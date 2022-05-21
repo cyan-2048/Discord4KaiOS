@@ -6,11 +6,16 @@
 	export let subtext = null;
 	export let status = null;
 	export let ch_type = "text";
+	export let id = null;
+	import { createEventDispatcher } from "svelte";
+	const dispatch = createEventDispatcher();
 
-	window.onkeydown = (e) => mentions++;
+	let onClick = () => {
+		dispatch("select", { id });
+	};
 </script>
 
-<main tabindex="0" class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {((unread && !muted) || mentions) > 0 ? 'unread' : ''}">
+<main on:click={onClick} tabindex="0" class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {((unread && !muted) || mentions) > 0 ? 'unread' : ''}">
 	{#if avatar}
 		<div class="avatar">
 			<img src={avatar} alt="" />

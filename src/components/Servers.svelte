@@ -2,7 +2,7 @@
 	export let selected;
 </script>
 
-<main class={["zero", "one", "two"][selected] || ""} />
+<main class={["", "", "two"][selected] || ""} />
 
 <style>
 	main {

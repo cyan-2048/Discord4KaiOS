@@ -2,7 +2,9 @@
 	export let selected;
 </script>
 
-<main class={["zero", "one"][selected] || ""} />
+<main class={["zero", "one"][selected] || ""}>
+	<slot />
+</main>
 
 <style>
 	main {
@@ -13,6 +15,7 @@
 		transform: translateX(100vw);
 		top: 0;
 		left: 0;
+		overflow: auto;
 		background-color: #36393f;
 	}
 	.one {

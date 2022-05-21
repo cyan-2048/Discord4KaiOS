@@ -1,6 +1,4 @@
 ((exports) => {
-	let XMLHttpRequest = typeof require === "function" && typeof window === "undefined" ? require("xmlhttprequest").XMLHttpRequest : window.XMLHttpRequest;
-
 	class DiscordXHR {
 		constructor(options = {}) {
 			this.token = null;
