@@ -1,0 +1,37 @@
+{
+	"version": "0.1.3",
+	"name": "Discord",
+	"description": "Discord Client for KaiOS",
+	"launch_path": "/index.html",
+	"icons": {
+		"56": "/css/56px.png",
+		"112": "/css/112px.png"
+	},
+	"developer": {
+		"name": "John Jelatis"
+	},
+	"type": "privileged",
+	"permissions": {
+		"systemXHR": {
+			"description": "Required to access Discord's Server"
+		},
+		"video-capture": {
+			"description": "Reading Codes using the Camera"
+		}
+	},
+	"activities": {
+		"@discord_qr": {
+			"href": "./redirects/qr/index.html",
+			"disposition": "inline",
+			"returnValue": true
+		},
+		"@discord_login": {
+			"href": "./redirects/login/index.html",
+			"disposition": "inline",
+			"returnValue": true
+		}
+	},
+	"installs_allowed_from": ["*"],
+	"locales": {},
+	"default_locale": "en"
+}

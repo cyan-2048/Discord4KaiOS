@@ -1,0 +1,31 @@
+html,
+body {
+	position: relative;
+	width: 100vw;
+	height: 100vh;
+	color: white;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	background-color: black;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	font-family: "Open Sans", sans-serif;
+}
+
+a {
+	color: rgb(0, 100, 200);
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:visited {
+	color: rgb(0, 80, 160);
+}

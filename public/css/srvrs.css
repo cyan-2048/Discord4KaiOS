@@ -1,0 +1,167 @@
+#srvrs {
+	width: 7.2rem;
+	position: fixed;
+	background-color: #202225;
+	padding: 8px 12px 0 12px;
+	overflow-y: auto;
+}
+
+#srvrs .server-icon[data-role="dms"] {
+	background-image: url("dms.png") !important;
+}
+
+#srvrs .server-icon[data-role="dms"],
+#srvrs .server-icon.no_icon,
+#srvrs .server-folder[data-hidden="true"] {
+	background-color: var(--chview-bkgrnd);
+}
+
+#srvrs .server-folder[data-hidden="true"] .server-folder-icon {
+	display: none;
+}
+
+#srvrs .server-folder[data-hidden="true"] {
+	width: 4.8rem;
+	height: 4.8rem;
+	background-color: #3f4581;
+	border-radius: 35%;
+	position: relative;
+	margin-bottom: 0.8rem;
+}
+
+#srvrs .server-folder[data-hidden="true"] .server-icon:nth-child(2) {
+	left: -0.9rem;
+	top: -0.9rem;
+}
+#srvrs .server-folder[data-hidden="true"] .server-icon:nth-child(3) {
+	right: -0.99rem;
+	top: -0.9rem;
+}
+#srvrs .server-folder[data-hidden="true"] .server-icon:nth-child(4) {
+	left: -0.9rem;
+	bottom: -1.9rem;
+}
+#srvrs .server-folder[data-hidden="true"] .server-icon:nth-child(5) {
+	right: -0.99rem;
+	bottom: -1.9rem;
+}
+
+#srvrs .server-folder[data-hidden="true"] .server-icon:nth-child(-n + 5) {
+	position: absolute;
+	pointer-events: none;
+	transform: scale(0.37);
+}
+
+#srvrs .server-folder[data-hidden="true"] .server-icon:not(:nth-child(-n + 5)),
+#srvrs .server-folder[data-hidden="true"] .server-icon:nth-child(-n + 5)::after,
+#srvrs .server-folder[data-hidden="true"] .server-icon:nth-child(-n + 5)::before {
+	display: none;
+}
+
+#srvrs .server-folder-icon {
+	width: 4.8rem;
+	background-size: cover;
+	height: 4.8rem;
+	background-image: url("folder.png") !important;
+	position: relative;
+}
+
+#srvrs .server-icon.no_icon {
+	text-align: center;
+	line-height: 4.8rem;
+	color: var(--chview-frgrnd);
+	font-size: 1.3rem;
+	font-weight: 600;
+}
+
+#srvrs .server-folder {
+	background-color: var(--chlist-bkgrnd);
+	border-radius: 2.5rem;
+}
+
+#srvrs .server-icon.no_icon:focus,
+#srvrs .server-icon.no_icon.selected,
+#srvrs .server-icon[data-role="dms"]:focus,
+#srvrs .server-icon[data-role="dms"].selected {
+	background-color: #5865f2 !important;
+}
+
+#srvrs .server-icon {
+	width: 4.8rem;
+	height: 4.8rem;
+	margin-bottom: 0.8rem;
+	background-image: var(--server_url);
+	background-size: cover;
+	border-radius: 50%;
+	position: relative;
+	transition: border-radius 0.3s ease, background-color linear 0.2s;
+}
+
+#srvrs .server-icon:focus,
+#srvers .server-icon.selected {
+	border-radius: 30% !important;
+}
+
+#srvrs .server-icon[data-mentions]::after {
+	display: none;
+}
+
+#srvrs .server-folder[data-hidden="false"]::after {
+	display: none;
+}
+
+#srvrs [data-mentions]:not([data-mentions="0"]):not([data-hidden="false"])::after {
+	content: attr(data-mentions);
+	display: block;
+	position: absolute;
+	border-radius: 2rem;
+	background-color: var(--color-of-ping);
+	color: white;
+	height: 0.6rem;
+	width: fit-content;
+	padding: 0.5rem;
+	font-size: 1.2rem;
+	bottom: 0;
+	right: 0;
+	line-height: 0.6rem;
+	border: solid 0.3rem #202225;
+}
+
+#srvrs .server-folder [data-mentions]::after {
+	border: solid 0.3rem var(--chlist-bkgrnd) !important;
+}
+
+#srvrs [data-unread="true"]::before {
+	content: "";
+	position: absolute;
+	width: 1rem;
+	height: 1rem;
+	border-radius: 2rem;
+	background-color: white;
+	left: -1.7rem;
+	bottom: 1.85rem;
+}
+
+#srvrs .server-folder[data-hidden="true"]:focus::before,
+#srvrs .server-icon:focus::before,
+#srvrs .server-folder-icon:focus::before {
+	content: "";
+	position: absolute;
+	width: 1rem;
+	height: 2.5rem;
+	border-radius: 2rem;
+	background-color: white;
+	left: -1.7rem;
+	bottom: 1.1rem;
+}
+
+#srvrs .server-icon.selected::before {
+	content: "";
+	position: absolute;
+	width: 1rem;
+	height: 4.8rem;
+	border-radius: 2rem;
+	background-color: white;
+	left: -1.7rem;
+	bottom: 0;
+}
