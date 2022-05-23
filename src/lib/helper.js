@@ -61,4 +61,77 @@ function wouldMessagePing(message, roles) {
 }
 function wouldMessagePingDM(message) {}
 
-export { hashCode, bitwise2text, groupBy, parseRoleAccess, wouldMessagePing, wouldMessagePingDM };
+function siftChannels(raw, roles, profile, skipSeparators) {
+	let position = (a, b) => a.position - b.position;
+	let _channels = {
+		0: [],
+	};
+	let separators = [];
+	let channels_id = {};
+	raw.forEach((a) => {
+		if (a.type == 4) {
+			_channels[a.name] = [];
+			channels_id[a.id] = a.name;
+			separators.push(a);
+		}
+	});
+	separators.sort(position);
+	separators = separators.map((a) => a.name);
+	separators.unshift(0);
+
+	raw.forEach((a) => {
+		if (a.type == 0 || a.type == 5) {
+			let perms = parseRoleAccess(a.permission_overwrites, profile.roles.concat([roles.find((p) => p.position == 0).id, profile.user.id]));
+			let id = a.parent_id;
+			if (perms.read !== false) (_channels[id ? channels_id[id] : 0] || []).push(a);
+		}
+	});
+
+	Object.keys(_channels).forEach((a) => {
+		if (_channels[a].length == 0) {
+			_channels[a] = null; // playing safe
+		} else {
+			_channels[a].sort(position);
+		}
+	});
+
+	let final = [];
+
+	separators.forEach((a) => {
+		if (_channels[a]) {
+			if (!skipSeparators) final.push({ type: "separator", name: a });
+			final = final.concat(_channels[a]);
+		}
+	});
+
+	return final;
+}
+
+function findScrollParent(node) {
+	if (node == null) return null;
+	if (node.scrollHeight > node.clientHeight) return node;
+	else return findScrollParent(node.parentNode);
+}
+
+function centerScroll(el, sync) {
+	const rect = el.getBoundingClientRect();
+	const elY = rect.top + rect.height / 2;
+	findScrollParent(el)?.scrollBy({
+		left: 0,
+		top: elY - window.innerHeight / 2,
+		behavior: sync ? "auto" : "smooth",
+	});
+}
+
+function isChannelMuted(discordInstance, channel, guildID) {
+	let settings = discordInstance.cache.user_guild_settings;
+	let guild = settings.find((e) => e.guild_id === guildID);
+	if (!guild) return false;
+	let find = guild.channel_overrides.find((a) => a.channel_id === channel.id);
+	if (find) return find.muted;
+	return false;
+}
+
+let last = (e) => e[e.length - 1];
+
+export { last, isChannelMuted, findScrollParent, centerScroll, siftChannels, hashCode, bitwise2text, groupBy, parseRoleAccess, wouldMessagePing, wouldMessagePingDM };

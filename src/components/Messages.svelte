@@ -2,7 +2,7 @@
 	export let selected;
 </script>
 
-<main class={["zero", "one"][selected] || ""}>
+<main tabindex="0" class="{['zero', 'one'][selected] || ''} {selected === 0 ? 'selected' : ''}">
 	<slot />
 </main>
 

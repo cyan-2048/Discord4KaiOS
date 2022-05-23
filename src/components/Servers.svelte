@@ -2,7 +2,7 @@
 	export let selected;
 </script>
 
-<main class={["", "", "two"][selected] || ""} />
+<main class="{['', '', 'two'][selected] || ''} {selected === 2 ? 'selected' : ''}"><slot /></main>
 
 <style>
 	main {
@@ -15,7 +15,7 @@
 		left: 0;
 		overflow: hidden;
 		background-color: #202225;
-		padding: 8px 12px 0 12px;
+		padding: 8px 12px;
 		overflow-y: auto;
 	}
 	.two {

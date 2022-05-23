@@ -2,11 +2,10 @@
 	export let message;
 	export let roles;
 	export let profile;
+	export let discordGateway;
+	export let discord;
 	import { onDestroy, onMount } from "svelte";
-	import { hashCode } from "../lib/helper.js";
-	onDestroy(() => {
-		// after death remove eventListener for message
-	});
+	import { hashCode, wouldMessagePing } from "../lib/helper.js";
 
 	import EmojiDict from "../lib/EmojiDict.js";
 
@@ -69,16 +68,60 @@
 		});
 		Object.keys(blocks).forEach((a) => {
 			let res = blocks[a].slice(0, -3).slice(3);
-			if (/^\w+<br>|^<br>/.test(res)) res = res.split("<br>").slice(1).join("<br>");
+			if (/^\w+\n|^\n/.test(res)) res = res.split("\n").slice(1).join("\n");
 			output = output.replace(a, `<pre>${res}</pre>`);
 		});
 		return output;
 	}
+
+	let contentEl;
+	let content = linkify(message.content);
+
+	let onchange = async (el = contentEl) => {
+		if (!el) return console.log("element not there");
+		if (el.childNodes.length === 1 && el.firstChild.className === "emoji") {
+			let emoji = el.firstChild.style;
+			emoji.setProperty("--emoji_url", emoji.getPropertyValue("--emoji_url").replace("size=16", "size=32"));
+			el.firstChild.classList.add("emoji-big");
+		}
+	};
+
+	onMount(onchange);
+
+	let update = (d) => {
+		if (d.id == message.id) {
+			if (d.content != message.content) {
+				content = linkify(d.content);
+				setTimeout(onchange, 50);
+			}
+			message = d;
+		}
+	};
+
+	discordGateway.on("t:message_update", update, "msg" + message.id);
+
+	onDestroy(() => {
+		// after death remove eventListener for message
+		discordGateway.off("t:message_update", update, "msg" + message.id);
+	});
 </script>
 
 <main>
-	{@html linkify(message.content)}
+	<div class="content" bind:this={contentEl}>
+		{@html content}
+	</div>
 </main>
 
 <style>
+	main {
+		padding-left: 32px;
+		font-size: 13px;
+		padding-right: 5px;
+		white-space: pre-wrap;
+	}
+	main,
+	.content {
+		hyphens: auto;
+		word-wrap: break-word;
+	}
 </style>

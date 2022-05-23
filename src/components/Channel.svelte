@@ -1,21 +1,56 @@
 <script>
 	export let avatar = null;
-	export let mentions = 0;
-	export let unread = false;
-	export let muted = false;
 	export let subtext = null;
 	export let status = null;
 	export let ch_type = "text";
 	export let id = null;
-	import { createEventDispatcher } from "svelte";
+	export let guildID;
+	export let serverAck;
+	export let discord;
+	export let last_message_id;
+
+	import { createEventDispatcher, onMount, onDestroy } from "svelte";
+	import { isChannelMuted } from "../lib/helper";
 	const dispatch = createEventDispatcher();
 
 	let onClick = () => {
 		dispatch("select", { id });
 	};
+
+	let mentions = 0;
+	let unread = false;
+	let muted = false;
+
+	let change = () => {
+		muted = isChannelMuted(discord, { id }, guildID);
+		if (guildID) {
+			if (muted) unread = false;
+			let el = discord.cache.read_state.find((e) => e.id == id);
+			if (el) {
+				if (!muted) unread = last_message_id ? el.last_message_id != last_message_id : false;
+				mentions = el.mention_count;
+			}
+		}
+	};
+
+	let update = (d) => {
+		console.log("channel updating");
+		if (d.channel_id == id) {
+			last_message_id = d.last_message_id;
+			change();
+		}
+		let override = d.channel_overrides?.find((a) => a.channel_id == id);
+		if (override || muted) {
+			change();
+		}
+	};
+
+	onMount(change);
+	serverAck.on("update", update, "ch" + id);
+	onDestroy(() => serverAck.off("update", update, "ch" + id));
 </script>
 
-<main on:click={onClick} tabindex="0" class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {((unread && !muted) || mentions) > 0 ? 'unread' : ''}">
+<main data-focusable on:click={onClick} tabindex="0" class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {(unread && !muted) || mentions > 0 ? 'unread' : ''}">
 	{#if avatar}
 		<div class="avatar">
 			<img src={avatar} alt="" />
@@ -24,6 +59,7 @@
 			{/if}
 		</div>
 	{:else}
+		<div class="bar" />
 		<img class="ch_type{mentions > 0 || unread ? ' bright' : ''}" src="/css/channels/{ch_type}.png" alt />
 	{/if}
 	{#if !isNaN(mentions) && mentions > 0}
@@ -41,17 +77,43 @@
 	main:last-child {
 		margin-bottom: 6.5px;
 	}
+	main:first-child {
+		margin-top: 6.5px;
+	}
 	img {
 		image-rendering: pixelated;
 		image-rendering: -moz-crisp-edges;
 		image-rendering: optimizespeed;
 	}
+
+	.bar {
+		width: 10px;
+		height: 100%;
+		display: grid;
+		align-items: center;
+		left: -15px;
+	}
+
+	.bar::after {
+		content: "";
+		display: block;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background-color: transparent;
+	}
+
+	.unread .bar::after {
+		background-color: white;
+	}
+
 	.mentions,
 	.subtext,
 	.text,
 	.avatar,
 	.status,
-	.ch_type {
+	.ch_type,
+	.bar {
 		position: absolute;
 	}
 	.bright {

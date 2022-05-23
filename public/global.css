@@ -18,7 +18,7 @@ body {
 }
 
 a {
-	color: rgb(0, 100, 200);
+	color: #00aff4;
 	text-decoration: none;
 }
 
@@ -28,4 +28,62 @@ a:hover {
 
 a:visited {
 	color: rgb(0, 80, 160);
+}
+
+:focus {
+	outline: none;
+}
+
+.emoji {
+	position: relative;
+	width: 16px;
+	height: 16px;
+	display: inline-block;
+}
+
+.emoji::after {
+	content: "";
+	position: absolute;
+	background-image: var(--emoji_url);
+	width: 16px;
+	height: 16px;
+	top: 3px;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-attachment: local;
+	overflow: hidden;
+	background-size: contain;
+}
+
+.mentions,
+.mentions::after {
+	background-color: var(--color, rgba(88, 101, 242, 0.3));
+	border-radius: 2px;
+	color: #dee0fc;
+}
+
+.emoji-big,
+.emoji-big::after {
+	width: 32px !important;
+	height: 32px !important;
+}
+
+.content pre,
+.content code {
+	font-family: "Droid Sans Mono";
+	border-radius: 3px;
+	background-color: #2f3136;
+}
+
+.content code {
+	font-size: 0.9em;
+	padding: 1px;
+}
+
+.content pre {
+	margin: 2px 0;
+	border: solid 1.5px #202225;
+	padding: 2px 5px;
+	word-break: break-all;
+	white-space: pre-wrap;
 }
