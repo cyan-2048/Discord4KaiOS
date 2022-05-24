@@ -1,16 +1,16 @@
 <script>
 	export let avatar = null;
-	export let subtext = null;
-	export let status = null;
 	export let ch_type = "text";
 	export let id = null;
 	export let guildID;
 	export let serverAck;
 	export let discord;
+	export let recipients;
+	export let dm = false;
 	export let last_message_id;
 
 	import { createEventDispatcher, onMount, onDestroy } from "svelte";
-	import { centerScroll, isChannelMuted } from "../lib/helper";
+	import { centerScroll, isChannelMuted, shuffle } from "../lib/helper";
 	const dispatch = createEventDispatcher();
 
 	let onClick = () => {
@@ -44,9 +44,46 @@
 		}
 	};
 
+	let subtext;
+	let status;
+	let client;
+
+	function decideClient(clientsObj) {
+		let clone = { ...clientsObj };
+		Object.keys(clone).forEach((a) => {
+			if (a === client) return delete clone[a];
+			if (clone[a] !== status) return delete clone[a];
+		});
+		if (Object.keys(clone).length > 0) {
+			return shuffle(Object.keys(clone))[0];
+		} else return client;
+	}
+
+	let onStatus = (d) => {
+		if (recipients?.length !== 1) return;
+		let p;
+		if (d) {
+			if (d.user?.id === recipients[0].id) status = d.status;
+		} else {
+			let found = discord.cache.guilds.find((a) => a.presences.find((e) => (e.user.id === recipients[0].id ? (p = e) : false)));
+			if (found) status = p.status;
+		}
+		if (!status) status = "offline";
+		else client = decideClient((d || p).client_status);
+	};
+
 	onMount(change);
 	serverAck.on("update", update, "ch" + id);
-	onDestroy(() => serverAck.off("update", update, "ch" + id));
+	if (dm) {
+		subtext = recipients.length > 1 ? recipients.length + " Members" : null;
+		onStatus();
+		serverAck.on("status", onStatus, "ch" + id);
+	}
+
+	onDestroy(() => {
+		serverAck.off("update", update, "ch" + id);
+		if (dm) serverAck.off("status", onStatus, "ch" + id);
+	});
 
 	function onFocus() {
 		setTimeout(() => centerScroll(this), 50);
@@ -64,7 +101,10 @@
 		<div class="avatar">
 			<img src={avatar} alt="" />
 			{#if status}
-				<div class="status" style="background-image:url(/css/status/{status}.png);" />
+				<div
+					class="status {client === 'mobile' && status !== 'offline' ? 'mobile' : ''}"
+					style="background-image:url(/css/status/{status !== 'offline' ? client + '_' : ''}{status}.png);"
+				/>
 			{/if}
 		</div>
 	{:else}
@@ -101,6 +141,11 @@
 		display: grid;
 		align-items: center;
 		left: -15px;
+	}
+
+	.mobile {
+		height: 21px !important;
+		border-radius: 18% !important;
 	}
 
 	.bar::after {

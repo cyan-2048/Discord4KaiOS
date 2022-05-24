@@ -92,8 +92,6 @@
 			let { id, icon, recipients, last_message_id } = ch;
 			let { id: user_id, avatar } = recipients[0];
 
-			let subtext = icon ? ch.recipients.length + " Members" : null;
-
 			return {
 				type: "channel",
 				name,
@@ -101,7 +99,6 @@
 				dm: true,
 				recipients,
 				last_message_id,
-				subtext,
 				avatar: !icon && !avatar ? "/css/default.png" : `https://cdn.discordapp.com/${icon ? "channel-icons" : "avatars"}/${icon ? id : user_id}/${icon || avatar}.jpg`,
 			};
 		});
@@ -228,17 +225,18 @@
 	discordGateway.on("t:user_settings_update", (d) => {
 		if (discord.cache) Object.assign(discord.cache.user_settings, d);
 	});
+
+	let serverAck = new EventEmitter();
 	discordGateway.on("t:presence_update", (d) => {
 		if (!discord.cache) return;
 		let e = discord.cache.guilds.find((a) => a.id == d.guild_id);
 		if (e) {
 			let ix = e.presences.findIndex((a) => a.user.id == d.user.id);
-			if (ix) e.presences[ix] = d;
+			if (ix > -1) e.presences[ix] = d;
 			else e.presences.push(d);
 		}
+		serverAck.emit("status", d);
 	});
-
-	let serverAck = new EventEmitter();
 	discordGateway.on("t:message_ack", (a) => {
 		if (!discord.cache) return;
 		let el = discord.cache.read_state.find((e) => e.id == a.channel_id);

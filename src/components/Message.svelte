@@ -8,7 +8,7 @@
 	export let channel;
 	export let guildID;
 	import { onDestroy, onMount } from "svelte";
-	import { decimal2rgb, hashCode, wouldMessagePing } from "../lib/helper.js";
+	import { decimal2rgb, hashCode, wouldMessagePing, toHTML } from "../lib/helper.js";
 	import EmojiDict from "../lib/EmojiDict.js";
 
 	let main;
@@ -17,7 +17,7 @@
 		let backticks = {};
 		let blocks = {};
 
-		let output = inputText
+		let output = toHTML(inputText)
 			// back ticks always first
 			.replace(/```([\s\S]*?)```/g, (a, b, c) => {
 				let hash = hashCode(Math.random() + c + b);
@@ -47,22 +47,22 @@
 
 			// links/urls
 			//URLs starting with http://, https://, or ftp://
-			.replace(/<?(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])>?/gim, '<a href="$1" target="_blank">$1</a>')
+			.replace(/(&lt;)?(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])(&gt;)?/gim, '<a href="$1" target="_blank">$1</a>')
 			//Change email addresses to mailto:: links.
 			.replace(/(([a-zA-Z0-9\-\_\.])+@[a-zA-Z\_]+?(\.[a-zA-Z]{2,6})+)/gim, '<a href="mailto:$1">$1</a>')
 			// discord emojis
 			.replace(
-				/(<a?):\w+:(\d{18}>)?/g,
+				/(&lt;a?):\w+:(\d{18}&gt;)?/g,
 				(a) =>
-					`<div class="emoji" style="--emoji_url: url('https://cdn.discordapp.com/emojis/${a.slice(0, -1).split(":").reverse()[0]}.${
-						a.startsWith("<a") ? "gif" : "png"
+					`<div class="emoji" style="--emoji_url: url('https://cdn.discordapp.com/emojis/${a.slice(0, -4).split(":").reverse()[0]}.${
+						a.startsWith("&amp;a") ? "gif" : "png"
 					}?size=16')"></div>`
 			)
 			.replace(/@everyone|@here/g, `<span class="mentions">$&</span>`)
 			.replace(/:(.*):/g, (a, b) => EmojiDict[b] || a)
 			.replace(
-				/<(@|#|@&)(\d*)>/g,
-				(a, b, c) => `<span class="mentions" data-type="${b == "@&" ? "role" : b == "#" ? "channel" : "user"}" data-id="${c}">${a.slice(1).slice(0, -1)}</span>`
+				/&lt;(@|#|@&amp;)(\d*)&gt;/g,
+				(a, b, c) => `<span class="mentions" data-type="${b == "@&amp;" ? "role" : b == "#" ? "channel" : "user"}" data-id="${c}">${a.slice(4).slice(0, -4)}</span>`
 			);
 		Object.keys(backticks).forEach((a) => {
 			output = output.replace(a, `<code>${backticks[a].slice(0, -1).slice(1)}</code>`);
@@ -145,11 +145,11 @@
 				let msg = messages.querySelector("#msg" + ref.id);
 				temp = msg ? msg.innerText : ref.content;
 			} else temp = ref.content;
-			if (channel.dm) temp = `<b>${"@" + ref.author.username} </b>` + temp;
+			if (channel.dm) temp = `<b>${"@" + ref.author.username} </b>` + toHTML(temp);
 			else {
 				let id = ref.author.id;
 				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
-				temp = `<b>${"@" + (s_profile.nick || s_profile.user?.username || "unknown-user")} </b>` + temp;
+				temp = `<b>${"@" + (s_profile.nick || s_profile.user?.username || "unknown-user")} </b>` + toHTML(temp);
 			}
 			reply = temp;
 		}
