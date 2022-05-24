@@ -7,7 +7,7 @@
 	import { onMount } from "svelte";
 	import { DiscordXHR } from "./lib/DiscordXHR.js";
 	import { EventEmitter } from "./lib/EventEmitter.js";
-	import { wouldMessagePing, centerScroll, siftChannels, last } from "./lib/helper";
+	import { wouldMessagePing, centerScroll, hashCode, siftChannels, last } from "./lib/helper";
 	var discordGateway = new (class extends EventEmitter {
 		constructor() {
 			super();
@@ -56,7 +56,7 @@
 			selected = 1;
 		}
 	};
-	window.addEventListener("sn:focused", () => setTimeout(() => centerScroll(document.activeElement), 50));
+
 	$: selected !== null &&
 		(() => {
 			console.log("selected changed", selected);
@@ -98,6 +98,8 @@
 				type: "channel",
 				name,
 				id,
+				dm: true,
+				recipients,
 				last_message_id,
 				subtext,
 				avatar: !icon && !avatar ? "/css/default.png" : `https://cdn.discordapp.com/${icon ? "channel-icons" : "avatars"}/${icon ? id : user_id}/${icon || avatar}.jpg`,
@@ -138,20 +140,18 @@
 	$: guild === null && loadDMS();
 	$: guild && loadChannels();
 
-	$: channel &&
-		(async () => {
-			messages = [];
-			let msgs = await discord.getMessages(channel.id, 30);
-			messages = [...msgs].reverse();
-			selected = 0;
-			setTimeout(() => {
-				let zel = document.querySelector(".zero.selected");
-				zel?.lastElementChild?.scrollIntoView(true);
-				zel?.focus();
-			}, 900);
-		})();
+	let loadMessages = async () => {
+		messages = [];
+		let msgs = await discord.getMessages(channel.id, 30);
+		messages = [...msgs].reverse();
+		selected = 0;
+		setTimeout(() => {
+			let zel = document.querySelector(".zero.selected");
+			zel?.lastElementChild?.scrollIntoView(true);
+		}, 1000);
+	};
 
-	let loadMessages = async (channel_id, roles, serverProfile) => {};
+	$: channel && loadMessages();
 
 	let init = async () => {
 		ready = true;
@@ -160,6 +160,17 @@
 		servers = wait.map((e) => {
 			let { id, name, icon, roles } = e;
 			return { id, name, icon, roles };
+		});
+		let attempts = 0;
+		discordGateway.on("close", function () {
+			if (attempts == 5) {
+				if (confirm("The Discord gateway closed 5 times already! Do you want to retry connecting? You might get rate limited...")) {
+					attempts = -1;
+				} else return window.close();
+			}
+			attempts++;
+			discordGateway.init(localStorage.token);
+			if (channel) loadMessages();
 		});
 	};
 
@@ -208,6 +219,7 @@
 	});
 	discordGateway.once("t:ready", init);
 	discordGateway.on("t:message_delete", (d) => {
+		if (!channel) return;
 		if (d.channel_id == channel.id && messages.find((e) => e.id == d.id)) {
 			messages = messages.filter((m) => m.id != d.id);
 		}
@@ -227,7 +239,6 @@
 	});
 
 	let serverAck = new EventEmitter();
-	serverAck.on("update", (a) => console.error("serverAck", a));
 	discordGateway.on("t:message_ack", (a) => {
 		if (!discord.cache) return;
 		let el = discord.cache.read_state.find((e) => e.id == a.channel_id);
@@ -267,6 +278,23 @@
 		let { author, id, username, avatar } = e;
 		return { author, id, name: username, avatar };
 	};
+
+	let mentionCache = {};
+
+	async function cachedMentions() {
+		console.log(mentionCache);
+		let args = [...arguments];
+		let hash = hashCode(args.join(""));
+		let type = args.shift();
+		if (mentionCache[hash]) return mentionCache[hash];
+		let res = await discord[type](...args);
+		while (res.message && res.code !== 10007) {
+			await new Promise((r) => setTimeout(r, 1000));
+			res = await discord[type](...args);
+		}
+		mentionCache[hash] = res;
+		return res;
+	}
 </script>
 
 {#if ready}
@@ -295,9 +323,9 @@
 	<Messages {selected}>
 		{#each messages as message, i (message.id)}
 			{#if messages[i - 1]?.author.id != message.author?.id}
-				<MessageSeparator {...spreadAuthor(message.author)} {discord} />
+				<MessageSeparator {cachedMentions} userID={discord.user.id} {roles} {...spreadAuthor(message.author)} guildID={guild ? guild.id : null} {channel} profile={serverProfile} />
 			{/if}
-			<Message {roles} {discord} profile={serverProfile} {discordGateway} {message} />
+			<Message guildID={guild ? guild.id : null} {cachedMentions} {roles} {channel} {discord} profile={serverProfile} {discordGateway} {message} />
 		{/each}
 	</Messages>
 {/if}

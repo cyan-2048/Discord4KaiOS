@@ -11,7 +11,7 @@
  * get rid of JQuery support
  */
 
-(function ($) {
+const SpatialNavigation = (function ($) {
 	"use strict";
 
 	/************************/
@@ -1116,10 +1116,7 @@
 
 	window.SpatialNavigation = SpatialNavigation;
 
-	/**********************/
-	/* CommonJS Interface */
-	/**********************/
-	if (typeof module === "object") {
-		module.exports = SpatialNavigation;
-	}
+	return SpatialNavigation;
 })();
+
+export default SpatialNavigation;

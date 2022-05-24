@@ -1,14 +1,34 @@
 <script>
+	import { onMount } from "svelte";
+	import { decimal2rgb } from "../lib/helper";
+
 	export let id = null;
 	export let name = null;
 	export let avatar = null;
-	export let discord;
+	export let channel;
+	export let profile;
+	export let userID;
+	export let guildID;
+	export let cachedMentions;
+	export let roles;
+
+	let color;
 
 	let image = avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.jpg?size=24` : null;
+
+	onMount(async () => {
+		if (!channel.dm && id) {
+			let s_profile = userID === id ? profile : await cachedMentions("getServerProfile", guildID, id);
+			if (!s_profile) return;
+			if (s_profile.nick) name = s_profile.nick;
+			let role = [...roles].sort((a, b) => b.position - a.position).find((o) => s_profile.roles.includes(o.id) && o.color > 0);
+			if (role) color = decimal2rgb(role.color, true);
+		}
+	});
 </script>
 
 <main>
-	<img src={image || "/css/default.png"} alt /><b>{name}</b>
+	<img src={image || "/css/default.png"} alt /><b style={color ? `color: rgb(${color});` : null}>{name}</b>
 </main>
 
 <style>

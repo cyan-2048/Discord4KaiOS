@@ -1,8 +1,10 @@
 <script>
 	export let selected;
+	let main;
+	$: selected === 0 && main && main.focus();
 </script>
 
-<main tabindex="0" class="{['zero', 'one'][selected] || ''} {selected === 0 ? 'selected' : ''}">
+<main bind:this={main} tabindex="0" class="{['zero', 'one'][selected] || ''} {selected === 0 ? 'selected' : ''}">
 	<slot />
 </main>
 

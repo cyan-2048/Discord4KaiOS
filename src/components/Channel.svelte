@@ -10,7 +10,7 @@
 	export let last_message_id;
 
 	import { createEventDispatcher, onMount, onDestroy } from "svelte";
-	import { isChannelMuted } from "../lib/helper";
+	import { centerScroll, isChannelMuted } from "../lib/helper";
 	const dispatch = createEventDispatcher();
 
 	let onClick = () => {
@@ -34,7 +34,6 @@
 	};
 
 	let update = (d) => {
-		console.log("channel updating");
 		if (d.channel_id == id) {
 			last_message_id = d.last_message_id;
 			change();
@@ -48,9 +47,19 @@
 	onMount(change);
 	serverAck.on("update", update, "ch" + id);
 	onDestroy(() => serverAck.off("update", update, "ch" + id));
+
+	function onFocus() {
+		setTimeout(() => centerScroll(this), 50);
+	}
 </script>
 
-<main data-focusable on:click={onClick} tabindex="0" class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {(unread && !muted) || mentions > 0 ? 'unread' : ''}">
+<main
+	data-focusable
+	on:focus={onFocus}
+	on:click={onClick}
+	tabindex="0"
+	class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {(unread && !muted) || mentions > 0 ? 'unread' : ''}"
+>
 	{#if avatar}
 		<div class="avatar">
 			<img src={avatar} alt="" />
@@ -60,7 +69,7 @@
 		</div>
 	{:else}
 		<div class="bar" />
-		<img class="ch_type{mentions > 0 || unread ? ' bright' : ''}" src="/css/channels/{ch_type}.png" alt />
+		<img class="ch_type{mentions > 0 || unread ? ' bright' : ''}" src="/css/channels/{ch_type}.svg" alt />
 	{/if}
 	{#if !isNaN(mentions) && mentions > 0}
 		<div class="mentions">

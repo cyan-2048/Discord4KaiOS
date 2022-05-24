@@ -1,6 +1,6 @@
 <script>
 	import { createEventDispatcher, onMount } from "svelte";
-	import { isChannelMuted, siftChannels } from "../lib/helper.js";
+	import { isChannelMuted, siftChannels, centerScroll } from "../lib/helper.js";
 	export let dm = false;
 	export let discord;
 	export let server;
@@ -16,8 +16,6 @@
 	let profile;
 	let channels;
 	let update = async () => {
-		console.log(channels);
-		console.log("updating");
 		if (dm) {
 		} else {
 			if (!profile) profile = await discord.getServerProfile(id, discord.user.id);
@@ -53,6 +51,12 @@
 			.map((a) => a[0])
 			.join("")
 			.slice(0, 3) || "";
+
+	function onFocus() {
+		setTimeout(() => centerScroll(this), 400);
+	}
+
+	let main;
 </script>
 
 <main
@@ -61,6 +65,8 @@
 	data-focusable
 	class="{unread ? 'unread' : ''} {dm ? 'dm' : ''} {selected ? 'selected' : ''}"
 	tabindex="0"
+	on:focus={onFocus}
+	bind:this={main}
 >
 	<div class="hover" />
 	{#if icon}
@@ -68,9 +74,28 @@
 	{:else}
 		<div class="image">{shorten(name)}</div>
 	{/if}
+	{#if mentions > 0}
+		<div class="mentions" style={main?.parentNode?.matches("[data-folder]") ? "border-color: rgb(47, 49, 54);" : ""}>{mentions}</div>
+	{/if}
 </main>
 
 <style>
+	.mentions {
+		display: block;
+		position: absolute;
+		border-radius: 20px;
+		background-color: #ed4245;
+		color: white;
+		height: 15px;
+		min-width: 15px;
+		padding: 7px 3.9px;
+		font-size: 12px;
+		bottom: 0;
+		right: 0;
+		line-height: 0;
+		border: solid 3px #202225;
+	}
+
 	:focus div.image,
 	:hover div.image {
 		background-color: rgb(88, 101, 242);

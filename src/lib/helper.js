@@ -116,7 +116,9 @@ function findScrollParent(node) {
 function centerScroll(el, sync) {
 	const rect = el.getBoundingClientRect();
 	const elY = rect.top + rect.height / 2;
-	findScrollParent(el)?.scrollBy({
+	let e = findScrollParent(el);
+	if (!e) e = el.parentNode;
+	e.scrollBy({
 		left: 0,
 		top: elY - window.innerHeight / 2,
 		behavior: sync ? "auto" : "smooth",
@@ -133,5 +135,11 @@ function isChannelMuted(discordInstance, channel, guildID) {
 }
 
 let last = (e) => e[e.length - 1];
+function decimal2rgb(ns, arr) {
+	let r = Math.floor(ns / (256 * 256)),
+		g = Math.floor(ns / 256) % 256,
+		b = ns % 256;
+	return arr ? [r, g, b] : { r, g, b };
+}
 
-export { last, isChannelMuted, findScrollParent, centerScroll, siftChannels, hashCode, bitwise2text, groupBy, parseRoleAccess, wouldMessagePing, wouldMessagePingDM };
+export { decimal2rgb, last, isChannelMuted, findScrollParent, centerScroll, siftChannels, hashCode, bitwise2text, groupBy, parseRoleAccess, wouldMessagePing, wouldMessagePingDM };
