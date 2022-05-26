@@ -46,7 +46,7 @@ export default {
 		svelte({
 			compilerOptions: {
 				// enable run-time checks when not in production
-				dev: !production,
+				dev: false,
 			},
 		}),
 		// we'll extract any component CSS out into

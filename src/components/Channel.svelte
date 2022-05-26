@@ -8,6 +8,7 @@
 	export let recipients;
 	export let dm = false;
 	export let last_message_id;
+	export let name = null;
 
 	import { createEventDispatcher, onMount, onDestroy } from "svelte";
 	import { centerScroll, isChannelMuted, shuffle } from "../lib/helper";
@@ -119,7 +120,12 @@
 	{#if subtext}
 		<div class="subtext">{subtext}</div>
 	{/if}
-	<div class="text"><slot /></div>
+	<div class="text">
+		{#if name}{name}
+		{:else}
+			<slot />
+		{/if}
+	</div>
 </main>
 
 <style>

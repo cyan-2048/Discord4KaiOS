@@ -47,7 +47,7 @@
 
 			// links/urls
 			//URLs starting with http://, https://, or ftp://
-			.replace(/(&lt;)?(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])(&gt;)?/gim, '<a href="$1" target="_blank">$1</a>')
+			.replace(/(?:&lt;)?(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])(?:&gt;)?/gim, '<a href="$1" target="_blank">$1</a>')
 			//Change email addresses to mailto:: links.
 			.replace(/(([a-zA-Z0-9\-\_\.])+@[a-zA-Z\_]+?(\.[a-zA-Z]{2,6})+)/gim, '<a href="mailto:$1">$1</a>')
 			// discord emojis
@@ -145,7 +145,7 @@
 				let msg = messages.querySelector("#msg" + ref.id);
 				temp = msg ? msg.innerText : ref.content;
 			} else temp = ref.content;
-			if (channel.dm) temp = `<b>${"@" + ref.author.username} </b>` + toHTML(temp);
+			if (channel.dm || ref.author.bot) temp = `<b>${"@" + ref.author.username} </b>` + toHTML(temp);
 			else {
 				let id = ref.author.id;
 				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);

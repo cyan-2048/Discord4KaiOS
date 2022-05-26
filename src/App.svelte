@@ -273,36 +273,58 @@
 	});
 
 	let spreadAuthor = (e) => {
-		let { author, id, username, avatar } = e;
-		return { author, id, name: username, avatar };
+		let { bot, id, username, avatar } = e;
+		return { bot, id, name: username, avatar };
 	};
 
 	let mentionCache = {};
 
-	async function cachedMentions() {
-		console.log(mentionCache);
-		let args = [...arguments];
-		let hash = hashCode(args.join(""));
-		let type = args.shift();
-		if (mentionCache[hash]) return mentionCache[hash];
-		let res = await discord[type](...args);
-		while (res.message && res.code !== 10007) {
-			await new Promise((r) => setTimeout(r, 1000));
-			res = await discord[type](...args);
-		}
-		mentionCache[hash] = res;
-		return res;
+	function delay() {
+		console.log("delaying");
+		return new Promise((r) => setTimeout(r, 1000));
 	}
+
+	const cachedMentions = (() => {
+		let pending = Promise.resolve();
+
+		async function func() {
+			let args = [...arguments];
+			let hash = hashCode(args.join(""));
+			let type = args.shift();
+			if (mentionCache[hash]) return mentionCache[hash];
+			let res = await discord[type](...args);
+			mentionCache[hash] = "waiting";
+			while (res.message && res.code !== 10007 && res.code !== 10013) {
+				await delay();
+				res = await discord[type](...args);
+			}
+			mentionCache[hash] = res;
+			return res;
+		}
+
+		const run = async function () {
+			try {
+				await pending;
+			} finally {
+				return func(...arguments);
+			}
+		};
+
+		// update pending promise so that next task could await for it
+		return function () {
+			return (pending = run(...arguments));
+		};
+	})();
 </script>
 
 {#if ready}
 	<Servers {selected}>
-		<Server on:select={selectServer} selected={!guild} {serverAck} {discordGateway} {discord} dm={true} />
+		<Server on:select={selectServer} selected={!guild} {serverAck} {discord} dm={true} />
 		{#each servers as server}
 			{#if server.folder}
-				<ServerFolder {...server} {discordGateway} {discord} />
+				<ServerFolder {...server} {discord} />
 			{:else}
-				<Server on:select={selectServer} selected={guild?.id === server.id} {serverAck} {server} {discordGateway} {discord} />
+				<Server on:select={selectServer} selected={guild?.id === server.id} {serverAck} {server} {discord} />
 			{/if}
 		{/each}
 	</Servers>
