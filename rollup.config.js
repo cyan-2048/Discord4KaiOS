@@ -43,6 +43,7 @@ export default {
 			copy({
 				targets: [{ src: "public/*", dest: "dist/" }],
 			}),
+		commonjs(),
 		svelte({
 			compilerOptions: {
 				// enable run-time checks when not in production
@@ -89,8 +90,6 @@ export default {
 			browser: true,
 			dedupe: ["svelte"],
 		}),
-		commonjs(),
-
 		// In dev mode, call `npm run start` once
 		// the bundle has been generated
 		!production && serve(),
@@ -104,6 +103,7 @@ export default {
 		production && terser(),
 	],
 	watch: {
+		buildDelay: 2000,
 		clearScreen: false,
 	},
 };

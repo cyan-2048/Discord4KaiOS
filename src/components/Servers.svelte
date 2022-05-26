@@ -2,10 +2,10 @@
 	export let selected;
 </script>
 
-<main class="{['', '', 'two'][selected] || ''} {selected === 2 ? 'selected' : ''}"><slot /></main>
+<div data-servers class="{['', '', 'two'][selected] || ''} {selected === 2 ? 'selected' : ''}"><slot /></div>
 
 <style>
-	main {
+	div {
 		transition: transform 0.4s ease;
 		width: 72px;
 		height: 100vh;

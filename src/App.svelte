@@ -7,7 +7,7 @@
 	import { onMount } from "svelte";
 	import { DiscordXHR } from "./lib/DiscordXHR.js";
 	import { EventEmitter } from "./lib/EventEmitter.js";
-	import { wouldMessagePing, centerScroll, hashCode, siftChannels, last } from "./lib/helper";
+	import { wouldMessagePing, inViewport, centerScroll, hashCode, siftChannels, last } from "./lib/helper";
 	var discordGateway = new (class extends EventEmitter {
 		constructor() {
 			super();
@@ -25,10 +25,13 @@
 	import SpatialNavigation from "./lib/spatial_navigation";
 	const sn = SpatialNavigation;
 	sn.init();
-	sn.add({
-		id: "default",
-		selector: ".selected [data-focusable]",
-	});
+	["messages", "channels", "servers"].forEach((id) =>
+		sn.add({
+			id,
+			selector: `[data-${id}].selected [data-focusable]`,
+			rememberSource: false,
+		})
+	);
 	import Message from "./components/Message.svelte";
 	import Server from "./components/Server.svelte";
 	import ServerFolder from "./components/ServerFolder.svelte";
@@ -57,11 +60,36 @@
 		}
 	};
 
+	window.addEventListener("sn:willunfocus", (e) => {
+		let { nextElement: next, direction } = e.detail;
+		if (!/up|down/.test(direction) || selected !== 0) return;
+		let actEl = document.activeElement;
+		if (!actEl.id.startsWith("msg")) return;
+		if (actEl.offsetHeight > window.innerHeight) {
+			e.preventDefault();
+			actEl.parentNode.scrollTop += direction === "up" ? -66 : 66;
+			if (!next) return;
+			if (next.offsetHeight > window.innerHeight) {
+				if (inViewport(next, true)) next.focus();
+			} else if (inViewport(next)) {
+				next.focus();
+				setTimeout(() => centerScroll(next), 50);
+			}
+		} else if (next && next.offsetHeight < window.innerHeight) setTimeout(() => centerScroll(next), 50);
+	});
+
 	$: selected !== null &&
 		(() => {
 			console.log("selected changed", selected);
 			document.activeElement.blur();
-			setTimeout(() => sn.focus(), 50);
+			setTimeout(() => {
+				let query = document.querySelector(".two.selected .selected");
+				if (selected === 2 && query) {
+					query.parentElement.matches("[data-folder][data-focusable]") ? query.parentElement.focus() : query.focus();
+					return;
+				}
+				sn.focus();
+			}, 50);
 		})();
 
 	let guild = false;
@@ -144,8 +172,9 @@
 		selected = 0;
 		setTimeout(() => {
 			let zel = document.querySelector(".zero.selected");
-			zel?.lastElementChild?.scrollIntoView(true);
-		}, 1000);
+			if (zel) zel.scrollTop = zel.scrollHeight;
+			last(zel.children).focus();
+		}, 100);
 	};
 
 	$: channel && loadMessages();
@@ -187,7 +216,6 @@
 	window.discord = discord;
 	window.discordGateway = discordGateway;
 	let isChannel = (o) => !!(o.name && o.type === "channel");
-	window.setSelect = (o) => (selected = o);
 
 	let selectChannel = async (e) => {
 		let { id } = e.detail;
@@ -259,7 +287,7 @@
 		let el = discord.cache.read_state.find((e) => e.id == d.channel_id);
 		if (d.guild_id) {
 			let r = d.guild_id == guild?.id ? serverProfile : await discord.getServerProfile(d.guild_id, discord.user.id);
-			let ping = wouldMessagePing(d, r.roles);
+			let ping = wouldMessagePing(d, r.roles, discord);
 			if (el && ping) el.mention_count++;
 		}
 		serverAck.emit("update", d);
@@ -273,8 +301,8 @@
 	});
 
 	let spreadAuthor = (e) => {
-		let { bot, id, username, avatar } = e;
-		return { bot, id, name: username, avatar };
+		let { bot, discriminator, id, username, avatar } = e;
+		return { bot, discriminator, id, name: username, avatar };
 	};
 
 	let mentionCache = {};
@@ -286,14 +314,11 @@
 
 	const cachedMentions = (() => {
 		let pending = Promise.resolve();
-
 		async function func() {
 			let args = [...arguments];
 			let hash = hashCode(args.join(""));
 			let type = args.shift();
-			if (mentionCache[hash]) return mentionCache[hash];
 			let res = await discord[type](...args);
-			mentionCache[hash] = "waiting";
 			while (res.message && res.code !== 10007 && res.code !== 10013) {
 				await delay();
 				res = await discord[type](...args);
@@ -301,7 +326,6 @@
 			mentionCache[hash] = res;
 			return res;
 		}
-
 		const run = async function () {
 			try {
 				await pending;
@@ -309,10 +333,12 @@
 				return func(...arguments);
 			}
 		};
-
 		// update pending promise so that next task could await for it
 		return function () {
-			return (pending = run(...arguments));
+			let args = [...arguments];
+			let obj = mentionCache[hashCode(args.join(""))];
+			if (obj) return Promise.resolve(obj);
+			return (pending = run(...args));
 		};
 	})();
 </script>
@@ -345,7 +371,7 @@
 			{#if messages[i - 1]?.author.id != message.author?.id}
 				<MessageSeparator {cachedMentions} userID={discord.user.id} {roles} {...spreadAuthor(message.author)} guildID={guild ? guild.id : null} {channel} profile={serverProfile} />
 			{/if}
-			<Message guildID={guild ? guild.id : null} {cachedMentions} {roles} {channel} {discord} profile={serverProfile} {discordGateway} {message} />
+			<Message guildID={guild ? guild.id : null} {cachedMentions} {roles} {channel} {discord} profile={serverProfile} {discordGateway} msg={message} />
 		{/each}
 	</Messages>
 {/if}

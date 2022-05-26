@@ -12,14 +12,14 @@
 	export let cachedMentions;
 	export let roles;
 	export let bot;
+	export let discriminator;
 
 	let color;
 
 	let image = avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.jpg?size=24` : null;
 
 	onMount(async () => {
-		console.log("bot :", bot);
-		if (!channel.dm && id && bot !== true) {
+		if (!channel.dm && id && discriminator !== "0000" /*i think this is how we can differ webhooks*/) {
 			let s_profile = userID === id ? profile : await cachedMentions("getServerProfile", guildID, id);
 			if (!s_profile || !s_profile.roles) return;
 			if (s_profile.nick) name = s_profile.nick;
@@ -29,11 +29,24 @@
 	});
 </script>
 
-<main>
-	<img src={image || "/css/default.png"} alt /><b style={color ? `color: rgb(${color});` : null}>{name}</b>
+<main data-separator>
+	<img src={image || "/css/default.png"} alt /><b style={color ? `color: rgb(${color});` : null}>{name}</b>{#if bot}
+		<div class="bot">{discriminator === "0000" ? "WEBHOOK" : "BOT"}</div>
+	{/if}
 </main>
 
 <style>
+	.bot {
+		font-size: 8px;
+		display: inline-block;
+		padding: 2px 4px;
+		height: 12px;
+		border-radius: 4px;
+		line-height: 1;
+		margin: 0 2px;
+		align-self: center;
+		background-color: rgb(88, 101, 242);
+	}
 	main {
 		display: flex;
 		height: 17px;

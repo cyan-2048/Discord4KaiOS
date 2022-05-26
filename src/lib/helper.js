@@ -47,11 +47,11 @@ function parseRoleAccess(overwrites = [], roles = []) {
 	return obj;
 }
 
-function wouldMessagePing(message, roles) {
+function wouldMessagePing(message, roles, discordInstance) {
 	let check = (e) => e instanceof Array && !!e[0];
 	let { mention_everyone, mentions, mention_roles, guild_id } = message;
 	if (mention_everyone) return true;
-	if (check(mentions) && mentions.find((a) => a.id == discord.user.id)) {
+	if (check(mentions) && mentions.find((a) => a.id == discordInstance.user.id)) {
 		return true;
 	}
 	if (check(mention_roles) && mention_roles.some((r) => roles.includes(r))) {
@@ -161,7 +161,17 @@ function shuffle(array) {
 	return array;
 }
 
+function inViewport(element, partial) {
+	let bounding = element.getBoundingClientRect();
+	let height = element.offsetHeight;
+	let width = element.offsetWidth;
+	return partial
+		? !!(bounding.top >= -height && bounding.left >= -width && bounding.right <= window.innerWidth + width && bounding.bottom <= window.innerHeight + height)
+		: !!(bounding.top >= 0 && bounding.left >= 0 && bounding.right <= window.innerWidth && bounding.bottom <= window.innerHeight);
+}
+
 export {
+	inViewport,
 	shuffle,
 	toHTML,
 	decimal2rgb,

@@ -1,5 +1,5 @@
 <script>
-	export let message;
+	export let msg;
 	export let roles;
 	export let profile;
 	export let discordGateway;
@@ -10,75 +10,15 @@
 	import { onDestroy, onMount } from "svelte";
 	import { decimal2rgb, hashCode, wouldMessagePing, toHTML } from "../lib/helper.js";
 	import EmojiDict from "../lib/EmojiDict.js";
-
+	import { toHTML as markdown } from "../lib/discord-markdown.js";
+	let message = msg;
 	let main;
 
+	let pinged;
+	$: message && (pinged = wouldMessagePing(message, profile?.roles || [], discord));
+
 	function linkify(inputText) {
-		let backticks = {};
-		let blocks = {};
-
-		let output = toHTML(inputText)
-			// back ticks always first
-			.replace(/```([\s\S]*?)```/g, (a, b, c) => {
-				let hash = hashCode(Math.random() + c + b);
-				blocks[hash] = a;
-				return hash;
-			})
-			.replace(/`([\s\S]*?)`/g, (a, b, c) => {
-				let hash = hashCode(Math.random() + c + b);
-				backticks[hash] = a;
-				return hash;
-			})
-
-			// other stuff starts here
-
-			// markdown bold italics
-			.replace(/\*\*\*([\s\S]*?)\*\*\*/g, "<b><i>$1</i></b>")
-			// bold
-			.replace(/\*\*([\s\S]*?)\*\*/g, "<b>$1</b>")
-			// italic
-			.replace(/\*([\s\S]*?)\*/g, "<i>$1</i>")
-			// underline
-			.replace(/__([\s\S]*?)__/g, "<u>$1</u>")
-			//italic (no i can't use | because underline)
-			.replace(/\s_([\s\S]*?)_\s/g, "<i>$1</i>")
-			// strikethrough
-			.replace(/~~([\s\S]*?)~~/g, "<s>$1</s>")
-
-			// links/urls
-			//URLs starting with http://, https://, or ftp://
-			.replace(/(?:&lt;)?(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])(?:&gt;)?/gim, '<a href="$1" target="_blank">$1</a>')
-			//Change email addresses to mailto:: links.
-			.replace(/(([a-zA-Z0-9\-\_\.])+@[a-zA-Z\_]+?(\.[a-zA-Z]{2,6})+)/gim, '<a href="mailto:$1">$1</a>')
-			// discord emojis
-			.replace(
-				/(&lt;a?):\w+:(\d{18}&gt;)?/g,
-				(a) =>
-					`<div class="emoji" style="--emoji_url: url('https://cdn.discordapp.com/emojis/${a.slice(0, -4).split(":").reverse()[0]}.${
-						a.startsWith("&amp;a") ? "gif" : "png"
-					}?size=16')"></div>`
-			)
-			.replace(/@everyone|@here/g, `<span class="mentions">$&</span>`)
-			.replace(/:(.*):/g, (a, b) => EmojiDict[b] || a)
-			.replace(
-				/&lt;(@|#|@&amp;)(\d*)&gt;/g,
-				(a, b, c) => `<span class="mentions" data-type="${b == "@&amp;" ? "role" : b == "#" ? "channel" : "user"}" data-id="${c}">${a.slice(4).slice(0, -4)}</span>`
-			);
-		Object.keys(backticks).forEach((a) => {
-			output = output.replace(a, `<code>${backticks[a].slice(0, -1).slice(1)}</code>`);
-		});
-		Object.keys(blocks).forEach((a) => {
-			let res = blocks[a].slice(0, -3).slice(3);
-			if (/^\w+\n|^\n/.test(res)) res = res.split("\n").slice(1).join("\n");
-			output = output.replace(a, `<pre>${res}</pre>`);
-		});
-		return output;
-	}
-
-	function linkifyText(inputText) {
-		let div = document.createElement("div");
-		div.innerHTML = linkify(inputText);
-		return div.innerText;
+		return markdown(inputText || "").replace(/:(.*):/g, (a, b) => EmojiDict[b] || a);
 	}
 
 	let contentEl;
@@ -87,10 +27,14 @@
 	let onchange = async (el = contentEl) => {
 		console.log(message);
 		if (!el) return console.error("element not there");
-		if (el.childNodes.length === 1 && el.firstChild.className === "emoji") {
-			let emoji = el.firstChild.style;
-			emoji.setProperty("--emoji_url", emoji.getPropertyValue("--emoji_url").replace("size=16", "size=32"));
-			el.firstChild.classList.add("emoji-big");
+		if (el.childNodes.length === 1) {
+			if (el.firstElementChild?.tagName === "A" && message.embeds[0]?.type === "image") {
+				el.innerHTML = "";
+			} else if (el.firstChild.className === "emoji") {
+				let emoji = el.firstChild.style;
+				emoji.setProperty("--emoji_url", emoji.getPropertyValue("--emoji_url").replace("size=16", "size=32"));
+				el.firstChild.classList.add("emoji-big");
+			}
 		}
 		let getMentions = (e) => el.querySelectorAll(`span.mentions[data-type='${e}']`);
 		if (channel.dm) {
@@ -136,11 +80,15 @@
 
 	onMount(onchange);
 	onMount(async () => {
+		if (pinged && main && main.previousElementSibling?.matches("[data-separator]")) {
+			main.previousElementSibling.classList.add("mentioned");
+		}
 		let temp;
 		let messages = main.parentNode;
 		if (!messages) return;
 		let { referenced_message: ref } = message;
 		if (ref) {
+			reply = "loading...";
 			if (/<(@|#|@&)(\d*)>/.test(ref.content)) {
 				let msg = messages.querySelector("#msg" + ref.id);
 				temp = msg ? msg.innerText : ref.content;
@@ -157,11 +105,10 @@
 
 	let update = (d) => {
 		if (d.id == message.id) {
-			if (d.content != message.content) {
-				content = linkify(d.content);
-				setTimeout(onchange, 50);
-			}
-			message = d;
+			message = { ...message, ...d };
+			content = "";
+			content = linkify(message.content);
+			setTimeout(onchange, 50);
 		}
 	};
 
@@ -171,21 +118,88 @@
 		// after death remove eventListener for message
 		discordGateway.off("t:message_update", update, "msg" + message.id);
 	});
+
+	function onClick(e) {
+		let { target } = e;
+		if (target.classList.contains("spoiler") && target.tagName === "SPAN") target.classList.toggle("active");
+	}
+
+	let decideHeight = (e) => {
+		let { height, width } = e;
+		if ((width || 0) > 203) {
+			return {
+				width: 203,
+				height: (height / width) * 203,
+			};
+		} else return { height, width };
+	};
+
+	function toggleFocus(e) {
+		let { type, target } = e;
+		let prev = target.previousElementSibling;
+		if (prev?.matches("[data-separator]")) prev.classList[type === "focus" ? "add" : "remove"]("focus");
+	}
 </script>
 
-<main bind:this={main} id={"msg" + message.id}>
+<main data-focusable on:blur={toggleFocus} on:focus={toggleFocus} class={pinged ? "mention" : ""} tabindex="0" bind:this={main} id={"msg" + message.id}>
 	{#if reply}
 		<div class="reply">
 			<div class="r-icon" />
 			<div class="r-text">{@html reply}</div>
 		</div>
 	{/if}
-	<div class="content {message.edited_timestamp ? 'edited' : ''}" bind:this={contentEl}>
+	<div on:click={onClick} class="content {message.edited_timestamp ? 'edited' : ''}" bind:this={contentEl}>
 		{@html content}
 	</div>
+	{#if message.attachments && message.attachments[0]}
+		{#each message.attachments as attachment (attachment.id)}
+			{#if attachment.content_type?.startsWith("image")}
+				<img src={attachment.proxy_url} {...decideHeight(attachment)} alt />
+			{/if}
+		{/each}
+	{/if}
+	{#if message.embeds && message.embeds[0]}
+		{#each message.embeds as embed}
+			{#if embed.type !== "image"}
+				<div style={embed.color ? `--line_color: rgb(${decimal2rgb(embed.color, true)});` : ""} class="embed">
+					{#if embed.description}
+						<div class="embed-desc">{@html markdown(embed.description, { embed: true })}</div>
+					{/if}
+				</div>
+			{:else}
+				<img src={embed.thumbnail.proxy_url} {...decideHeight(embed.thumbnail)} alt />
+			{/if}
+		{/each}
+	{/if}
 </main>
 
 <style>
+	main:not(.mention):focus {
+		background-color: #32353b;
+	}
+
+	main.mention:focus {
+		background-color: #3c3831;
+	}
+	main.mention {
+		background-color: #49443c;
+	}
+
+	.content + .embed {
+		margin-top: 4px;
+	}
+	.embed {
+		padding: 8px;
+		padding-left: 5px;
+		border-left: 3px solid;
+		border-color: var(--line_color, #202225);
+		margin-bottom: 4px;
+		background-color: rgb(47, 49, 54);
+		border-radius: 3px;
+	}
+	.embed-desc {
+		font-size: 11px;
+	}
 	.reply {
 		display: flex;
 		font-size: 9.6px;

@@ -1,15 +1,13 @@
 <script>
 	export let selected;
-	let main;
-	$: selected === 0 && main && main.focus();
 </script>
 
-<main bind:this={main} tabindex="0" class="{['zero', 'one'][selected] || ''} {selected === 0 ? 'selected' : ''}">
+<div data-messages class="{['zero', 'one'][selected] || ''} {selected === 0 ? 'selected' : ''}">
 	<slot />
-</main>
+</div>
 
 <style>
-	main {
+	div {
 		transition: transform 0.4s ease;
 		width: 100vw;
 		height: 100vh;

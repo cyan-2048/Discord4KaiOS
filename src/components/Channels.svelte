@@ -2,10 +2,10 @@
 	export let selected;
 </script>
 
-<main class="{['zero', '', 'two'][selected] || ''} {selected === 1 ? 'selected' : ''}"><slot /></main>
+<div data-channels class="{['zero', '', 'two'][selected] || ''} {selected === 1 ? 'selected' : ''}"><slot /></div>
 
 <style>
-	main {
+	div {
 		transition: transform 0.4s ease;
 		background-color: #2f3136;
 		overflow: auto;

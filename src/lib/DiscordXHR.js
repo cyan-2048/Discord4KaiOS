@@ -61,7 +61,7 @@ class DiscordXHR {
 	xhrRequestJSON() {
 		return this.xhrRequest(...arguments).then((x, xhr) => {
 			try {
-				if (xhr) x.status = xhr.status;
+				if (xhr && !x.status) x.status = xhr.status;
 				return JSON.parse(x);
 			} catch (e) {
 				let error = new Error(e.message);
