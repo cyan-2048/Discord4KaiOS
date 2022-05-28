@@ -1,8 +1,9 @@
 <script>
 	export let selected;
+	export let appState;
 </script>
 
-<div data-servers class="{['', '', 'two'][selected] || ''} {selected === 2 ? 'selected' : ''}"><slot /></div>
+<div data-servers style={appState !== "app" ? "display:none;" : null} class="{['', '', 'two'][selected] || ''} {selected === 2 ? 'selected' : ''}"><slot /></div>
 
 <style>
 	div {

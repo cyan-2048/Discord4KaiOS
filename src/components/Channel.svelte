@@ -60,17 +60,26 @@
 		} else return client;
 	}
 
+	let makeSubtext = (d) => {
+		let s = d.activities?.find((a) => a.type === 4);
+		if (s) subtext = s.state;
+	};
+
 	let onStatus = (d) => {
 		if (recipients?.length !== 1) return;
+		if (d && d.user?.id !== recipients[0].id) return;
 		let p;
 		if (d) {
-			if (d.user?.id === recipients[0].id) status = d.status;
+			status = d.status;
 		} else {
 			let found = discord.cache.guilds.find((a) => a.presences.find((e) => (e.user.id === recipients[0].id ? (p = e) : false)));
 			if (found) status = p.status;
 		}
 		if (!status) status = "offline";
-		else client = decideClient((d || p).client_status);
+		else {
+			makeSubtext(d || p);
+			client = decideClient((d || p).client_status);
+		}
 	};
 
 	onMount(change);
@@ -225,6 +234,10 @@
 		bottom: 6px;
 		left: 50px;
 		font-size: 11px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		width: 160px;
 	}
 	.subtext + .text {
 		top: 3px !important;

@@ -74,7 +74,7 @@ const rules = {
 			};
 		},
 		html: (node, output, state) => {
-			return htmlTag("pre", htmlTag("code", markdown.sanitizeText(node.content), {}, state), null, state);
+			return htmlTag("pre", htmlTag("code", markdown.sanitizeText(node.content), { "data-lang": node.lang }, state), null, state);
 		},
 	}),
 	newline: markdown.defaultRules.newline,

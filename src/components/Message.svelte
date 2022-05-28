@@ -8,11 +8,27 @@
 	export let channel;
 	export let guildID;
 	import { onDestroy, onMount } from "svelte";
-	import { decimal2rgb, hashCode, wouldMessagePing, toHTML } from "../lib/helper.js";
+	import { decimal2rgb, hashCode, wouldMessagePing, toHTML, shuffle } from "../lib/helper.js";
 	import EmojiDict from "../lib/EmojiDict.js";
 	import { toHTML as markdown } from "../lib/discord-markdown.js";
 	let message = msg;
 	let main;
+
+	let greetings = [
+		"$user joined the party.",
+		"$user is here.",
+		"Welcome, $user. We hope you brought pizza.",
+		"A wild $user appeared.",
+		"$user just landed.",
+		"$user just slid into the server.",
+		"$user just showed up!",
+		"Welcome $user. Say hi!",
+		"$user hopped into the server.",
+		"Everyone welcome $user!",
+		"Glad you're here, $user.",
+		"Good to see you, $user.",
+		"Yay you made it, $user!",
+	];
 
 	let pinged;
 	$: message && (pinged = wouldMessagePing(message, profile?.roles || [], discord));
@@ -22,7 +38,7 @@
 	}
 
 	let contentEl;
-	let content = linkify(message.content);
+	let content = message.type === 7 ? shuffle(greetings)[0].replace("$user", message.author.username) : linkify(message.content);
 
 	let onchange = async (el = contentEl) => {
 		console.log(message);
@@ -61,6 +77,7 @@
 			getMentions("user").forEach(async (a) => {
 				let id = a.dataset.id;
 				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
+				if (s_profile.code) s_profile = await cachedMentions("getProfile", id);
 				a.innerText = "@" + (s_profile.nick || s_profile.user?.username || "unknown-user");
 			});
 		}
@@ -88,7 +105,7 @@
 		if (!messages) return;
 		let { referenced_message: ref } = message;
 		if (ref) {
-			reply = "loading...";
+			reply = ref.author.username || "loading...";
 			if (/<(@|#|@&)(\d*)>/.test(ref.content)) {
 				let msg = messages.querySelector("#msg" + ref.id);
 				temp = msg ? msg.innerText : ref.content;
@@ -97,7 +114,7 @@
 			else {
 				let id = ref.author.id;
 				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
-				temp = `<b>${"@" + (s_profile.nick || s_profile.user?.username || "unknown-user")} </b>` + toHTML(temp);
+				temp = `<b>${"@" + (s_profile.nick || s_profile.user?.username || ref.author.username || "unknown-user")} </b>` + toHTML(temp);
 			}
 			reply = temp;
 		}
@@ -160,20 +177,50 @@
 	{/if}
 	{#if message.embeds && message.embeds[0]}
 		{#each message.embeds as embed}
-			{#if embed.type !== "image"}
+			{#if embed.type === "image"}
+				<img src={embed.thumbnail.proxy_url} {...decideHeight(embed.thumbnail)} alt />
+			{:else}
 				<div style={embed.color ? `--line_color: rgb(${decimal2rgb(embed.color, true)});` : ""} class="embed">
+					{#if embed.provider}
+						{#if embed.provider.name}
+							<div class="embed-p-name">{embed.provider.name}</div>
+						{/if}
+					{/if}
+					{#if embed.author}
+						{#if embed.author.name}
+							<div class="embed-a-name">{embed.author.name}</div>
+						{/if}
+					{/if}
+					{#if embed.title}
+						<div class="embed-title">
+							{#if embed.url}
+								<a href={embed.url}>{embed.title}</a>
+							{:else}
+								{embed.title}
+							{/if}
+						</div>
+					{/if}
 					{#if embed.description}
 						<div class="embed-desc">{@html markdown(embed.description, { embed: true })}</div>
 					{/if}
 				</div>
-			{:else}
-				<img src={embed.thumbnail.proxy_url} {...decideHeight(embed.thumbnail)} alt />
 			{/if}
 		{/each}
 	{/if}
 </main>
 
 <style>
+	.embed-a-name,
+	.embed-p-name {
+		font-size: 11px;
+	}
+	.embed-a-name {
+		font-weight: bold;
+	}
+	.embed-title {
+		font-size: 13px;
+	}
+
 	main:not(.mention):focus {
 		background-color: #32353b;
 	}
@@ -194,7 +241,7 @@
 		border-left: 3px solid;
 		border-color: var(--line_color, #202225);
 		margin-bottom: 4px;
-		background-color: rgb(47, 49, 54);
+		background-color: #2f3136;
 		border-radius: 3px;
 	}
 	.embed-desc {
@@ -216,8 +263,7 @@
 		width: 11px;
 		background-color: rgb(32, 34, 37);
 		background-image: url(/css/reply.svg);
-		background-position-x: 1px;
-		background-position-y: 2px;
+		background-position: center;
 		background-size: 80%;
 		background-repeat: no-repeat;
 		margin-top: 1.5px;

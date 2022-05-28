@@ -11,7 +11,7 @@
  * get rid of JQuery support
  */
 
-const SpatialNavigation = (function ($) {
+(function () {
 	"use strict";
 
 	/************************/
@@ -71,9 +71,6 @@ const SpatialNavigation = (function ($) {
 	var _lastSectionId = "";
 	var _duringFocusChange = false;
 
-	/************/
-	/* Polyfill */
-	/************/
 	var elementMatchesSelector = Element.prototype.matches;
 
 	/*****************/
@@ -390,9 +387,7 @@ const SpatialNavigation = (function ($) {
 		var result = [];
 		try {
 			if (selector) {
-				if ($) {
-					result = $(selector).get();
-				} else if (typeof selector === "string") {
+				if (typeof selector === "string") {
 					result = [].slice.call(document.querySelectorAll(selector));
 				} else if (typeof selector === "object" && selector.length) {
 					result = [].slice.call(selector);
@@ -407,9 +402,7 @@ const SpatialNavigation = (function ($) {
 	}
 
 	function matchSelector(elem, selector) {
-		if ($) {
-			return $(elem).is(selector);
-		} else if (typeof selector === "string") {
+		if (typeof selector === "string") {
 			return elementMatchesSelector.call(elem, selector);
 		} else if (typeof selector === "object" && selector.length) {
 			return selector.indexOf(elem) >= 0;
@@ -528,7 +521,7 @@ const SpatialNavigation = (function ($) {
 			if (currentFocusedElement) {
 				currentFocusedElement.blur();
 			}
-			elem.focus();
+			elem.focus({ preventScroll: true });
 			focusChanged(elem, sectionId);
 		};
 
@@ -570,7 +563,7 @@ const SpatialNavigation = (function ($) {
 			_duringFocusChange = false;
 			return false;
 		}
-		elem.focus();
+		elem.focus({ preventScroll: true });
 		fireEvent(elem, "focused", focusProperties, false);
 
 		_duringFocusChange = false;
@@ -663,10 +656,6 @@ const SpatialNavigation = (function ($) {
 					return null;
 				}
 				return focusExtendedSelector(next, direction);
-			}
-
-			if ($ && next instanceof $) {
-				next = next.get(0);
 			}
 
 			var nextSectionId = getSectionId(next);
@@ -856,7 +845,7 @@ const SpatialNavigation = (function ($) {
 			if (!fireEvent(target, "willunfocus", unfocusProperties)) {
 				_duringFocusChange = true;
 				setTimeout(function () {
-					target.focus();
+					target.focus({ preventScroll: true });
 					_duringFocusChange = false;
 				});
 			} else {
@@ -1027,10 +1016,6 @@ const SpatialNavigation = (function ($) {
 						result = focusExtendedSelector(elem);
 					}
 				} else {
-					if ($ && elem instanceof $) {
-						elem = elem.get(0);
-					}
-
 					var nextSectionId = getSectionId(elem);
 					if (isNavigable(elem, nextSectionId)) {
 						result = focusElement(elem, nextSectionId);
@@ -1116,7 +1101,10 @@ const SpatialNavigation = (function ($) {
 
 	window.SpatialNavigation = SpatialNavigation;
 
-	return SpatialNavigation;
+	/**********************/
+	/* CommonJS Interface */
+	/**********************/
+	if (typeof module === "object") {
+		module.exports = SpatialNavigation;
+	}
 })();
-
-export default SpatialNavigation;

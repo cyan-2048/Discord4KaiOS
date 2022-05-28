@@ -1,8 +1,9 @@
 <script>
 	export let selected;
+	export let appState;
 </script>
 
-<div data-messages class="{['zero', 'one'][selected] || ''} {selected === 0 ? 'selected' : ''}">
+<div data-messages style={appState !== "app" ? "display:none;" : null} class="{['zero', 'one'][selected] || ''} {selected === 0 ? 'selected' : ''}">
 	<slot />
 </div>
 

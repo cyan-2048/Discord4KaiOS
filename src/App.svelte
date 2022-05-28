@@ -7,7 +7,7 @@
 	import { onMount } from "svelte";
 	import { DiscordXHR } from "./lib/DiscordXHR.js";
 	import { EventEmitter } from "./lib/EventEmitter.js";
-	import { wouldMessagePing, inViewport, centerScroll, hashCode, siftChannels, last } from "./lib/helper";
+	import { wouldMessagePing, getScrollBottom, inViewport, centerScroll, hashCode, siftChannels, last } from "./lib/helper";
 	var discordGateway = new (class extends EventEmitter {
 		constructor() {
 			super();
@@ -22,7 +22,7 @@
 			this.worker.postMessage({ event: "init", token });
 		}
 	})();
-	import SpatialNavigation from "./lib/spatial_navigation";
+	import SpatialNavigation from "./lib/spatial_navigation.js";
 	const sn = SpatialNavigation;
 	sn.init();
 	["messages", "channels", "servers"].forEach((id) =>
@@ -36,10 +36,13 @@
 	import Server from "./components/Server.svelte";
 	import ServerFolder from "./components/ServerFolder.svelte";
 	import MessageSeparator from "./components/MessageSeparator.svelte";
+	import Login from "./Login.svelte";
 	let discord = new DiscordXHR({ cache: true });
 	let selected = 1;
+	let appState = "app";
 
-	window.onkeydown = (e) => {
+	window.addEventListener("keydown", (e) => {
+		if (appState !== "app") return;
 		let { key, target } = e;
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
@@ -58,16 +61,32 @@
 			sn.focus();
 			selected = 1;
 		}
-	};
-
+	});
+	window.addEventListener("sn:navigatefailed", (e) => {
+		if (appState !== "app") return;
+		let { direction } = e.detail;
+		if (!/up|down/.test(direction) || selected !== 0) return;
+		let actEl = document.activeElement;
+		if (!actEl.id.startsWith("msg")) return;
+		if (actEl.offsetHeight > window.innerHeight) {
+			actEl.parentNode.scrollBy({
+				top: direction === "up" ? -66 : 66,
+				behavior: "smooth",
+			});
+		}
+	});
 	window.addEventListener("sn:willunfocus", (e) => {
+		if (appState !== "app") return;
 		let { nextElement: next, direction } = e.detail;
 		if (!/up|down/.test(direction) || selected !== 0) return;
 		let actEl = document.activeElement;
 		if (!actEl.id.startsWith("msg")) return;
 		if (actEl.offsetHeight > window.innerHeight) {
 			e.preventDefault();
-			actEl.parentNode.scrollTop += direction === "up" ? -66 : 66;
+			actEl.parentNode.scrollBy({
+				top: direction === "up" ? -66 : 66,
+				behavior: "smooth",
+			});
 			if (!next) return;
 			if (next.offsetHeight > window.innerHeight) {
 				if (inViewport(next, true)) next.focus();
@@ -200,21 +219,27 @@
 		});
 	};
 
+	let login = (e) => {
+		appState = "app";
+		localStorage.token = e;
+		discord.login(e);
+		discordGateway.init(e);
+	};
+
 	onMount(() => {
 		let token = localStorage.token;
 		if (token) {
 			discord.login(token);
 			discordGateway.init(token);
 		} else {
-			window.login = (e) => {
-				localStorage.token = e;
-				discordGateway.init(e);
-			};
+			appState = "login";
+			window.login = login;
 		}
 	});
 
 	window.discord = discord;
 	window.discordGateway = discordGateway;
+	window.changeAppState = (e) => (appState = e);
 	let isChannel = (o) => !!(o.name && o.type === "channel");
 
 	let selectChannel = async (e) => {
@@ -249,11 +274,9 @@
 			messages = messages.filter((m) => m.id != d.id);
 		}
 	});
-
 	discordGateway.on("t:user_settings_update", (d) => {
 		if (discord.cache) Object.assign(discord.cache.user_settings, d);
 	});
-
 	let serverAck = new EventEmitter();
 	discordGateway.on("t:presence_update", (d) => {
 		if (!discord.cache) return;
@@ -277,6 +300,12 @@
 	discordGateway.on("t:message_create", async (d) => {
 		if (channel?.id == d.channel_id) {
 			messages = [...messages, d];
+			setTimeout(() => {
+				let messages = document.querySelector("[data-messages]");
+				if (getScrollBottom(messages) < 100) {
+					centerScroll(last(messages.children));
+				}
+			}, 50);
 		}
 		if (!discord.cache) return;
 		let e;
@@ -299,20 +328,16 @@
 		else m.push(d);
 		serverAck.emit("update", d);
 	});
-
 	let spreadAuthor = (e) => {
 		let { bot, discriminator, id, username, avatar } = e;
 		return { bot, discriminator, id, name: username, avatar };
 	};
-
-	let mentionCache = {};
-
-	function delay() {
-		console.log("delaying");
-		return new Promise((r) => setTimeout(r, 1000));
-	}
-
 	const cachedMentions = (() => {
+		let mentionCache = {};
+		function delay() {
+			console.log("delaying");
+			return new Promise((r) => setTimeout(r, 1000));
+		}
 		let pending = Promise.resolve();
 		async function func() {
 			let args = [...arguments];
@@ -344,7 +369,7 @@
 </script>
 
 {#if ready}
-	<Servers {selected}>
+	<Servers {appState} {selected}>
 		<Server on:select={selectServer} selected={!guild} {serverAck} {discord} dm={true} />
 		{#each servers as server}
 			{#if server.folder}
@@ -354,7 +379,7 @@
 			{/if}
 		{/each}
 	</Servers>
-	<Channels {selected}>
+	<Channels {appState} {selected}>
 		{#if guild === null}
 			<Separator>DIRECT MESSAGES</Separator>
 		{/if}
@@ -366,7 +391,7 @@
 			{/if}
 		{/each}
 	</Channels>
-	<Messages {selected}>
+	<Messages {appState} {selected}>
 		{#each messages as message, i (message.id)}
 			{#if messages[i - 1]?.author.id != message.author?.id}
 				<MessageSeparator {cachedMentions} userID={discord.user.id} {roles} {...spreadAuthor(message.author)} guildID={guild ? guild.id : null} {channel} profile={serverProfile} />
@@ -374,7 +399,42 @@
 			<Message guildID={guild ? guild.id : null} {cachedMentions} {roles} {channel} {discord} profile={serverProfile} {discordGateway} msg={message} />
 		{/each}
 	</Messages>
+{:else}
+	<main id="loading">
+		<img src="/css/loading.png" alt />
+		<div id="dyk">DID YOU KNOW</div>
+		<div id="fact">svelte is awesome</div>
+	</main>
+{/if}
+{#if appState === "login"}
+	<Login {sn} on:login={(e) => login(e.detail.token)} />
 {/if}
 
 <style>
+	#loading {
+		width: 100vw;
+		height: 100vh;
+		position: absolute;
+		top: 0;
+		left: 0;
+		background-color: #2f3136;
+	}
+	#loading img {
+		width: 200px;
+		height: 200px;
+		margin: 12px 20px;
+	}
+	#loading > div {
+		text-align: center;
+	}
+	#dyk {
+		font-size: 12px;
+		margin-top: -35px;
+		font-weight: 600;
+		margin-bottom: 8px;
+	}
+	#fact {
+		font-size: 16px;
+		height: 75px;
+	}
 </style>

@@ -170,7 +170,21 @@ function inViewport(element, partial) {
 		: !!(bounding.top >= 0 && bounding.left >= 0 && bounding.right <= window.innerWidth && bounding.bottom <= window.innerHeight);
 }
 
+function getTopBottom(el) {
+	let bounding = el.getBoundingClientRect();
+	return {
+		top: bounding.top,
+		bottom: window.innerHeight - bounding.top - el.offsetHeight,
+	};
+}
+
+function getScrollBottom(el) {
+	return el.scrollHeight - el.offsetHeight - el.scrollTop;
+}
+
 export {
+	getScrollBottom,
+	getTopBottom,
 	inViewport,
 	shuffle,
 	toHTML,
