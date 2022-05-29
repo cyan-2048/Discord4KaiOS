@@ -7,7 +7,7 @@
 	import { onMount } from "svelte";
 	import { DiscordXHR } from "./lib/DiscordXHR.js";
 	import { EventEmitter } from "./lib/EventEmitter.js";
-	import { wouldMessagePing, getScrollBottom, inViewport, centerScroll, hashCode, siftChannels, last } from "./lib/helper";
+	import { wouldMessagePing, getScrollBottom, inViewport, centerScroll, hashCode, siftChannels, last, parseRoleAccess } from "./lib/helper";
 	var discordGateway = new (class extends EventEmitter {
 		constructor() {
 			super();
@@ -46,9 +46,9 @@
 		let { key, target } = e;
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
-			if (key == "Enter") target.click();
+			if (/Right|Enter/.test(key)) target.click();
 		}
-		if (selected == 0 && key == "Backspace") {
+		if (selected == 0 && key == "Backspace" && (target.tagName !== "TEXTAREA" || target.value === "")) {
 			e.preventDefault();
 			setTimeout(() => (selected = 1), 50);
 		}
@@ -65,7 +65,9 @@
 	window.addEventListener("sn:navigatefailed", (e) => {
 		if (appState !== "app") return;
 		let { direction } = e.detail;
-		if (!/up|down/.test(direction) || selected !== 0) return;
+		if (selected !== 0) return;
+		if (direction === "left") setTimeout(() => (selected = 1), 50);
+		if (!/up|down/.test(direction)) return;
 		let actEl = document.activeElement;
 		if (!actEl.id.startsWith("msg")) return;
 		if (actEl.offsetHeight > window.innerHeight) {
@@ -73,6 +75,9 @@
 				top: direction === "up" ? -66 : 66,
 				behavior: "smooth",
 			});
+		}
+		if (direction === "down" && getScrollBottom(actEl.parentNode) === 0) {
+			document.querySelector(".grow-wrap textarea").focus();
 		}
 	});
 	window.addEventListener("sn:willunfocus", (e) => {
@@ -120,6 +125,7 @@
 	let channels = [];
 	let messages = [];
 	let ready = false;
+	let channelPermissions = {};
 
 	let loadDMS = async () => {
 		document.activeElement.blur();
@@ -185,6 +191,9 @@
 	$: guild && loadChannels();
 
 	let loadMessages = async () => {
+		if (!channel.dm) {
+			channelPermissions = parseRoleAccess(channel.permission_overwrites, serverProfile.roles.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]));
+		} else channelPermissions = {};
 		messages = [];
 		let msgs = await discord.getMessages(channel.id, 30);
 		messages = [...msgs].reverse();
@@ -334,6 +343,7 @@
 	};
 	const cachedMentions = (() => {
 		let mentionCache = {};
+		window.mentionCache = mentionCache;
 		function delay() {
 			console.log("delaying");
 			return new Promise((r) => setTimeout(r, 1000));
@@ -366,6 +376,7 @@
 			return (pending = run(...args));
 		};
 	})();
+	let sendMessage = (e, opts = {}) => discord.sendMessage(channel.id, e, opts);
 </script>
 
 {#if ready}
@@ -391,7 +402,7 @@
 			{/if}
 		{/each}
 	</Channels>
-	<Messages {appState} {selected}>
+	<Messages {sendMessage} {channelPermissions} {appState} {selected}>
 		{#each messages as message, i (message.id)}
 			{#if messages[i - 1]?.author.id != message.author?.id}
 				<MessageSeparator {cachedMentions} userID={discord.user.id} {roles} {...spreadAuthor(message.author)} guildID={guild ? guild.id : null} {channel} profile={serverProfile} />

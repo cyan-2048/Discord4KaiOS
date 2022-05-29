@@ -38,7 +38,12 @@
 	}
 
 	let contentEl;
-	let content = message.type === 7 ? shuffle(greetings)[0].replace("$user", message.author.username) : linkify(message.content);
+	let content =
+		message.type === 7
+			? shuffle(greetings)[0].replace("$user", message.author.username)
+			: message.author.bot
+			? markdown(message.content, { embed: true })
+			: linkify(message.content);
 
 	let onchange = async (el = contentEl) => {
 		console.log(message);
@@ -74,14 +79,14 @@
 				}
 				a.innerText = text;
 			});
-			getMentions("user").forEach(async (a) => {
+			for (const a of getMentions("user")) {
 				let id = a.dataset.id;
 				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
 				if (s_profile.code) s_profile = await cachedMentions("getProfile", id);
 				a.innerText = "@" + (s_profile.nick || s_profile.user?.username || "unknown-user");
-			});
+			}
 		}
-		getMentions("channel").forEach(async (a) => {
+		for (const a of getMentions("channel")) {
 			let id = a.dataset.id;
 			let text = "deleted-channel";
 			if (channel.id === id) text = channel.name;
@@ -90,7 +95,9 @@
 				text = channel.name;
 			}
 			a.innerText = "#" + text;
-		});
+		}
+		typeof el.parentNode.loaded === "function" && el.parentNode.loaded();
+		el.parentNode.loaded = true;
 	};
 
 	let reply;
@@ -106,9 +113,15 @@
 		let { referenced_message: ref } = message;
 		if (ref) {
 			reply = ref.author.username || "loading...";
-			if (/<(@|#|@&)(\d*)>/.test(ref.content)) {
+			let _m = /<(@|#|@&)(\d*)>/g;
+			if (_m.test(ref.content)) {
 				let msg = messages.querySelector("#msg" + ref.id);
-				temp = msg ? msg.innerText : ref.content;
+				temp = msg
+					? await new Promise((r) => {
+							if (msg.loaded) r(msg.innerText);
+							else msg.loaded = () => r(msg.innerText);
+					  })
+					: ref.content?.replace(_m, "") || "";
 			} else temp = ref.content;
 			if (channel.dm || ref.author.bot) temp = `<b>${"@" + ref.author.username} </b>` + toHTML(temp);
 			else {
@@ -124,7 +137,7 @@
 		if (d.id == message.id) {
 			message = { ...message, ...d };
 			content = "";
-			content = linkify(message.content);
+			content = d.author.bot ? markdown(message.content, { embed: true }) : linkify(message.content);
 			setTimeout(onchange, 50);
 		}
 	};
@@ -191,7 +204,7 @@
 							<div class="embed-a-name">{embed.author.name}</div>
 						{/if}
 					{/if}
-					{#if embed.title}
+					{#if embed.title && embed.type !== "rich"}
 						<div class="embed-title">
 							{#if embed.url}
 								<a href={embed.url}>{embed.title}</a>
@@ -199,6 +212,9 @@
 								{embed.title}
 							{/if}
 						</div>
+					{/if}
+					{#if embed.title && embed.type === "rich"}
+						<div class="embed-title">{@html markdown(embed.title, { embed: true })}</div>
 					{/if}
 					{#if embed.description}
 						<div class="embed-desc">{@html markdown(embed.description, { embed: true })}</div>
