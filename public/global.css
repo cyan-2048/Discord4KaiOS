@@ -14,7 +14,7 @@ body {
 *::before,
 *::after {
 	box-sizing: border-box;
-	font-family: "Open Sans", sans-serif;
+	font-family: "Open Sans", twemoji, sans-serif;
 }
 
 a {
@@ -68,7 +68,7 @@ a:hover {
 
 .content pre,
 .content code {
-	font-family: "Droid Sans Mono";
+	font-family: "Droid Sans Mono", monospace;
 	border-radius: 3px;
 	background-color: #2f3136;
 }

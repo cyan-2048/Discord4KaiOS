@@ -86,20 +86,20 @@
 		if (!/up|down/.test(direction) || selected !== 0) return;
 		let actEl = document.activeElement;
 		if (!actEl.id.startsWith("msg")) return;
-		if (actEl.offsetHeight > window.innerHeight) {
+		if (actEl.offsetHeight > window.innerHeight - 71) {
 			e.preventDefault();
 			actEl.parentNode.scrollBy({
 				top: direction === "up" ? -66 : 66,
 				behavior: "smooth",
 			});
 			if (!next) return;
-			if (next.offsetHeight > window.innerHeight) {
+			if (next.offsetHeight > window.innerHeight - 71) {
 				if (inViewport(next, true)) next.focus();
 			} else if (inViewport(next)) {
 				next.focus();
 				setTimeout(() => centerScroll(next), 50);
 			}
-		} else if (next && next.offsetHeight < window.innerHeight) setTimeout(() => centerScroll(next), 50);
+		} else if (next && next.offsetHeight < window.innerHeight - 71) setTimeout(() => centerScroll(next), 50);
 	});
 
 	$: selected !== null &&
@@ -377,6 +377,29 @@
 		};
 	})();
 	let sendMessage = (e, opts = {}) => discord.sendMessage(channel.id, e, opts);
+
+	onMount(() => {
+		function initEmoji(link, toSave) {
+			let xhr = new XMLHttpRequest({ mozSystem: true });
+			xhr.open("get", link, true);
+			xhr.responseType = "blob";
+			xhr.onload = () => {
+				let r = xhr.response;
+				let el = document.createElement("style");
+				let url = URL.createObjectURL(r);
+				el.innerHTML = `@font-face { font-family: twemoji; src: url("${url}");}`;
+				document.documentElement.appendChild(el);
+				if (toSave === true) {
+					let reader = new FileReader();
+					reader.readAsDataURL(r);
+					reader.onloadend = () => localStorage.setItem("emoji-font", reader.result);
+				}
+			};
+			xhr.send();
+		}
+		let emoji = localStorage.getItem("emoji-font");
+		initEmoji(emoji || "https://github.com/mozilla/twemoji-colr/releases/latest/download/TwemojiMozilla.ttf", !!!emoji);
+	});
 </script>
 
 {#if ready}

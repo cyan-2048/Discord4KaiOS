@@ -33,17 +33,12 @@
 	let pinged;
 	$: message && (pinged = wouldMessagePing(message, profile?.roles || [], discord));
 
-	function linkify(inputText) {
-		return markdown(inputText || "").replace(/:(.*):/g, (a, b) => EmojiDict[b] || a);
+	function linkify(inputText, opts = {}) {
+		return markdown(inputText || "", opts).replace(/:(.*):/g, (a, b) => EmojiDict[b] || a);
 	}
 
 	let contentEl;
-	let content =
-		message.type === 7
-			? shuffle(greetings)[0].replace("$user", message.author.username)
-			: message.author.bot
-			? markdown(message.content, { embed: true })
-			: linkify(message.content);
+	let content = message.type === 7 ? shuffle(greetings)[0].replace("$user", message.author.username) : linkify(message.content, { embed: !!message.author.bot });
 
 	let onchange = async (el = contentEl) => {
 		console.log(message);
@@ -154,12 +149,18 @@
 		if (target.classList.contains("spoiler") && target.tagName === "SPAN") target.classList.toggle("active");
 	}
 
-	let decideHeight = (e) => {
+	let decideHeight = (e, size, minus) => {
+		if (!e || typeof e !== "object") return {};
 		let { height, width } = e;
-		if ((width || 0) > 203) {
+		if (!height || !width) return {};
+		if (minus && height - minus > 0 && width - minus > 0) {
+			height -= minus;
+			width -= minus;
+		}
+		if ((width || 0) > (size || 203)) {
 			return {
-				width: 203,
-				height: (height / width) * 203,
+				width: size || 203,
+				height: (height / width) * (size || 203),
 			};
 		} else return { height, width };
 	};
@@ -214,10 +215,27 @@
 						</div>
 					{/if}
 					{#if embed.title && embed.type === "rich"}
-						<div class="embed-title">{@html markdown(embed.title, { embed: true })}</div>
+						<div class="embed-title">{@html linkify(embed.title, { embed: true })}</div>
 					{/if}
 					{#if embed.description}
-						<div class="embed-desc">{@html markdown(embed.description, { embed: true })}</div>
+						<div class="embed-desc">{@html linkify(embed.description, { embed: true })}</div>
+					{/if}
+					{#if embed.thumbnail}
+						<img class="thumb" {...decideHeight(embed.thumbnail, 187, 50)} src={embed.thumbnail.proxy_url} alt />
+					{/if}
+					{#if embed.fields && embed.fields[0]}
+						{#each embed.fields as field}
+							<div class="field {field.inline ? 'inline' : ''}">
+								<div class="field-t">{@html linkify(field.name, { embed: true })}</div>
+								<div class="field-v">{@html linkify(field.value, { embed: true })}</div>
+							</div>
+						{/each}
+					{/if}
+					{#if embed.image}
+						<img src={embed.image.url} {...decideHeight(embed.image, 187)} alt class="thumb" />
+					{/if}
+					{#if embed.timestamp}
+						<div class="timestamp">{new Date(embed.timestamp).toLocaleDateString()}</div>
 					{/if}
 				</div>
 			{/if}
@@ -226,11 +244,28 @@
 </main>
 
 <style>
+	.embed > *:not(:last-child) {
+		margin-bottom: 2px;
+	}
+	img {
+		display: block;
+	}
+	.timestamp {
+		font-size: 10px;
+	}
+	.field {
+		width: 50%;
+	}
+	.field.inline {
+		display: inline-block;
+	}
 	.embed-a-name,
-	.embed-p-name {
+	.embed-p-name,
+	.field {
 		font-size: 11px;
 	}
-	.embed-a-name {
+	.embed-a-name,
+	.field-t {
 		font-weight: bold;
 	}
 	.embed-title {
@@ -250,6 +285,8 @@
 
 	.content + .embed {
 		margin-top: 4px;
+		word-wrap: break-word;
+		hyphens: auto;
 	}
 	.embed {
 		padding: 8px;

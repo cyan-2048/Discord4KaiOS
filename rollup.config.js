@@ -46,7 +46,7 @@ export default {
 		commonjs(),
 		svelte({
 			compilerOptions: {
-				// enable run-time checks when not in production
+				// compiler checks makes the thing very slow
 				dev: false,
 			},
 		}),
@@ -103,7 +103,7 @@ export default {
 		production && terser(),
 	],
 	watch: {
-		buildDelay: 2000,
+		buildDelay: 5000,
 		clearScreen: false,
 	},
 };

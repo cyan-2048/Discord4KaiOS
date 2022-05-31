@@ -120,7 +120,7 @@ function centerScroll(el, sync) {
 	if (!e) e = el.parentNode;
 	e.scrollBy({
 		left: 0,
-		top: elY - window.innerHeight / 2,
+		top: elY - e.offsetHeight / 2,
 		behavior: sync ? "auto" : "smooth",
 	});
 }

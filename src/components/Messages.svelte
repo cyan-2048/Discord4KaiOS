@@ -16,13 +16,20 @@
 	});
 
 	let height = () => {
-		textAreaHeight = window.innerHeight - con.offsetHeight;
+		after.scrollTop = textarea.scrollTop;
+		textAreaHeight = window.innerHeight - con.offsetHeight - (channelPermissions.write === false ? 0 : 30);
 	};
 
 	$: {
 		console.log(channelPermissions);
 		setTimeout(() => con && height(), 50);
 	}
+
+	let messageFocused = true;
+	window.addEventListener("sn:focused", (e) => {
+		if (!messageFocused || selected !== 0) return;
+		let { target } = e;
+	});
 
 	onMount(height);
 	onMount(() => {
@@ -33,13 +40,15 @@
 				sendMessage(this.value); // to do replace mention elements
 				setTimeout(() => (this.value = ""), 10);
 			}
+			height();
 		};
+		textarea.onblur = () => (messageFocused = true);
+		textarea.onfocus = () => (messageFocused = false);
 		textarea.oninput = function () {
 			setTimeout(() => {
 				after.innerText = this.value + " ";
 				let _m = /(@(\S*)#\d{4})|(:(\w*):)/g;
 				if (_m.test(this.value)) after.innerHTML = after.innerHTML.replace(_m, `<span class="mentions">$&</span>`);
-				after.scrollTop = textarea.scrollTop;
 				height();
 			}, 1);
 		};
@@ -54,15 +63,55 @@
 >
 	<slot />
 </div>
-<div bind:this={con} class="grow-wrap {['zero', 'one'][selected] || ''}">
+<div bind:this={con} style={channelPermissions.write === false ? "bottom:0;" : null} class="grow-wrap {['zero', 'one'][selected] || ''}">
 	<textarea style={channelPermissions.write === false ? "display:none;" : null} bind:this={textarea} />
 	<div style={channelPermissions.write === false ? "display:none;" : null} bind:this={after} class="after" />
 	{#if channelPermissions.write === false}
-		<div style="font-size:10px">You do not have permission to send messages in this channel.</div>
+		<div style="font-size: 10px; white-space: pre-wrap; word-wrap: break-word; height: 30px;">You do not have permission to send messages in this channel.</div>
 	{/if}
+</div>
+<div class="softkeys {['zero', 'one'][selected] || ''}" style={channelPermissions.write === false ? "display:none;" : null}>
+	<div class="softkey softkey-left">
+		{#if !messageFocused}
+			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
+				><path d="M0 0h24v24H0V0z" fill="none" /><path
+					d="M3.4 20.4l17.45-7.48c.81-.35.81-1.49 0-1.84L3.4 3.6c-.66-.29-1.39.2-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z"
+				/></svg
+			>
+		{:else}
+			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
+				><g fill="none"><path d="M0 0h24v24H0V0z" /><path d="M0 0h24v24H0V0z" opacity=".87" /></g><path
+					d="M4 13c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0 4c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0-8c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm4 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zm0 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zM7 8c0 .55.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1zm-3 5c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0 4c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0-8c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm4 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zm0 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zM7 8c0 .55.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1z"
+				/></svg
+			>
+		{/if}
+	</div>
+	<div class="softkey softkey-center">
+		{#if !messageFocused}
+			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
+				><path
+					d="M19 8v3H5.83l2.88-2.88c.39-.39.39-1.02 0-1.41-.39-.39-1.02-.39-1.41 0L2.71 11.3c-.39.39-.39 1.02 0 1.41L7.3 17.3c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L5.83 13H20c.55 0 1-.45 1-1V8c0-.55-.45-1-1-1s-1 .45-1 1z"
+				/></svg
+			>
+		{/if}
+	</div>
+	<div class="softkey softkey-right">
+		<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
+			><path d="M0 0h24v24H0V0z" fill="none" /><path
+				d="M4 18h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zm0-5h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zM3 7c0 .55.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1z"
+			/></svg
+		>
+	</div>
 </div>
 
 <style>
+	svg {
+		height: 100%;
+		border-radius: 20px;
+		width: auto;
+		padding: 0 10px;
+		background-color: #2f3136;
+	}
 	[data-messages] {
 		position: absolute;
 		top: 0;
@@ -70,7 +119,9 @@
 		overflow: auto;
 	}
 	[data-messages],
-	.grow-wrap {
+	.grow-wrap,
+	.softkeys,
+	.softkeys-icon {
 		width: 100vw;
 		transform: translateX(100vw);
 		transition: transform 0.4s ease;
@@ -86,7 +137,7 @@
 		/* easy way to plop the elements on top of each other and have them both sized based on the tallest one's height */
 		display: grid;
 		position: absolute;
-		bottom: 0;
+		bottom: 30px;
 		border-top: solid 1px #2c2f32;
 		padding: 5px 10px;
 	}
@@ -110,6 +161,7 @@
 	.grow-wrap .after {
 		/* Identical styling required!! */
 		word-break: break-word;
+		margin: 0;
 		border: 1px solid rgb(118, 118, 118);
 		border-radius: 2px;
 		background-color: #40444b;
@@ -120,5 +172,44 @@
 		font-size: 12px;
 		line-height: 1;
 		grid-area: 1 / 1 / 2 / 2;
+	}
+
+	/* Software Keys */
+
+	.softkeys,
+	.softkeys-icon {
+		box-sizing: border-box;
+		padding: 2px 5px;
+		column-gap: 0;
+		display: grid;
+		height: 30px;
+		color: white;
+		grid-template-columns: repeat(3, 1fr);
+		position: absolute;
+		bottom: 0;
+	}
+
+	.softkey {
+		overflow: hidden;
+		vertical-align: middle;
+	}
+
+	.softkey-left {
+		font-size: 14px;
+		font-weight: 600;
+		text-align: start;
+	}
+
+	.softkey-center {
+		font-size: 17px;
+		font-weight: 700;
+		text-align: center;
+		text-transform: uppercase;
+	}
+
+	.softkey-right {
+		font-size: 14px;
+		font-weight: 600;
+		text-align: end;
 	}
 </style>
