@@ -7,7 +7,7 @@
 	import { onMount } from "svelte";
 	import { DiscordXHR } from "./lib/DiscordXHR.js";
 	import { EventEmitter } from "./lib/EventEmitter.js";
-	import { wouldMessagePing, getScrollBottom, inViewport, centerScroll, hashCode, siftChannels, last, parseRoleAccess } from "./lib/helper";
+	import { wouldMessagePing, getScrollBottom, inViewport, centerScroll, hashCode, siftChannels, last, parseRoleAccess, findUserByTag } from "./lib/helper";
 	var discordGateway = new (class extends EventEmitter {
 		constructor() {
 			super();
@@ -21,6 +21,9 @@
 		init(token) {
 			this.worker.postMessage({ event: "init", token });
 		}
+		send(object) {
+			this.worker.postMessage({ event: "send", object });
+		}
 	})();
 	import SpatialNavigation from "./lib/spatial_navigation.js";
 	const sn = SpatialNavigation;
@@ -29,7 +32,7 @@
 		sn.add({
 			id,
 			selector: `[data-${id}].selected [data-focusable]`,
-			rememberSource: false,
+			rememberSource: true,
 		})
 	);
 	import Message from "./components/Message.svelte";
@@ -42,21 +45,22 @@
 	let appState = "app";
 
 	window.addEventListener("keydown", (e) => {
-		if (appState !== "app") return;
+		if (appState !== "app" || e.shiftKey) return;
 		let { key, target } = e;
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
 			if (/Right|Enter/.test(key)) target.click();
 		}
-		if (selected == 0 && key == "Backspace" && (target.tagName !== "TEXTAREA" || target.value === "")) {
+		if (selected == 0 && (key == "Backspace" || key == "ArrowLeft") && (target.tagName !== "TEXTAREA" || target.value === "")) {
 			e.preventDefault();
 			setTimeout(() => (selected = 1), 50);
 		}
-		if (selected == 1 && /-|Left|Back/.test(key)) {
+
+		if (selected === 1 && /-|Left|Back/.test(key)) {
 			e.preventDefault();
 			selected = 2;
 		}
-		if (selected == 2 && /=|Right/.test(key)) {
+		if (selected === 2 && /=|Right/.test(key)) {
 			document.activeElement.blur();
 			sn.focus();
 			selected = 1;
@@ -113,6 +117,9 @@
 					return;
 				}
 				sn.focus();
+				if (selected === 0) {
+					setTimeout(() => document.querySelector(".grow-wrap textarea").focus(), 20); // if element is not focusable, it will not blur first focused element...
+				}
 			}, 50);
 		})();
 
@@ -201,7 +208,7 @@
 		setTimeout(() => {
 			let zel = document.querySelector(".zero.selected");
 			if (zel) zel.scrollTop = zel.scrollHeight;
-			last(zel.children).focus();
+			last(zel.children)?.focus();
 		}, 100);
 	};
 
@@ -249,6 +256,7 @@
 	window.discord = discord;
 	window.discordGateway = discordGateway;
 	window.changeAppState = (e) => (appState = e);
+	window.changeReadyState = (e) => (ready = e);
 	let isChannel = (o) => !!(o.name && o.type === "channel");
 
 	let selectChannel = async (e) => {
@@ -343,7 +351,6 @@
 	};
 	const cachedMentions = (() => {
 		let mentionCache = {};
-		window.mentionCache = mentionCache;
 		function delay() {
 			console.log("delaying");
 			return new Promise((r) => setTimeout(r, 1000));
@@ -369,12 +376,35 @@
 			}
 		};
 		// update pending promise so that next task could await for it
-		return function () {
+		const final = function () {
 			let args = [...arguments];
 			let obj = mentionCache[hashCode(args.join(""))];
 			if (obj) return Promise.resolve(obj);
 			return (pending = run(...args));
 		};
+		final.findUserByTag = findUserByTag(mentionCache);
+		final.getGuildMembers = function (query = "", limit = 5) {
+			return new Promise((res) => {
+				discordGateway.send({
+					op: 8,
+					d: {
+						guild_id: guild.id,
+						query,
+						limit,
+					},
+				});
+				discordGateway.once("t:guild_members_chunk", (d) => {
+					res(
+						d.members.map((a) => {
+							a.guild_id = guild.id;
+							return a;
+						})
+					);
+				});
+			});
+		};
+		window.cachedMentions = final;
+		return final;
 	})();
 	let sendMessage = (e, opts = {}) => discord.sendMessage(channel.id, e, opts);
 
@@ -425,7 +455,7 @@
 			{/if}
 		{/each}
 	</Channels>
-	<Messages {sendMessage} {channelPermissions} {appState} {selected}>
+	<Messages {sendMessage} {sn} {roles} {channel} {channelPermissions} {appState} {selected}>
 		{#each messages as message, i (message.id)}
 			{#if messages[i - 1]?.author.id != message.author?.id}
 				<MessageSeparator {cachedMentions} userID={discord.user.id} {roles} {...spreadAuthor(message.author)} guildID={guild ? guild.id : null} {channel} profile={serverProfile} />
@@ -434,11 +464,11 @@
 		{/each}
 	</Messages>
 {:else}
-	<main id="loading">
+	<div id="loading">
 		<img src="/css/loading.png" alt />
 		<div id="dyk">DID YOU KNOW</div>
 		<div id="fact">svelte is awesome</div>
-	</main>
+	</div>
 {/if}
 {#if appState === "login"}
 	<Login {sn} on:login={(e) => login(e.detail.token)} />
@@ -452,14 +482,13 @@
 		top: 0;
 		left: 0;
 		background-color: #2f3136;
+		text-align: center;
 	}
 	#loading img {
 		width: 200px;
 		height: 200px;
-		margin: 12px 20px;
-	}
-	#loading > div {
-		text-align: center;
+		margin: 12px 0;
+		display: inline-block;
 	}
 	#dyk {
 		font-size: 12px;

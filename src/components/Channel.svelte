@@ -138,6 +138,9 @@
 </main>
 
 <style>
+	.muted:not(:focus) .avatar {
+    opacity: 0.5;
+}
 	main:last-child {
 		margin-bottom: 6.5px;
 	}

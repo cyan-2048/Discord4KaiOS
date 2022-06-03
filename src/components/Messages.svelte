@@ -1,13 +1,16 @@
 <script>
 	import { onMount } from "svelte";
-	import { last } from "../lib/helper";
+	import { last, hashCode } from "../lib/helper";
 
 	export let selected;
 	export let appState;
 	export let channelPermissions;
 	export let sendMessage;
+	export let sn;
+	export let roles;
+	export let channel;
 
-	let textarea, after, con, messages;
+	let textarea, after, con, messages, softkeys;
 	let textAreaHeight = 0;
 
 	window.addEventListener("sn:navigatefailed", (e) => {
@@ -17,7 +20,7 @@
 
 	let height = () => {
 		after.scrollTop = textarea.scrollTop;
-		textAreaHeight = window.innerHeight - con.offsetHeight - (channelPermissions.write === false ? 0 : 30);
+		textAreaHeight = window.innerHeight - con.offsetHeight - softkeys.offsetHeight;
 	};
 
 	$: {
@@ -31,23 +34,68 @@
 		let { target } = e;
 	});
 
+	let queryCache = {};
+
+	let showQuery = false;
+	let query_members = [];
+	let query_roles = [];
+	let query_emojis = [];
+	let query_channels = [];
+
 	onMount(height);
 	onMount(() => {
 		textarea.onkeydown = function (e) {
 			let { key } = e;
 			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(messages.children)?.focus(), 50);
-			if (/SoftLeft|-/.test(key)) {
+			if ("SoftLeft" === key && this.value !== "") {
 				sendMessage(this.value); // to do replace mention elements
-				setTimeout(() => (this.value = ""), 10);
+				this.value = "";
+				this.oninput();
 			}
 			height();
 		};
+
+		let query_timeout = null;
+
+		function handleQuery() {
+			clearTimeout(query_timeout);
+			query_timeout = setTimeout(async () => {
+				if (this.value.length !== this.selectionStart) return;
+				let regex = /(#|@|:)\S*$/;
+				if (!regex.test(this.value)) return;
+				let copy = regex.exec(this.value)[0];
+				let type = {
+					"#": "channel",
+					"@": "mention",
+					":": "emoji",
+				}[copy[0]];
+				let query = copy.slice(1);
+				if (query === "") return (showQuery = false);
+				switch (type) {
+					case "mention":
+						query_members = await cachedMentions.getGuildMembers(query);
+						query_members.forEach((a) => {
+							queryCache[hashCode(a.guild_id + a.user.id)] = a;
+						});
+						if (query_members.length === 1) {
+							let { discriminator: tag, username: name } = query_members[0].user;
+							this.value = this.value.replace(regex, `@${name}#${tag} `);
+							this.oninput();
+							this.selectionStart = this.value.length;
+							showQuery = false;
+						}
+						console.error(query_members);
+						break;
+				}
+			}, 1000);
+		}
 		textarea.onblur = () => (messageFocused = true);
 		textarea.onfocus = () => (messageFocused = false);
 		textarea.oninput = function () {
+			if (!channel.dm) handleQuery.call(this);
 			setTimeout(() => {
 				after.innerText = this.value + " ";
-				let _m = /(@(\S*)#\d{4})|(:(\w*):)/g;
+				let _m = /(@(.*)#\d{4})|(:(\w*)(~\d{1,3})?:)/gi;
 				if (_m.test(this.value)) after.innerHTML = after.innerHTML.replace(_m, `<span class="mentions">$&</span>`);
 				height();
 			}, 1);
@@ -64,16 +112,16 @@
 	<slot />
 </div>
 <div bind:this={con} style={channelPermissions.write === false ? "bottom:0;" : null} class="grow-wrap {['zero', 'one'][selected] || ''}">
-	<textarea style={channelPermissions.write === false ? "display:none;" : null} bind:this={textarea} />
+	<textarea rows="1" style={channelPermissions.write === false ? "display:none;" : null} bind:this={textarea} />
 	<div style={channelPermissions.write === false ? "display:none;" : null} bind:this={after} class="after" />
 	{#if channelPermissions.write === false}
 		<div style="font-size: 10px; white-space: pre-wrap; word-wrap: break-word; height: 30px;">You do not have permission to send messages in this channel.</div>
 	{/if}
 </div>
-<div class="softkeys {['zero', 'one'][selected] || ''}" style={channelPermissions.write === false ? "display:none;" : null}>
-	<div class="softkey softkey-left">
-		{#if !messageFocused}
-			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
+<div bind:this={softkeys} class="softkeys {['zero', 'one'][selected] || ''}" style={channelPermissions.write === false ? "display:none;" : null}>
+	<div>
+		{#if !messageFocused && (textarea?.value || "") !== ""}
+			<svg id="send" fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
 				><path d="M0 0h24v24H0V0z" fill="none" /><path
 					d="M3.4 20.4l17.45-7.48c.81-.35.81-1.49 0-1.84L3.4 3.6c-.66-.29-1.39.2-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z"
 				/></svg
@@ -86,7 +134,7 @@
 			>
 		{/if}
 	</div>
-	<div class="softkey softkey-center">
+	<div>
 		{#if !messageFocused}
 			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
 				><path
@@ -95,7 +143,7 @@
 			>
 		{/if}
 	</div>
-	<div class="softkey softkey-right">
+	<div>
 		<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
 			><path d="M0 0h24v24H0V0z" fill="none" /><path
 				d="M4 18h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zm0-5h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zM3 7c0 .55.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1z"
@@ -105,11 +153,14 @@
 </div>
 
 <style>
+	svg#send {
+		padding: 2px 5px;
+	}
 	svg {
 		height: 100%;
 		border-radius: 20px;
 		width: auto;
-		padding: 0 10px;
+		padding: 0 5px;
 		background-color: #2f3136;
 	}
 	[data-messages] {
@@ -137,7 +188,7 @@
 		/* easy way to plop the elements on top of each other and have them both sized based on the tallest one's height */
 		display: grid;
 		position: absolute;
-		bottom: 30px;
+		bottom: 25px;
 		border-top: solid 1px #2c2f32;
 		padding: 5px 10px;
 	}
@@ -166,50 +217,50 @@
 		border-radius: 2px;
 		background-color: #40444b;
 		color: #dcddde;
-		padding: 2px 9px;
+		padding: 4px 9px;
 		font: inherit;
 		max-height: 5em;
-		font-size: 12px;
-		line-height: 1;
+		font-size: 13px;
+		line-height: 1.2;
 		grid-area: 1 / 1 / 2 / 2;
 	}
 
 	/* Software Keys */
 
-	.softkeys,
-	.softkeys-icon {
+	.softkeys {
 		box-sizing: border-box;
 		padding: 2px 5px;
 		column-gap: 0;
 		display: grid;
-		height: 30px;
+		height: 25px;
 		color: white;
 		grid-template-columns: repeat(3, 1fr);
 		position: absolute;
 		bottom: 0;
 	}
 
-	.softkey {
+	.softkeys > * {
 		overflow: hidden;
 		vertical-align: middle;
 	}
 
-	.softkey-left {
+	.softkeys > *:not(:nth-child(2)) {
 		font-size: 14px;
 		font-weight: 600;
+	}
+
+	.softkeys > *:first-child {
 		text-align: start;
 	}
 
-	.softkey-center {
+	.softkeys > *:nth-child(2) {
 		font-size: 17px;
 		font-weight: 700;
 		text-align: center;
 		text-transform: uppercase;
 	}
 
-	.softkey-right {
-		font-size: 14px;
-		font-weight: 600;
+	.softkeys > *:last-child {
 		text-align: end;
 	}
 </style>

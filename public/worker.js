@@ -111,7 +111,7 @@ class DiscordGateway {
 let gateway;
 
 self.onmessage = (e) => {
-	let { event, token } = e.data;
+	let { event, token, object } = e.data;
 	if (event == "init") {
 		if (typeof gateway == "object" && gateway.ws) gateway.ws.close();
 		gateway = new DiscordGateway({ debug: true });
@@ -125,5 +125,7 @@ self.onmessage = (e) => {
 			} catch (e) {}
 		};
 		gateway.init();
+	} else if (event === "send") {
+		gateway.send(object);
 	}
 };

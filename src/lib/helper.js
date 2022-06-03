@@ -182,7 +182,26 @@ function getScrollBottom(el) {
 	return el.scrollHeight - el.offsetHeight - el.scrollTop;
 }
 
+function findUserByTag(mentionCache) {
+	return function (tag) {
+		let copy = (tag.startsWith("@") ? tag.slice(1) : tag).split("#");
+		let done = null;
+		for (const key in mentionCache) {
+			let test = mentionCache[key];
+			let user = test?.user;
+			if (!user || !(user.username && user.discriminator)) continue;
+			let { discriminator: tag, username: name, id } = user;
+			if (name === copy[0] && tag === copy[1]) {
+				done = id;
+				break;
+			}
+		}
+		return done;
+	};
+}
+
 export {
+	findUserByTag,
 	getScrollBottom,
 	getTopBottom,
 	inViewport,
