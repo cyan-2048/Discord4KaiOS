@@ -74,13 +74,14 @@
 		if (!/up|down/.test(direction)) return;
 		let actEl = document.activeElement;
 		if (!actEl.id.startsWith("msg")) return;
-		if (actEl.offsetHeight > window.innerHeight) {
-			actEl.parentNode.scrollBy({
+		const messages = actEl.closest("[data-messages]");
+		if (actEl.offsetHeight > messages.offsetHeight) {
+			messages.scrollBy({
 				top: direction === "up" ? -66 : 66,
 				behavior: "smooth",
 			});
 		}
-		if (direction === "down" && getScrollBottom(actEl.parentNode) === 0) {
+		if (direction === "down" && getScrollBottom(messages) === 0) {
 			document.querySelector(".grow-wrap textarea").focus();
 		}
 	});
@@ -90,20 +91,21 @@
 		if (!/up|down/.test(direction) || selected !== 0) return;
 		let actEl = document.activeElement;
 		if (!actEl.id.startsWith("msg")) return;
-		if (actEl.offsetHeight > window.innerHeight - 71) {
+		const messages = actEl.closest("[data-messages]");
+		if (actEl.offsetHeight > messages.offsetHeight) {
 			e.preventDefault();
-			actEl.parentNode.scrollBy({
+			messages.scrollBy({
 				top: direction === "up" ? -66 : 66,
 				behavior: "smooth",
 			});
 			if (!next) return;
-			if (next.offsetHeight > window.innerHeight - 71) {
+			if (next.offsetHeight > messages.offsetHeight) {
 				if (inViewport(next, true)) next.focus();
 			} else if (inViewport(next)) {
 				next.focus();
 				setTimeout(() => centerScroll(next), 50);
 			}
-		} else if (next && next.offsetHeight < window.innerHeight - 71) setTimeout(() => centerScroll(next), 50);
+		} else if (next && next.offsetHeight < messages.offsetHeight) setTimeout(() => centerScroll(next), 50);
 	});
 
 	$: selected !== null &&

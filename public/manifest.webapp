@@ -1,14 +1,14 @@
 {
-	"version": "0.2.0",
-	"name": "Discord",
-	"description": "Discord Client for KaiOS",
+	"version": "2.0.0",
+	"name": "Sveltecord",
+	"description": "Discord Client for KaiOS written in svelte.",
 	"launch_path": "/index.html",
 	"icons": {
 		"56": "/css/56px.png",
 		"112": "/css/112px.png"
 	},
 	"developer": {
-		"name": "John Jelatis"
+		"name": "Cyan"
 	},
 	"origin": "app://sveltecord.cyankindasus.com",
 	"type": "privileged",
@@ -18,18 +18,6 @@
 		},
 		"video-capture": {
 			"description": "Reading Codes using the Camera"
-		}
-	},
-	"activities": {
-		"@discord_qr": {
-			"href": "./redirects/qr/index.html",
-			"disposition": "inline",
-			"returnValue": true
-		},
-		"@discord_login": {
-			"href": "./redirects/login/index.html",
-			"disposition": "inline",
-			"returnValue": true
 		}
 	},
 	"installs_allowed_from": ["*"],
