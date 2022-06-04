@@ -10,7 +10,7 @@
 	export let userID;
 	export let guildID;
 	export let cachedMentions;
-	export let roles;
+	export let roles = null;
 	export let bot;
 	export let discriminator;
 
@@ -19,12 +19,15 @@
 	let image = avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.jpg?size=24` : null;
 
 	onMount(async () => {
-		if (!channel.dm && id && discriminator !== "0000" /*i think this is how we can differ webhooks*/) {
+		if (channel.dm) return;
+		if (id && discriminator !== "0000" /*i think this is how we can differ webhooks*/) {
 			let s_profile = userID === id ? profile : await cachedMentions("getServerProfile", guildID, id);
 			if (!s_profile || !s_profile.roles) return;
 			if (s_profile.nick) name = s_profile.nick;
-			let role = [...roles].sort((a, b) => b.position - a.position).find((o) => s_profile.roles.includes(o.id) && o.color > 0);
-			if (role) color = decimal2rgb(role.color, true);
+			if (roles) {
+				let role = [...roles].sort((a, b) => b.position - a.position).find((o) => s_profile.roles.includes(o.id) && o.color > 0);
+				if (role) color = decimal2rgb(role.color, true);
+			}
 		}
 	});
 </script>

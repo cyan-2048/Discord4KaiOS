@@ -125,3 +125,21 @@ a:hover {
 [data-separator]:not(.mentioned).focus {
 	background-color: #32353b;
 }
+
+@media (min-width: 320px) {
+	/* ===== Scrollbar CSS ===== */
+
+	/* Chrome, Edge, and Safari */
+	*::-webkit-scrollbar {
+		width: 5px;
+	}
+
+	*::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	*::-webkit-scrollbar-thumb {
+		background-color: rgba(14, 14, 14, 0.4);
+		border-radius: 20px;
+	}
+}

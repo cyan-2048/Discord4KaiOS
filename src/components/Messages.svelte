@@ -8,7 +8,9 @@
 	export let sendMessage;
 	export let sn;
 	export let roles;
+	export let discord;
 	export let channel;
+	export let evtForward;
 
 	let textarea, after, con, messages, softkeys;
 	let textAreaHeight = 0;
@@ -23,6 +25,8 @@
 		textAreaHeight = window.innerHeight - con.offsetHeight - softkeys.offsetHeight;
 	};
 
+	window.onresize = height;
+
 	$: {
 		console.log(channelPermissions);
 		setTimeout(() => con && height(), 50);
@@ -35,6 +39,7 @@
 	});
 
 	let queryCache = {};
+	let mentioned = [];
 
 	let showQuery = false;
 	let query_members = [];
@@ -42,18 +47,55 @@
 	let query_emojis = [];
 	let query_channels = [];
 
+	let messageEditing = null;
+	let editHandler = (message, content) => {
+		messageEditing = message;
+		textarea.value = content;
+		textarea.oninput();
+		height();
+	};
+	evtForward.on("message_edit", editHandler);
+
+	let replaceMentions = (content) => {
+		mentioned.forEach((a) => {
+			if (typeof a !== "object") return;
+			if (a.username) {
+				let { discriminator: tag, username: name, id } = a;
+				content = content.replace(`@${name}#${tag}`, `<@${id}>`);
+			} else {
+			}
+		});
+		return content;
+	};
+
 	onMount(height);
 	onMount(() => {
 		textarea.onkeydown = function (e) {
 			let { key } = e;
 			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(messages.children)?.focus(), 50);
-			if ("SoftLeft" === key && this.value !== "") {
-				if (this.value.startsWith("s/")) sendMessage.sed(this.value);
-				else sendMessage(this.value); // to do replace mention elements
-				this.value = "";
-				this.oninput();
-			}
-			height();
+			setTimeout(() => {
+				if (!messageEditing && ("SoftLeft" === key || "Control" === key) && this.value !== "") {
+					if (this.value.startsWith("s/")) sendMessage.sed(this.value);
+					else sendMessage(replaceMentions(this.value)); // to do replace mention elements
+					this.value = "";
+					this.oninput();
+				}
+				if (messageEditing) {
+					let end = () => (messageEditing = null);
+					if ("SoftLeft" === key || "Control" === key) {
+						discord.editMessage(channel.id, messageEditing.id, this.value); // to do replace mention elements
+						this.value = "";
+						this.oninput();
+						end();
+					}
+					if ("SoftRight" === key) {
+						this.value = "";
+						this.oninput();
+						end();
+					}
+				}
+				height();
+			}, 50);
 		};
 
 		let query_timeout = null;
@@ -79,11 +121,15 @@
 							queryCache[hashCode(a.guild_id + a.user.id)] = a;
 						});
 						if (query_members.length === 1) {
-							let { discriminator: tag, username: name } = query_members[0].user;
+							let { user } = query_members[0];
+							let { discriminator: tag, username: name } = user;
 							this.value = this.value.replace(regex, `@${name}#${tag} `);
 							this.oninput();
 							this.selectionStart = this.value.length;
 							showQuery = false;
+							if (!mentioned.find((a) => a.id === user.id)) {
+								mentioned = [...mentioned, user];
+							}
 						}
 						console.error(query_members);
 						break;
@@ -121,12 +167,16 @@
 </div>
 <div bind:this={softkeys} class="softkeys {['zero', 'one'][selected] || ''}" style={channelPermissions.write === false ? "display:none;" : null}>
 	<div>
-		{#if !messageFocused && (textarea?.value || "") !== ""}
+		{#if !messageEditing && !messageFocused && (textarea?.value || "") !== ""}
 			<svg id="send" fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
 				><path d="M0 0h24v24H0V0z" fill="none" /><path
 					d="M3.4 20.4l17.45-7.48c.81-.35.81-1.49 0-1.84L3.4 3.6c-.66-.29-1.39.2-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z"
 				/></svg
 			>
+		{:else if messageEditing && !messageFocused}
+			<svg id="checkmark" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+				<path fill="currentColor" fillrule="evenodd" cliprule="evenodd" d="M8.99991 16.17L4.82991 12L3.40991 13.41L8.99991 19L20.9999 7.00003L19.5899 5.59003L8.99991 16.17Z" />
+			</svg>
 		{:else}
 			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
 				><g fill="none"><path d="M0 0h24v24H0V0z" /><path d="M0 0h24v24H0V0z" opacity=".87" /></g><path
@@ -145,11 +195,17 @@
 		{/if}
 	</div>
 	<div>
-		<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
-			><path d="M0 0h24v24H0V0z" fill="none" /><path
-				d="M4 18h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zm0-5h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zM3 7c0 .55.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1z"
-			/></svg
-		>
+		{#if !messageFocused && messageEditing}
+			<svg id="close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+				<path fill="currentColor" d="M18.4 4L12 10.4L5.6 4L4 5.6L10.4 12L4 18.4L5.6 20L12 13.6L18.4 20L20 18.4L13.6 12L20 5.6L18.4 4Z" />
+			</svg>
+		{:else}
+			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
+				><path d="M0 0h24v24H0V0z" fill="none" /><path
+					d="M4 18h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zm0-5h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zM3 7c0 .55.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1z"
+				/></svg
+			>
+		{/if}
 	</div>
 </div>
 

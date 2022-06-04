@@ -93,15 +93,19 @@
 		if (!actEl.id.startsWith("msg")) return;
 		const messages = actEl.closest("[data-messages]");
 		if (actEl.offsetHeight > messages.offsetHeight) {
+			// console.warn("current message is bigger than screen, we scroll...");
 			e.preventDefault();
 			messages.scrollBy({
 				top: direction === "up" ? -66 : 66,
 				behavior: "smooth",
 			});
+			// if (!next) // console.warn("next element to focus not found!");
 			if (!next) return;
 			if (next.offsetHeight > messages.offsetHeight) {
+				// console.warn("next element is bigger than viewport");
 				if (inViewport(next, true)) next.focus();
 			} else if (inViewport(next)) {
+				// console.warn("next element is not bigger than viewport and is in viewport right now");
 				next.focus();
 				setTimeout(() => centerScroll(next), 50);
 			}
@@ -129,6 +133,8 @@
 	let serverProfile = null;
 	let roles = null;
 	let channel = null;
+
+	const ack = (e) => discord.xhrRequestJSON("post", `channels/${channel.id}/messages/${e}/ack`, {}, { token: "null" });
 
 	let servers = [];
 	let channels = [];
@@ -210,7 +216,11 @@
 		setTimeout(() => {
 			let zel = document.querySelector(".zero.selected");
 			if (zel) zel.scrollTop = zel.scrollHeight;
-			last(zel.children)?.focus();
+			let _last = last(zel.children);
+			if (_last) {
+				_last.focus();
+				ack(_last.id.slice(3));
+			}
 		}, 100);
 	};
 
@@ -323,6 +333,7 @@
 				let messages = document.querySelector("[data-messages]");
 				if (getScrollBottom(messages) < 100) {
 					centerScroll(last(messages.children));
+					ack(d.id);
 				}
 			}, 50);
 		}
@@ -458,6 +469,14 @@
 		let emoji = localStorage.getItem("emoji-font");
 		initEmoji(emoji || "https://github.com/mozilla/twemoji-colr/releases/latest/download/TwemojiMozilla.ttf", !!!emoji);
 	});
+
+	function diff_minutes(dt2, dt1) {
+		var diff = (dt2.getTime() - dt1.getTime()) / 1000;
+		diff /= 60;
+		return Math.abs(Math.round(diff));
+	}
+
+	const evtForward = new EventEmitter();
 </script>
 
 {#if ready}
@@ -483,9 +502,9 @@
 			{/if}
 		{/each}
 	</Channels>
-	<Messages {sendMessage} {sn} {roles} {channel} {channelPermissions} {appState} {selected}>
+	<Messages {evtForward} {sendMessage} {discord} {sn} {roles} {channel} {channelPermissions} {appState} {selected}>
 		{#each messages as message, i (message.id)}
-			{#if messages[i - 1]?.author.id != message.author?.id}
+			{#if i === 0 || messages[i - 1]?.author.id != message.author?.id || (messages[i - 1] && diff_minutes(new Date(messages[i - 1].timestamp), new Date(message.timestamp)) > 0)}
 				<MessageSeparator {cachedMentions} userID={discord.user.id} {roles} {...spreadAuthor(message.author)} guildID={guild ? guild.id : null} {channel} profile={serverProfile} />
 			{/if}
 			<Message
@@ -498,6 +517,7 @@
 				profile={serverProfile}
 				{discordGateway}
 				msg={message}
+				{evtForward}
 			/>
 		{/each}
 	</Messages>

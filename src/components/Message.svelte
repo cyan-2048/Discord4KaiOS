@@ -7,11 +7,13 @@
 	export let discord;
 	export let channel;
 	export let guildID;
+	export let evtForward;
 	import { createEventDispatcher, onDestroy, onMount } from "svelte";
 	const dispatch = createEventDispatcher();
 	import { decimal2rgb, hashCode, wouldMessagePing, toHTML, shuffle } from "../lib/helper.js";
 	import EmojiDict from "../lib/EmojiDict.js";
 	import { toHTML as markdown } from "../lib/discord-markdown.js";
+	import LottieSticker from "./LottieSticker.svelte";
 	let message = { ...msg }; // get rid of reference, well let's just hope it doesn't change yeah
 	let main;
 
@@ -35,6 +37,7 @@
 	$: message && (pinged = wouldMessagePing(message, profile?.roles || [], discord));
 
 	function linkify(inputText, opts = {}) {
+		if (inputText === "") return "";
 		return markdown(inputText || "", opts).replace(/:(.*):/g, (a, b) => EmojiDict[b] || a);
 	}
 
@@ -45,7 +48,8 @@
 		console.log(message);
 		if (!el) return console.error("element not there");
 		if (el.childNodes.length === 1) {
-			if (el.firstElementChild?.tagName === "A" && message.embeds[0]?.type === "image") {
+			let embed_type = message.embeds[0]?.type;
+			if (el.firstElementChild?.tagName === "A" && (embed_type === "image" || embed_type === "gifv")) {
 				el.innerHTML = "";
 			} else if (el.firstChild.className === "emoji") {
 				let emoji = el.firstChild.style;
@@ -78,8 +82,8 @@
 			for (const a of getMentions("user")) {
 				let id = a.dataset.id;
 				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
-				if (s_profile.code) s_profile = await cachedMentions("getProfile", id);
-				a.innerText = "@" + (s_profile.nick || s_profile.user?.username || "unknown-user");
+				if (!s_profile || s_profile.code) s_profile = await cachedMentions("getProfile", id);
+				a.innerText = "@" + (s_profile.nick || s_profile.user?.username || s_profile.username || "unknown-user");
 			}
 		}
 		for (const a of getMentions("channel")) {
@@ -172,9 +176,21 @@
 		let prev = target.previousElementSibling;
 		if (prev?.matches("[data-separator]")) prev.classList[type === "focus" ? "add" : "remove"]("focus");
 	}
+
+	async function handleEdit(e) {
+		if (message.author.id !== discord.user.id) return;
+		let clone = contentEl.cloneNode(true);
+		for (const a of clone.querySelectorAll("span.mentions[data-type='user']")) {
+			let id = a.dataset.id;
+			let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
+			if (!s_profile || s_profile.code) s_profile = await cachedMentions("getProfile", id);
+			a.innerText = "@" + (s_profile.user?.username || s_profile.username || "unknown-user") + "#" + s_profile.user?.discriminator || s_profile.discriminator || "0000";
+		}
+		evtForward.emit("message_edit", message, clone.innerText);
+	}
 </script>
 
-<main data-focusable on:blur={toggleFocus} on:focus={toggleFocus} class={pinged ? "mention" : ""} tabindex="0" bind:this={main} id={"msg" + message.id}>
+<main on:dblclick={handleEdit} data-focusable on:blur={toggleFocus} on:focus={toggleFocus} class={pinged ? "mention" : ""} tabindex="0" bind:this={main} id={"msg" + message.id}>
 	{#if reply}
 		<div class="reply">
 			<div class="r-icon" />
@@ -193,8 +209,8 @@
 	{/if}
 	{#if message.embeds && message.embeds[0]}
 		{#each message.embeds as embed}
-			{#if embed.type === "image"}
-				<img src={embed.thumbnail.proxy_url} {...decideHeight(embed.thumbnail)} alt />
+			{#if embed.type === "image" || embed.type === "gifv"}
+				<img src={embed.type === "gifv" ? embed.url + ".gif" : embed.thumbnail.proxy_url} {...decideHeight(embed.thumbnail)} alt />
 			{:else}
 				<div style={embed.color ? `--line_color: rgb(${decimal2rgb(embed.color, true)});` : ""} class="embed">
 					{#if embed.provider}
@@ -240,6 +256,15 @@
 						<div class="timestamp">{new Date(embed.timestamp).toLocaleDateString()}</div>
 					{/if}
 				</div>
+			{/if}
+		{/each}
+	{/if}
+	{#if message.sticker_items && message.sticker_items[0]}
+		{#each message.sticker_items as sticker}
+			{#if sticker.format_type === 3}
+				<LottieSticker src="https://discord.com/stickers/{sticker.id}.json" />
+			{:else}
+				<img src="https://media.discordapp.net/stickers/{sticker.id}.png?size=160" width="160" height="160" alt="Sticker: {sticker.name}" />
 			{/if}
 		{/each}
 	{/if}

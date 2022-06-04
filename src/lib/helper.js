@@ -117,7 +117,7 @@ function centerScroll(el, sync) {
 	const rect = el.getBoundingClientRect();
 	const elY = rect.top + rect.height / 2;
 	let e = findScrollParent(el);
-	if (!e) e = el.parentNode;
+	if (!e || e === el) e = el.parentNode;
 	e.scrollBy({
 		left: 0,
 		top: elY - e.offsetHeight / 2,
@@ -200,7 +200,17 @@ function findUserByTag(mentionCache) {
 	};
 }
 
+let dblclick = (el, bubbles = false) =>
+	el.dispatchEvent(
+		new MouseEvent("dblclick", {
+			view: window,
+			bubbles,
+			cancelable: true,
+		})
+	);
+
 export {
+	dblclick,
 	findUserByTag,
 	getScrollBottom,
 	getTopBottom,
