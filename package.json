@@ -28,6 +28,7 @@
 		"svelte": "^3.0.0"
 	},
 	"dependencies": {
+		"kaios-lib": "^1.6.0",
 		"simple-markdown": "^0.7.3"
 	}
 }

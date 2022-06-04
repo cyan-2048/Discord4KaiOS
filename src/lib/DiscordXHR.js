@@ -67,6 +67,7 @@ class DiscordXHR {
 				let error = new Error(e.message);
 				error.xhr = xhr;
 				error.responseText = x;
+				console.error(x);
 				return Promise.reject(error);
 			}
 		});
@@ -99,6 +100,10 @@ class DiscordXHR {
 
 	sendMessage(channel, message, opts = {}) {
 		return this.xhrRequestJSON("POST", `channels/${channel}/messages`, {}, Object.assign({ content: message, nonce: this.generateNonce() }, opts));
+	}
+
+	editMessage(channel_id, message_id, message, opts = {}) {
+		return this.xhrRequestJSON("PATCH", `channels/${channel_id}/messages/${message_id}`, {}, Object.assign({ content: message }, opts));
 	}
 
 	getServer(serverId) {

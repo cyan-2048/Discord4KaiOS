@@ -48,7 +48,8 @@
 			let { key } = e;
 			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(messages.children)?.focus(), 50);
 			if ("SoftLeft" === key && this.value !== "") {
-				sendMessage(this.value); // to do replace mention elements
+				if (this.value.startsWith("s/")) sendMessage.sed(this.value);
+				else sendMessage(this.value); // to do replace mention elements
 				this.value = "";
 				this.oninput();
 			}
@@ -154,10 +155,11 @@
 
 <style>
 	svg#send {
-		padding: 2px 5px;
+		margin: 2px 0;
+		height: 18px;
 	}
 	svg {
-		height: 100%;
+		height: 20px;
 		border-radius: 20px;
 		width: auto;
 		padding: 0 5px;

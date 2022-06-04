@@ -7,11 +7,12 @@
 	export let discord;
 	export let channel;
 	export let guildID;
-	import { onDestroy, onMount } from "svelte";
+	import { createEventDispatcher, onDestroy, onMount } from "svelte";
+	const dispatch = createEventDispatcher();
 	import { decimal2rgb, hashCode, wouldMessagePing, toHTML, shuffle } from "../lib/helper.js";
 	import EmojiDict from "../lib/EmojiDict.js";
 	import { toHTML as markdown } from "../lib/discord-markdown.js";
-	let message = msg;
+	let message = { ...msg }; // get rid of reference, well let's just hope it doesn't change yeah
 	let main;
 
 	let greetings = [
@@ -64,7 +65,7 @@
 			getMentions("role").forEach((a) => {
 				let id = a.dataset.id;
 				let role = roles.find((e) => e.id === id);
-				let text = role?.name || "deleted-role";
+				let text = "@" + (role?.name || "deleted-role");
 				if (role && role.color > 0) {
 					let rgb = decimal2rgb(role.color, true);
 					Object.assign(a.style, {
@@ -131,6 +132,7 @@
 	let update = (d) => {
 		if (d.id == message.id) {
 			message = { ...message, ...d };
+			dispatch("update", { message });
 			content = "";
 			content = d.author.bot ? markdown(message.content, { embed: true }) : linkify(message.content);
 			setTimeout(onchange, 50);

@@ -114,13 +114,83 @@
 		try {
 			if (a.mfa) token = await mfa(a.mfa);
 			let test = await testToken(token);
-			if (test) dispatch("login", a);
+			if (test) dispatch("login", { token });
 		} catch (e) {
 			alert("Error :" + JSON.stringify(e));
 		}
 	}
 
-	let required = ` - <i>This field is required</i>`;
+	import { QRCode } from "kaios-lib";
+
+	async function scanToken() {
+		const qrcode = new QRCode();
+		sn.pause();
+		try {
+			let token = await qrcode.readAsText();
+			if (!token) return sn.resume();
+			let test = await testToken(token);
+			if (test) dispatch("login", { token });
+		} catch (e) {
+			alert("Error :" + JSON.stringify(e));
+		}
+		sn.resume();
+	}
+
+	function kai_picker() {
+		return new Promise((res, err) => {
+			let e = new MozActivity({ name: "pick", data: { type: "text/plain" } });
+			function success() {
+				let blob = e.result.blob;
+				if (!blob || blob.type !== "text/plain") {
+					e = { error: { name: "Not a text file!", message: `the blob type was: ` + blob.type } };
+					return error();
+				}
+				let url = URL.createObjectURL(blob);
+				fetch(url)
+					.then((r) => r.text())
+					.then((r) => {
+						URL.revokeObjectURL(url);
+						res(r);
+					});
+			}
+			function error() {
+				if (e.error.name == "NO_PROVIDER") {
+					e = new MozActivity({ name: "pick" });
+					e.onsuccess = success;
+					e.onerror = error;
+				} else {
+					alert("an error occured while getting the file." + `\n${e.error.name || ""} \n${e.error.message || ""}`);
+					res(null);
+				}
+			}
+			e.onerror = error;
+			e.onsuccess = success;
+		});
+	}
+
+	async function useFile() {
+		let token = null;
+		try {
+			let res = await fetch("/token.txt");
+			let data = await res.text();
+			if (confirm("token.txt found in the app package, do you want to use that?")) {
+				token = data;
+			} else throw new Error();
+		} catch (e) {
+			if (typeof MozActivity === "function") {
+				token = await kai_picker();
+			}
+		}
+		if (!token) return;
+		try {
+			await testToken(token);
+			dispatch("login", { token });
+		} catch (e) {
+			alert("Error :" + JSON.stringify(e));
+		}
+	}
+
+	const required = ` - <i>This field is required</i>`;
 </script>
 
 <main bind:this={main} data-login>
@@ -145,11 +215,13 @@
 				try {
 					await testToken(token);
 					dispatch("login", { token });
-				} catch (e) {}
+				} catch (e) {
+					alert("Error :" + JSON.stringify(e));
+				}
 			}}>Login</Button
 		>
-		<Button>Use token.txt file</Button>
-		<Button>Scan token QR Code</Button>
+		<Button onclick={useFile}>Use token.txt file</Button>
+		<Button onclick={scanToken}>Scan token QR Code</Button>
 		<Button onclick={() => (page = 0)}>Go Back</Button>
 	{:else if page === 2}
 		<div class="separator {state.auth ? 'red' : ''}">

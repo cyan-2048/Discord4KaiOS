@@ -51,7 +51,7 @@
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
 			if (/Right|Enter/.test(key)) target.click();
 		}
-		if (selected == 0 && (key == "Backspace" || key == "ArrowLeft") && (target.tagName !== "TEXTAREA" || target.value === "")) {
+		if (selected == 0 && (key == "Backspace" || key == "ArrowLeft" || key == "SoftLeft") && (target.tagName !== "TEXTAREA" || target.value === "")) {
 			e.preventDefault();
 			setTimeout(() => (selected = 1), 50);
 		}
@@ -406,7 +406,33 @@
 		window.cachedMentions = final;
 		return final;
 	})();
-	let sendMessage = (e, opts = {}) => discord.sendMessage(channel.id, e, opts);
+	function sendMessage(e, opts = {}) {
+		return discord.sendMessage(channel.id, e, opts);
+	}
+
+	sendMessage.sed = function (sedString) {
+		if (!sedString) return;
+		let regex = "";
+		let string = "";
+		let toSplit = sedString.slice(2);
+		if (toSplit.split("/").length === 2) {
+			let [a, b] = toSplit.split("/");
+			regex = new RegExp(a);
+			string = b;
+		} else {
+			let escaped = [...toSplit.matchAll(/\\\//g)].map((a) => a.index + 1);
+			let matches = [...toSplit.matchAll(/\//g)].map((a) => a.index);
+			let exact = matches.filter((a) => !escaped.includes(a));
+			let index = exact[0];
+			regex = new RegExp(toSplit.slice(0, index));
+			string = toSplit.slice(index + 1);
+		}
+		let findMessage = [...messages].reverse().find((a) => a.author.id === discord.user.id);
+		if (!findMessage) return;
+		let original = findMessage.content;
+		let modified = findMessage.content.replace(regex, string);
+		if (modified !== original) discord.editMessage(channel.id, findMessage.id, modified);
+	};
 
 	onMount(() => {
 		function initEmoji(link, toSave) {
@@ -460,7 +486,17 @@
 			{#if messages[i - 1]?.author.id != message.author?.id}
 				<MessageSeparator {cachedMentions} userID={discord.user.id} {roles} {...spreadAuthor(message.author)} guildID={guild ? guild.id : null} {channel} profile={serverProfile} />
 			{/if}
-			<Message guildID={guild ? guild.id : null} {cachedMentions} {roles} {channel} {discord} profile={serverProfile} {discordGateway} msg={message} />
+			<Message
+				on:update={(e) => (messages[i] = e.detail.message)}
+				guildID={guild ? guild.id : null}
+				{cachedMentions}
+				{roles}
+				{channel}
+				{discord}
+				profile={serverProfile}
+				{discordGateway}
+				msg={message}
+			/>
 		{/each}
 	</Messages>
 {:else}

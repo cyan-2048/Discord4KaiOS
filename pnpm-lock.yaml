@@ -11,6 +11,7 @@ specifiers:
   '@rollup/plugin-node-resolve': ^11.0.0
   babel-plugin-transform-async-to-promises: ^0.8.18
   core-js: ^3.22.5
+  kaios-lib: ^1.6.0
   rollup: ^2.3.4
   rollup-plugin-copy: ^3.4.0
   rollup-plugin-css-only: ^3.1.0
@@ -22,6 +23,7 @@ specifiers:
   svelte: ^3.0.0
 
 dependencies:
+  kaios-lib: 1.6.0
   simple-markdown: 0.7.3
 
 devDependencies:
@@ -1862,6 +1864,16 @@ packages:
     optionalDependencies:
       graceful-fs: 4.2.10
     dev: true
+
+  /jsqr/1.4.0:
+    resolution: {integrity: sha512-dxLob7q65Xg2DvstYkRpkYtmKm2sPJ9oFhrhmudT1dZvNFFTlroai3AWSpLey/w5vMcLBXRgOJsbXpdN9HzU/A==}
+    dev: false
+
+  /kaios-lib/1.6.0:
+    resolution: {integrity: sha512-hitk9AibGV8UUqkqaRxIp512DXAsYnvfVwxukOKtHBgM/96QKjjRCAM4t6N5Yil+1cgPTmNxz0kcs1stDVNgQg==}
+    dependencies:
+      jsqr: 1.4.0
+    dev: false
 
   /kleur/4.1.4:
     resolution: {integrity: sha512-8QADVssbrFjivHWQU7KkMgptGTl6WAcSdlbBPY4uNF+mWr6DGcKrvY2w4FQJoXch7+fKMjj0dRrL75vk3k23OA==}
