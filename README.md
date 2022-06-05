@@ -7,16 +7,16 @@ frontend ->
 - discord mentions✅(@ / #, partial you can only mention users by typing @<insert unique username/nickname and without spaces> at the very end of the textbox)
 - qrcode scanner to scan token✅
 - attachments✅(partial only supports images for now, you can't send attachments yet)
-- more options
 - highlight message if user is mentioned✅
 - embed links✅(partial support, rich type/bot embeds not complete, video support is questionable)
 - replies✅(partial, user can't reply to messages yet)
 - stickers✅(full support, supports lottie as well)
-- typing indicator (ugg i need to create some sort of object for this)
-- edit messages✅(partial, only works on desktop browser by double clicking on a message, will be fully supported once more options is partially supported)
+- typing indicator✅(partial, other people can see you typing, you can only see other people typing on dms, unknown reason why servers don't work)
+- edit messages✅(partial, only works on desktop browser by double clicking on a message, will be fully supported once "more options" is partially supported)
 - sed or s/e/x✅(full support, this is not really supported on the mobile version of discord, but I think it's neat to have...)
 - server folders (broken on both vanilla and svelte version, UI not implemented in svelte version)
 - load more messages button
+- more options
 - image viewer
 
 maybe ->

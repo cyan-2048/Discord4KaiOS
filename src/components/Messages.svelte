@@ -63,10 +63,10 @@
 	$: {
 		console.log(channelPermissions);
 		setTimeout(() => con && height(), 50);
-		if (selected !== 0) {
+		if (selected === 1) {
 			console.warn("messages went blur!");
 			typingState.off("change", ontyping, "messages");
-		} else {
+		} else if (selected === 0) {
 			typingState.on("change", ontyping, "messages");
 			ontyping(typingState.getState(channel.id));
 		}
@@ -176,10 +176,18 @@
 				}
 			}, 1000);
 		}
+
+		let isTyping = false;
+
 		textarea.onblur = () => (messageFocused = true);
 		textarea.onfocus = () => (messageFocused = false);
 		textarea.oninput = function () {
 			if (!channel.dm) handleQuery.call(this);
+			if (!isTyping) {
+				isTyping = true;
+				discord.xhrRequestJSON("POST", `channels/${channel.id}/typing`);
+				setTimeout(() => (isTyping = false), 8000);
+			}
 			setTimeout(() => {
 				after.innerText = this.value + " ";
 				let _m = /(@(.*)#\d{4})|(:(\w*)(~\d{1,3})?:)/gi;
@@ -263,10 +271,9 @@
 		width: 100vw;
 		position: absolute;
 		left: 0;
-		height: 20px;
 		background-color: #2c2f32;
 		font-size: 11px;
-		line-height: 1.5;
+		line-height: 1.8;
 		white-space: pre-wrap;
 		word-break: break-word;
 		padding: 0 8px;

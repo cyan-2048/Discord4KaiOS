@@ -46,7 +46,10 @@
 	let selected = 1;
 	let appState = "app";
 
+	let ready = false;
+
 	window.addEventListener("keydown", (e) => {
+		if (key === "Backspace") e.preventDefault();
 		if (appState !== "app" || e.shiftKey) return;
 		let { key, target } = e;
 		if (selected > 0) {
@@ -60,13 +63,14 @@
 
 		if (selected === 1 && /-|Left|Back/.test(key)) {
 			e.preventDefault();
-			selected = 2;
+			setTimeout(() => (selected = 2), 50);
 		}
 		if (selected === 2 && /=|Right/.test(key)) {
 			document.activeElement.blur();
 			sn.focus();
 			selected = 1;
 		}
+		if (key === "Backspace" && (selected === 2 || !ready) && confirm("Are you sure you want to exit the app?")) window.close();
 	});
 	window.addEventListener("sn:navigatefailed", (e) => {
 		if (appState !== "app") return;
@@ -141,7 +145,7 @@
 	let servers = [];
 	let channels = [];
 	let messages = [];
-	let ready = false;
+
 	let channelPermissions = {};
 
 	let loadDMS = async () => {
@@ -231,9 +235,20 @@
 			return { id, name, icon, roles };
 		});
 		let attempts = 0;
-		discordGateway.on("close", function () {
+		discordGateway.on("close", async function () {
+			let internet = false;
+			try {
+				if (navigator.onLine) {
+					await fetch("https://discord.com/api/v9/");
+					internet = true;
+				} else internet = false;
+			} catch (e) {
+				internet = false;
+			}
+			if (!internet && !confirm("There seems to be no internet connection, do you want to retry connecting?")) return window.close();
+			else attempts = -1;
 			if (attempts == 5) {
-				if (confirm("The Discord gateway closed 5 times already! Do you want to retry connecting? You might get rate limited...")) {
+				if (internet && confirm("The Discord gateway closed 5 times already! Do you want to retry connecting? You might get rate limited...")) {
 					attempts = -1;
 				} else return window.close();
 			}
