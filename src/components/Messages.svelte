@@ -8,12 +8,15 @@
 	export let sendMessage;
 	export let sn;
 	export let roles;
+	export let guildID;
+	export let typingState;
 	export let discord;
 	export let channel;
 	export let evtForward;
 
 	let textarea, after, con, messages, softkeys;
 	let textAreaHeight = 0;
+	let typingIndicatorBottom = 0;
 
 	window.addEventListener("sn:navigatefailed", (e) => {
 		if (selected !== 0) return;
@@ -22,14 +25,51 @@
 
 	let height = () => {
 		after.scrollTop = textarea.scrollTop;
-		textAreaHeight = window.innerHeight - con.offsetHeight - softkeys.offsetHeight;
+		typingIndicatorBottom = con.offsetHeight + softkeys.offsetHeight;
+		textAreaHeight = window.innerHeight - typingIndicatorBottom;
 	};
 
 	window.onresize = height;
 
+	let currentTypingState = [];
+
+	function oxford(raw, conjunction, ifempty) {
+		let arr = [...raw]; // clone
+		let l = arr.length;
+		if (!l) return ifempty;
+		if (l < 2) return arr[0];
+		if (l < 3) return arr.join(` ${conjunction} `);
+		arr = arr.slice();
+		arr[l - 1] = `${conjunction} ${arr[l - 1]}`;
+		return arr.join(", ");
+	}
+
+	async function ontyping({ id, state }) {
+		if (!channel || id !== channel.id) return;
+		if (channel.dm) {
+			currentTypingState = state.map((a) => channel.recipients.find((e) => e.id === a)?.username).filter((a) => !!a);
+		} else {
+			let current = [];
+			if (state.length < 4) {
+				for (const user of state) {
+					let s_profile = await cachedMentions("getServerProfile", guildID, user);
+					current.push(s_profile.nick || s_profile.user?.username || "unknown-user");
+				}
+			} else current = state;
+			currentTypingState = current;
+		}
+	}
+
 	$: {
 		console.log(channelPermissions);
 		setTimeout(() => con && height(), 50);
+		if (selected !== 0) {
+			console.warn("messages went blur!");
+			typingState.off("change", ontyping, "messages");
+		} else {
+			typingState.on("change", ontyping, "messages");
+			ontyping(typingState.getState(channel.id));
+		}
 	}
 
 	let messageFocused = true;
@@ -158,6 +198,15 @@
 >
 	<slot />
 </div>
+{#if currentTypingState.length > 0}
+	<div style="bottom: {typingIndicatorBottom}px;" id="typing">
+		{#if currentTypingState.length < 4}
+			{oxford(currentTypingState, "and", "an error occured so no one")} {currentTypingState.length > 1 ? "are" : "is"} typing...
+		{:else}
+			Several people are typing...
+		{/if}
+	</div>
+{/if}
 <div bind:this={con} style={channelPermissions.write === false ? "bottom:0;" : null} class="grow-wrap {['zero', 'one'][selected] || ''}">
 	<textarea rows="1" style={channelPermissions.write === false ? "display:none;" : null} bind:this={textarea} />
 	<div style={channelPermissions.write === false ? "display:none;" : null} bind:this={after} class="after" />
@@ -210,6 +259,19 @@
 </div>
 
 <style>
+	#typing {
+		width: 100vw;
+		position: absolute;
+		left: 0;
+		height: 20px;
+		background-color: #2c2f32;
+		font-size: 11px;
+		line-height: 1.5;
+		white-space: pre-wrap;
+		word-break: break-word;
+		padding: 0 8px;
+	}
+
 	svg#send {
 		margin: 2px 0;
 		height: 18px;
@@ -251,8 +313,6 @@
 		padding: 5px 10px;
 	}
 	.grow-wrap .after {
-		/* This is how textarea text behaves */
-		white-space: pre-wrap;
 		/* Hidden from view, clicks, and screen readers */
 		color: transparent !important;
 		background-color: transparent !important;
@@ -269,7 +329,7 @@
 	.grow-wrap > textarea,
 	.grow-wrap .after {
 		/* Identical styling required!! */
-		word-break: break-word;
+		word-break: break-all; /* kaios behavior weird*/
 		margin: 0;
 		border: 1px solid rgb(118, 118, 118);
 		border-radius: 2px;
@@ -281,6 +341,8 @@
 		font-size: 13px;
 		line-height: 1.2;
 		grid-area: 1 / 1 / 2 / 2;
+		max-width: 220px;
+		white-space: pre-wrap;
 	}
 
 	/* Software Keys */

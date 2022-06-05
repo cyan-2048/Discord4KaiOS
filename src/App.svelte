@@ -41,6 +41,7 @@
 	import MessageSeparator from "./components/MessageSeparator.svelte";
 	import Login from "./Login.svelte";
 	import DateSeparator from "./components/DateSeparator.svelte";
+	import TypingState from "./lib/TypingState";
 	let discord = new DiscordXHR({ cache: true });
 	let selected = 1;
 	let appState = "app";
@@ -150,13 +151,7 @@
 		roles = null;
 		let dms = await discord.getChannelsDM();
 		let sift = dms.map((ch) => {
-			let name =
-				ch.name ||
-				ch.recipients
-					.map(function (x) {
-						return x.username;
-					})
-					.join(", ");
+			let name = ch.name || ch.recipients.map((x) => x.username).join(", ");
 
 			let { id, icon, recipients, last_message_id } = ch;
 			let { id: user_id, avatar } = recipients[0];
@@ -304,10 +299,11 @@
 			messages = messages.filter((m) => m.id != d.id);
 		}
 	});
+
 	discordGateway.on("t:user_settings_update", (d) => {
 		if (discord.cache) Object.assign(discord.cache.user_settings, d);
 	});
-	let serverAck = new EventEmitter();
+	const serverAck = new EventEmitter();
 	discordGateway.on("t:presence_update", (d) => {
 		if (!discord.cache) return;
 		let e = discord.cache.guilds.find((a) => a.id == d.guild_id);
@@ -478,6 +474,14 @@
 	}
 
 	const evtForward = new EventEmitter();
+
+	const typingState = new TypingState();
+	discordGateway.on("t:typing_start", (d) => typingState.add(d));
+	typingState.on("change", ({ id, state }) => {
+		if (channel.id === id) {
+			console.error("typing state:", state);
+		}
+	});
 </script>
 
 {#if ready}
@@ -503,7 +507,7 @@
 			{/if}
 		{/each}
 	</Channels>
-	<Messages {evtForward} {sendMessage} {discord} {sn} {roles} {channel} {channelPermissions} {appState} {selected}>
+	<Messages {typingState} {evtForward} {sendMessage} {discord} {sn} {roles} {channel} {channelPermissions} {appState} {selected} guildID={guild ? guild.id : null}>
 		{#each messages as message, i (message.id)}
 			{#if i !== 0 && new Date(messages[i - 1].timestamp).toLocaleDateString("en-us") !== new Date(message.timestamp).toLocaleDateString("en-us")}
 				<DateSeparator>{new Date(message.timestamp).toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })}</DateSeparator>
