@@ -38,7 +38,7 @@
 
 	function linkify(inputText, opts = {}) {
 		if (inputText === "") return "";
-		return markdown(inputText || "", opts).replace(/:(.*):/g, (a, b) => EmojiDict[b] || a);
+		return markdown(inputText || "", opts).replace(/:(.*):/g, (a, b) => EmojiDict.search(b) || a);
 	}
 
 	let contentEl;

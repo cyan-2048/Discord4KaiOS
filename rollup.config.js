@@ -6,6 +6,7 @@ import { terser } from "rollup-plugin-terser";
 import css from "rollup-plugin-css-only";
 import babel from "@rollup/plugin-babel";
 import copy from "rollup-plugin-copy";
+import json from "@rollup/plugin-json";
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -44,6 +45,7 @@ export default {
 				targets: [{ src: "public/*", dest: "dist/" }],
 			}),
 		commonjs(),
+		json(),
 		svelte({
 			compilerOptions: {
 				// compiler checks makes the thing very slow

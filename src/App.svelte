@@ -40,6 +40,7 @@
 	import ServerFolder from "./components/ServerFolder.svelte";
 	import MessageSeparator from "./components/MessageSeparator.svelte";
 	import Login from "./Login.svelte";
+	import DateSeparator from "./components/DateSeparator.svelte";
 	let discord = new DiscordXHR({ cache: true });
 	let selected = 1;
 	let appState = "app";
@@ -504,6 +505,9 @@
 	</Channels>
 	<Messages {evtForward} {sendMessage} {discord} {sn} {roles} {channel} {channelPermissions} {appState} {selected}>
 		{#each messages as message, i (message.id)}
+			{#if i !== 0 && new Date(messages[i - 1].timestamp).toLocaleDateString("en-us") !== new Date(message.timestamp).toLocaleDateString("en-us")}
+				<DateSeparator>{new Date(message.timestamp).toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })}</DateSeparator>
+			{/if}
 			{#if i === 0 || messages[i - 1]?.author.id != message.author?.id || (messages[i - 1] && diff_minutes(new Date(messages[i - 1].timestamp), new Date(message.timestamp)) > 0)}
 				<MessageSeparator {cachedMentions} userID={discord.user.id} {roles} {...spreadAuthor(message.author)} guildID={guild ? guild.id : null} {channel} profile={serverProfile} />
 			{/if}

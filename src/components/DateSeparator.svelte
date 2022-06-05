@@ -1,0 +1,43 @@
+<div class="strike">
+	<span><slot /></span>
+</div>
+
+<style>
+	.strike {
+		display: block;
+		text-align: center;
+		overflow: hidden;
+		white-space: nowrap;
+		width: calc(100vw - 20px);
+		font-size: 10px;
+		margin-left: 10px;
+		color: #a3a6aa;
+		margin-bottom: -4px;
+		margin-top: 2px;
+	}
+
+	.strike > span {
+		position: relative;
+		display: inline-block;
+	}
+
+	.strike > span:before,
+	.strike > span:after {
+		content: "";
+		position: absolute;
+		top: 50%;
+		width: 9999px;
+		height: 1px;
+		background: rgba(79, 84, 92, 0.48);
+	}
+
+	.strike > span:before {
+		right: 100%;
+		margin-right: 15px;
+	}
+
+	.strike > span:after {
+		left: 100%;
+		margin-left: 15px;
+	}
+</style>

@@ -8,9 +8,12 @@ specifiers:
   '@babel/runtime': ^7.17.9
   '@rollup/plugin-babel': ^5.3.1
   '@rollup/plugin-commonjs': ^17.0.0
+  '@rollup/plugin-json': ^4.1.0
   '@rollup/plugin-node-resolve': ^11.0.0
   babel-plugin-transform-async-to-promises: ^0.8.18
   core-js: ^3.22.5
+  emojibase: '*'
+  emojibase-data: ^7.0.1
   kaios-lib: ^1.6.0
   rollup: ^2.3.4
   rollup-plugin-copy: ^3.4.0
@@ -23,6 +26,8 @@ specifiers:
   svelte: ^3.0.0
 
 dependencies:
+  emojibase: 6.1.0
+  emojibase-data: 7.0.1_emojibase@6.1.0
   kaios-lib: 1.6.0
   simple-markdown: 0.7.3
 
@@ -34,6 +39,7 @@ devDependencies:
   '@babel/runtime': 7.17.9
   '@rollup/plugin-babel': 5.3.1_ddp4whfhauf2n5cf6yj7gaerwe
   '@rollup/plugin-commonjs': 17.1.0_rollup@2.72.1
+  '@rollup/plugin-json': 4.1.0_rollup@2.72.1
   '@rollup/plugin-node-resolve': 11.2.1_rollup@2.72.1
   babel-plugin-transform-async-to-promises: 0.8.18
   core-js: 3.22.5
@@ -1279,6 +1285,15 @@ packages:
       rollup: 2.72.1
     dev: true
 
+  /@rollup/plugin-json/4.1.0_rollup@2.72.1:
+    resolution: {integrity: sha512-yfLbTdNS6amI/2OpmbiBoW12vngr5NW2jCJVZSBEz+H5KfUJZ2M7sDjk0U6GOOdCWFVScShte29o9NezJ53TPw==}
+    peerDependencies:
+      rollup: ^1.20.0 || ^2.0.0
+    dependencies:
+      '@rollup/pluginutils': 3.1.0_rollup@2.72.1
+      rollup: 2.72.1
+    dev: true
+
   /@rollup/plugin-node-resolve/11.2.1_rollup@2.72.1:
     resolution: {integrity: sha512-yc2n43jcqVyGE2sqV5/YCmocy9ArjVAP/BeXyTtADTBBX6V0e5UMqwO8CdQ0kzjb6zu5P1qMzsScCMRvE9OlVg==}
     engines: {node: '>= 10.0.0'}
@@ -1604,6 +1619,18 @@ packages:
   /electron-to-chromium/1.4.137:
     resolution: {integrity: sha512-0Rcpald12O11BUogJagX3HsCN3FE83DSqWjgXoHo5a72KUKMSfI39XBgJpgNNxS9fuGzytaFjE06kZkiVFy2qA==}
     dev: true
+
+  /emojibase-data/7.0.1_emojibase@6.1.0:
+    resolution: {integrity: sha512-BLZpOdwyFpZ7lzBWyDtnxmKVm/SJMYgAfp1if3o6n1TVUMSXAf0nikONXl90LZuJ/m3XWPBkkubgCet2BsCGGQ==}
+    peerDependencies:
+      emojibase: '*'
+    dependencies:
+      emojibase: 6.1.0
+    dev: false
+
+  /emojibase/6.1.0:
+    resolution: {integrity: sha512-1GkKJPXP6tVkYJHOBSJHoGOr/6uaDxZ9xJ6H7m6PfdGXTmQgbALHLWaVRY4Gi/qf5x/gT/NUXLPuSHYLqtLtrQ==}
+    dev: false
 
   /escalade/3.1.1:
     resolution: {integrity: sha512-k0er2gUkLf8O0zKJiAhmkTnJlTvINGv7ygDNPbeIsX/TJjGJZHuh9B2UxbsaEkmlEo9MfhrSzmhIlhRlI2GXnw==}
