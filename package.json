@@ -32,6 +32,7 @@
 		"emojibase": "*",
 		"emojibase-data": "^7.0.1",
 		"kaios-lib": "^1.6.0",
+		"lottie-web": "^5.9.4",
 		"simple-markdown": "^0.7.3"
 	}
 }

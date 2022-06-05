@@ -1,10 +1,10 @@
 <script>
 	import { onMount } from "svelte";
 	export let src;
-	import bodymovin from "../lib/lottie_light.js";
+	import lottie from "lottie-web/build/player/lottie_light.js";
 	let container;
 	onMount(() => {
-		var animation = bodymovin.loadAnimation({
+		lottie.loadAnimation({
 			container,
 			renderer: "svg",
 			loop: true,
