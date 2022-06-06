@@ -26,7 +26,7 @@ maybe ->
 backend -> discord gateway
 - hide channels that are not supposed to be seen✅(bitwise was the weirdest thing ever...)
 - unread/read/mentions indicators✅(partial, dms do not work yet...)
-- discord presence in dms✅(partial no support for presences that are not the status of the user, no support for emojis as well)
+- discord presence in dms✅(partial, no support for presences that are not the status of the user, no support for emojis as well)
 
 no plans on supporting ->
 - video will probably not be supported because most video formats probably won't work

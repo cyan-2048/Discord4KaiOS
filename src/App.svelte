@@ -49,9 +49,9 @@
 	let ready = false;
 
 	window.addEventListener("keydown", (e) => {
-		if (key === "Backspace") e.preventDefault();
 		if (appState !== "app" || e.shiftKey) return;
 		let { key, target } = e;
+		if (key === "Backspace") e.preventDefault();
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
 			if (/Right|Enter/.test(key)) target.click();
