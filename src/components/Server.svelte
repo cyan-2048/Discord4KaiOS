@@ -1,11 +1,13 @@
 <script>
 	import { createEventDispatcher, onMount } from "svelte";
 	import { isChannelMuted, siftChannels, centerScroll } from "../lib/helper.js";
+	import ServerMentions from "./ServerMentions.svelte";
 	export let dm = false;
 	export let discord;
 	export let server;
 	export let selected;
 	export let serverAck;
+	export let focusable = true;
 	const dispatch = createEventDispatcher();
 
 	let { id, roles, name, icon } = server || { id: null };
@@ -62,42 +64,29 @@
 <main
 	data-mentions={mentions}
 	on:click={() => dispatch("select", { id })}
-	data-focusable
+	data-focusable={focusable ? "" : null}
 	class="{unread ? 'unread' : ''} {dm ? 'dm' : ''} {selected ? 'selected' : ''}"
 	tabindex="0"
 	on:focus={onFocus}
 	bind:this={main}
 >
-	<div class="hover" />
+	{#if focusable}
+		<div class="hover" />
+	{/if}
 	{#if icon}
 		<img class="image" src="https://cdn.discordapp.com/icons/{id}/{icon}.png?size=48" alt={shorten(name)} />
 	{:else}
 		<div class="image">{shorten(name)}</div>
 	{/if}
-	{#if mentions > 0}
-		<div class="mentions" style={main?.parentNode?.matches("[data-folder]") ? "border-color: rgb(47, 49, 54);" : ""}>{mentions}</div>
+	{#if mentions > 0 && focusable}
+		<ServerMentions color={main?.parentNode.matches("[data-folder]") && "#2f3136"}>{mentions}</ServerMentions>
 	{/if}
 </main>
 
 <style>
-	.mentions {
-		display: block;
-		position: absolute;
-		border-radius: 20px;
-		background-color: #ed4245;
-		color: white;
-		height: 15px;
-		min-width: 15px;
-		padding: 7px 3.9px;
-		font-size: 12px;
-		bottom: 0;
-		right: 0;
-		line-height: 0;
-		border: solid 3px #202225;
-	}
-
 	:focus div.image,
-	:hover div.image {
+	:hover div.image,
+	.selected div.image {
 		background-color: rgb(88, 101, 242);
 	}
 

@@ -143,3 +143,21 @@ a:hover {
 		border-radius: 20px;
 	}
 }
+
+[data-folder]:not(.open) > * {
+	display: none;
+}
+[data-folder]:not(.open) > *:nth-child(-n + 5):not(.hover) {
+	display: inline-block;
+	transform: scale(0.37);
+	height: 17.76px;
+	width: 17.76px;
+}
+
+[data-folder]:not(.open) {
+	display: grid;
+	--t: 18px 18px;
+	grid-template-rows: var(--t);
+	grid-template-columns: var(--t);
+	grid-gap: 2px;
+}

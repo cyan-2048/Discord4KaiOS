@@ -7,7 +7,7 @@
 	import { onMount } from "svelte";
 	import { DiscordXHR } from "./lib/DiscordXHR.js";
 	import { EventEmitter } from "./lib/EventEmitter.js";
-	import { wouldMessagePing, getScrollBottom, inViewport, centerScroll, hashCode, siftChannels, last, parseRoleAccess, findUserByTag } from "./lib/helper";
+	import { wouldMessagePing, getScrollBottom, inViewport, centerScroll, hashCode, siftChannels, last, parseRoleAccess, findUserByTag, asyncQueueGenerator } from "./lib/helper";
 	var discordGateway = new (class extends EventEmitter {
 		constructor() {
 			super();
@@ -51,10 +51,10 @@
 	window.addEventListener("keydown", (e) => {
 		if (appState !== "app" || e.shiftKey) return;
 		let { key, target } = e;
-		if (key === "Backspace") e.preventDefault();
+		if (key === "Backspace" && !"value" in target) e.preventDefault();
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
-			if (/Right|Enter/.test(key)) target.click();
+			if (/Enter/.test(key)) target.click();
 		}
 		if (selected == 0 && (key == "Backspace" || key == "ArrowLeft" || key == "SoftLeft") && (target.tagName !== "TEXTAREA" || target.value === "")) {
 			e.preventDefault();
@@ -130,7 +130,7 @@
 				}
 				sn.focus();
 				if (selected === 0) {
-					setTimeout(() => document.querySelector(".grow-wrap textarea").focus(), 20); // if element is not focusable, it will not blur first focused element...
+					setTimeout(() => document.querySelector(".grow-wrap textarea").focus(), 50); // if element is not focusable, it will not blur first focused element...
 				}
 			}, 50);
 		})();
@@ -226,14 +226,33 @@
 
 	$: channel && loadMessages();
 
+	async function loadServers() {
+		servers = [];
+		const wait = await discord.getServers();
+		const { guild_positions: serverPositions, guild_folders: serverFolders } = discord.cache.user_settings;
+
+		let temp = [];
+		wait
+			.map(({ id, name, icon, roles }) => ({ id, name, icon, roles }))
+			.sort((a, b) => {
+				let indexer = ({ id }) => serverPositions.indexOf(id);
+				return indexer(a) - indexer(b);
+			})
+			.forEach((a) => {
+				let folder = serverFolders.find((e) => e.id && e.guild_ids?.includes(a.id));
+				if (folder) {
+					const found = temp.find((a) => a.type === "folder" && a.id === folder.id);
+					found ? found.servers.push(a) : temp.push({ type: "folder", id: folder.id, servers: [a], color: folder.color });
+				} else temp.push(a);
+			});
+
+		servers = temp;
+	}
+
 	let init = async () => {
 		ready = true;
 		guild = null;
-		let wait = await discord.getServers();
-		servers = wait.map((e) => {
-			let { id, name, icon, roles } = e;
-			return { id, name, icon, roles };
-		});
+		await loadServers();
 		let attempts = 0;
 		discordGateway.on("close", async function () {
 			let internet = false;
@@ -292,9 +311,16 @@
 		}
 	};
 	let selectServer = async (e) => {
+		console.error("on select working fine", e.detail);
 		let { id } = e.detail;
 		if (id === null) return (guild = id);
-		let sift = servers.find((d) => d.id == id);
+		let sift = null;
+		let found = servers.find((d) => {
+			if (d.type === "folder") {
+				return (sift = d.servers.find((l) => l.id === id));
+			} else return d.id === id;
+		});
+		if (found.type !== "folder") sift = found;
 		if (sift && guild?.id != sift.id) {
 			guild = sift;
 		} else {
@@ -374,14 +400,14 @@
 		let { bot, discriminator, id, username, avatar } = e;
 		return { bot, discriminator, id, name: username, avatar };
 	};
+
 	const cachedMentions = (() => {
-		let mentionCache = {};
 		function delay() {
 			console.log("delaying");
 			return new Promise((r) => setTimeout(r, 1000));
 		}
-		let pending = Promise.resolve();
-		async function func() {
+
+		const final = asyncQueueGenerator(async function () {
 			let args = [...arguments];
 			let hash = hashCode(args.join(""));
 			let type = args.shift();
@@ -390,44 +416,39 @@
 				await delay();
 				res = await discord[type](...args);
 			}
-			mentionCache[hash] = res;
 			return res;
-		}
-		const run = async function () {
-			try {
-				await pending;
-			} finally {
-				return func(...arguments);
-			}
-		};
-		// update pending promise so that next task could await for it
-		const final = function () {
-			let args = [...arguments];
-			let obj = mentionCache[hashCode(args.join(""))];
-			if (obj) return Promise.resolve(obj);
-			return (pending = run(...args));
-		};
-		final.findUserByTag = findUserByTag(mentionCache);
-		final.getGuildMembers = function (query = "", limit = 5) {
+		});
+
+		final.getGuildMembers = asyncQueueGenerator(function (query = "", limit = 5) {
+			if (query === "") return Promise.resolve([]);
 			return new Promise((res) => {
-				discordGateway.send({
-					op: 8,
-					d: {
-						guild_id: guild.id,
-						query,
-						limit,
-					},
-				});
-				discordGateway.once("t:guild_members_chunk", (d) => {
+				if (!channel.dm) {
+					discordGateway.send({
+						op: 8,
+						d: {
+							guild_id: guild.id,
+							query,
+							limit,
+						},
+					});
+					discordGateway.once("t:guild_members_chunk", (d) => {
+						res(
+							d.members.map((a) => {
+								a.guild_id = guild.id;
+								return a;
+							})
+						);
+					});
+				} else
 					res(
-						d.members.map((a) => {
-							a.guild_id = guild.id;
-							return a;
-						})
+						channel.recipients
+							.filter((a) => a.username.includes(query))
+							.slice(0, limit)
+							.map((a) => ({ user: { ...a } }))
 					);
-				});
 			});
-		};
+		});
+		final.findUserByTag = findUserByTag(final.cache, final.getGuildMembers.cache);
 		window.cachedMentions = final;
 		return final;
 	})();
@@ -503,8 +524,8 @@
 	<Servers {appState} {selected}>
 		<Server on:select={selectServer} selected={!guild} {serverAck} {discord} dm={true} />
 		{#each servers as server}
-			{#if server.folder}
-				<ServerFolder {...server} {discord} />
+			{#if server.type === "folder"}
+				<ServerFolder {guild} on:select={selectServer} {serverAck} {discord} {...server} />
 			{:else}
 				<Server on:select={selectServer} selected={guild?.id === server.id} {serverAck} {server} {discord} />
 			{/if}

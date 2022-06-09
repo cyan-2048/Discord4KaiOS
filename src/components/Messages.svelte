@@ -105,6 +105,7 @@
 			} else {
 			}
 		});
+		mentioned = [];
 		return content;
 	};
 
@@ -114,7 +115,7 @@
 			let { key } = e;
 			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(messages.children)?.focus(), 50);
 			setTimeout(() => {
-				if (!messageEditing && ("SoftLeft" === key || "Control" === key) && this.value !== "") {
+				if (!messageEditing && ("SoftLeft" === key || "End" === key) && this.value !== "") {
 					if (this.value.startsWith("s/")) sendMessage.sed(this.value);
 					else sendMessage(replaceMentions(this.value)); // to do replace mention elements
 					this.value = "";
@@ -122,7 +123,7 @@
 				}
 				if (messageEditing) {
 					let end = () => (messageEditing = null);
-					if ("SoftLeft" === key || "Control" === key) {
+					if ("SoftLeft" === key || "End" === key) {
 						discord.editMessage(channel.id, messageEditing.id, this.value); // to do replace mention elements
 						this.value = "";
 						this.oninput();
@@ -154,26 +155,32 @@
 				}[copy[0]];
 				let query = copy.slice(1);
 				if (query === "") return (showQuery = false);
-				switch (type) {
-					case "mention":
-						query_members = await cachedMentions.getGuildMembers(query);
-						query_members.forEach((a) => {
-							queryCache[hashCode(a.guild_id + a.user.id)] = a;
-						});
-						if (query_members.length === 1) {
-							let { user } = query_members[0];
-							let { discriminator: tag, username: name } = user;
-							this.value = this.value.replace(regex, `@${name}#${tag} `);
-							this.oninput();
-							this.selectionStart = this.value.length;
-							showQuery = false;
-							if (!mentioned.find((a) => a.id === user.id)) {
-								mentioned = [...mentioned, user];
-							}
-						}
+				let insert = ({ user }) => {
+					let { discriminator: tag, username: name } = user;
+					this.value = this.value.replace(regex, `@${name}#${tag} `);
+					this.oninput();
+					this.selectionStart = this.value.length;
+					showQuery = false;
+					if (!mentioned.find((a) => a.id === user.id)) {
+						mentioned = [...mentioned, user];
+					}
+				};
+				if (type === "mention") {
+					query_members = await cachedMentions.getGuildMembers(query);
+					query_members.forEach((a) => {
+						queryCache[hashCode(a.guild_id + a.user.id)] = a;
+					});
+					if (query_members.length === 1) insert(query_members[0]);
+					else if (query_members.length < 1) showQuery = false;
+					else {
 						console.error(query_members);
-						break;
+					}
 				}
+				if (!channel.dm)
+					switch (type) {
+						case "mention":
+							break;
+					}
 			}, 1000);
 		}
 
@@ -182,7 +189,7 @@
 		textarea.onblur = () => (messageFocused = true);
 		textarea.onfocus = () => (messageFocused = false);
 		textarea.oninput = function () {
-			if (!channel.dm) handleQuery.call(this);
+			handleQuery.call(this);
 			if (!isTyping) {
 				isTyping = true;
 				discord.xhrRequestJSON("POST", `channels/${channel.id}/typing`);
@@ -348,7 +355,6 @@
 		font-size: 13px;
 		line-height: 1.2;
 		grid-area: 1 / 1 / 2 / 2;
-		max-width: 220px;
 		white-space: pre-wrap;
 	}
 

@@ -182,9 +182,11 @@ function getScrollBottom(el) {
 	return el.scrollHeight - el.offsetHeight - el.scrollTop;
 }
 
-function findUserByTag(mentionCache) {
+function findUserByTag() {
+	const args = arguments;
 	return function (tag) {
-		let copy = (tag.startsWith("@") ? tag.slice(1) : tag).split("#");
+		const mentionCache = Object.assign({}, ...args);
+		const copy = (tag.startsWith("@") ? tag.slice(1) : tag).split("#");
 		let done = null;
 		for (const key in mentionCache) {
 			let test = mentionCache[key];
@@ -209,7 +211,35 @@ let dblclick = (el, bubbles = false) =>
 		})
 	);
 
+function asyncQueueGenerator(func) {
+	const cache = {};
+	let pending = Promise.resolve();
+	const run = async function () {
+		const args = [...arguments];
+		try {
+			await pending;
+		} finally {
+			return (cache[hashCode(args.join(""))] = await func(...arguments));
+		}
+	};
+	const final = function () {
+		let args = [...arguments];
+		return cache[hashCode(args.join(""))] || (pending = run(...args));
+	};
+	final.cache = cache;
+	return final;
+}
+
+function rgbaToHex(d, b, a) {
+	var r = Math.floor(d[0] * a + b[0] * (1 - a));
+	var g = Math.floor(d[1] * a + b[1] * (1 - a));
+	var b = Math.floor(d[2] * a + b[2] * (1 - a));
+	return "#" + ((r << 16) | (g << 8) | b).toString(16);
+}
+
 export {
+	rgbaToHex,
+	asyncQueueGenerator,
 	dblclick,
 	findUserByTag,
 	getScrollBottom,
