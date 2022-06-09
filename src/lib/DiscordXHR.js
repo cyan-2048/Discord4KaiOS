@@ -52,25 +52,29 @@ class DiscordXHR {
 				if (a && b) xhr.setRequestHeader(a, b.replace(/\r?\n|\r/g, "")); // nodejs http bug
 			});
 
-			xhr.onload = () => res(xhr.responseText, xhr);
-			xhr.onerror = rej;
+			xhr.onload = () => res(xhr);
+			xhr.onerror = () => rej(xhr);
 			xhr.send(typeof data == "object" ? JSON.stringify(data) : data);
 		});
 	}
 
-	xhrRequestJSON() {
-		return this.xhrRequest(...arguments).then((x, xhr) => {
-			try {
-				if (xhr && !x.status) x.status = xhr.status;
-				return JSON.parse(x);
-			} catch (e) {
-				let error = new Error(e.message);
-				error.xhr = xhr;
-				error.responseText = x;
-				console.error(x);
-				return Promise.reject(error);
-			}
-		});
+	async xhrRequestJSON() {
+		let xhr = null;
+		try {
+			xhr = await this.xhrRequest(...arguments);
+		} catch (e) {
+			console.warn(e.status, e);
+		}
+		if (xhr === null) return { args: [...arguments], message: "unknown error occured" };
+		let parsed = xhr.responseText;
+		try {
+			parsed = JSON.parse(parsed);
+			parsed.__proto__.httpStatus = xhr.status; // if it's an array, we don't get an extra key
+		} catch (e) {
+			console.error("JSON.parse failed!", parsed);
+			parsed = { httpStatus: xhr.status };
+		}
+		return parsed;
 	}
 
 	getAvatarURL(userId = "@me", avatarId = null) {

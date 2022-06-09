@@ -7,7 +7,19 @@
 	import { onMount } from "svelte";
 	import { DiscordXHR } from "./lib/DiscordXHR.js";
 	import { EventEmitter } from "./lib/EventEmitter.js";
-	import { wouldMessagePing, getScrollBottom, inViewport, centerScroll, hashCode, siftChannels, last, parseRoleAccess, findUserByTag, asyncQueueGenerator } from "./lib/helper";
+	import {
+		wouldMessagePing,
+		getScrollBottom,
+		inViewport,
+		centerScroll,
+		hashCode,
+		siftChannels,
+		last,
+		parseRoleAccess,
+		findUserByTag,
+		asyncQueueGenerator,
+		asyncCachedGenerator,
+	} from "./lib/helper";
 	var discordGateway = new (class extends EventEmitter {
 		constructor() {
 			super();
@@ -402,17 +414,17 @@
 	};
 
 	const cachedMentions = (() => {
-		function delay() {
+		function delay(d = 1) {
 			console.log("delaying");
-			return new Promise((r) => setTimeout(r, 1000));
+			return new Promise((r) => setTimeout(r, d * 1000));
 		}
 
-		const final = asyncQueueGenerator(async function () {
+		const final = asyncCachedGenerator(async function () {
 			let args = [...arguments];
 			let hash = hashCode(args.join(""));
 			let type = args.shift();
 			let res = await discord[type](...args);
-			while (res.message && res.code !== 10007 && res.code !== 10013) {
+			while (res.httpStatus === 429) {
 				await delay();
 				res = await discord[type](...args);
 			}

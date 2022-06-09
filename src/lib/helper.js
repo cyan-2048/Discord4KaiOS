@@ -230,6 +230,17 @@ function asyncQueueGenerator(func) {
 	return final;
 }
 
+function asyncCachedGenerator(func) {
+	const cache = {};
+	const final = async function () {
+		let args = [...arguments];
+		const hash = hashCode(args.join(""));
+		return cache[hash] || (cache[hash] = await func(...args));
+	};
+	final.cache = cache;
+	return final;
+}
+
 function rgbaToHex(d, b, a) {
 	var r = Math.floor(d[0] * a + b[0] * (1 - a));
 	var g = Math.floor(d[1] * a + b[1] * (1 - a));
@@ -238,6 +249,7 @@ function rgbaToHex(d, b, a) {
 }
 
 export {
+	asyncCachedGenerator,
 	rgbaToHex,
 	asyncQueueGenerator,
 	dblclick,

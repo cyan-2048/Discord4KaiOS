@@ -42,7 +42,10 @@
 	}
 
 	let contentEl;
-	let content = message.type === 7 ? shuffle(greetings)[0].replace("$user", message.author.username) : linkify(message.content, { embed: !!message.author.bot });
+	let content =
+		message.type === 7
+			? linkify(greetings[new Date(message.timestamp) % greetings.length].replace("$user", `<@${message.author.id}>`))
+			: linkify(message.content, { embed: !!message.author.bot });
 
 	let onchange = async (el = contentEl) => {
 		console.log(message);
@@ -82,8 +85,8 @@
 			for (const a of getMentions("user")) {
 				let id = a.dataset.id;
 				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
-				if (!s_profile || s_profile.code) s_profile = await cachedMentions("getProfile", id);
-				a.innerText = "@" + (s_profile.nick || s_profile.user?.username || s_profile.username || "unknown-user");
+				if (!s_profile) s_profile = {};
+				a.innerText = "@" + (s_profile.nick || s_profile.user?.username || s_profile.username || message.author.username || "unknown-user");
 			}
 		}
 		for (const a of getMentions("channel")) {
