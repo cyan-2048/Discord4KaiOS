@@ -61,10 +61,9 @@
 	}
 
 	$: {
-		console.log(channelPermissions);
+		console.log("channel permissions:", channelPermissions);
 		setTimeout(() => con && height(), 50);
 		if (selected === 1) {
-			console.warn("messages went blur!");
 			typingState.off("change", ontyping, "messages");
 		} else if (selected === 0) {
 			typingState.on("change", ontyping, "messages");
@@ -346,7 +345,7 @@
 		word-break: break-all; /* kaios behavior weird*/
 		margin: 0;
 		border: 1px solid rgb(118, 118, 118);
-		border-radius: 2px;
+		border-radius: 5px;
 		background-color: #40444b;
 		color: #dcddde;
 		padding: 4px 9px;

@@ -2,19 +2,20 @@
 function hashCode(r){var n,t=String(r),o=0;if(0===t.length)return o;for(n=0;n<t.length;n++)o=(o<<5)-o+t.charCodeAt(n),o|=0;return Array.from(o.toString()).map(r=>"ledoshcyan"[r]).join("")}
 
 let bitwise2text = {
-	64: "write_reactions",
+	64: "add_reactions",
+	8: "admin",
 	1024: "read",
 	2048: "write",
-	8192: "mod_delete",
+	8192: "manage_messages",
 	32768: "attach",
 	65536: "history",
 	131072: "ping_everyone",
 	262144: "ext_emojis",
-	32: "ext_stickers",
-	4: "mod_threads",
-	8: "make_thread",
-	16: "make_priv_thread",
-	64: "write_thread",
+	137438953472: "ext_stickers",
+	17179869184: "manage_threads",
+	34359738368: "make_pub_thread",
+	68719476736: "make_priv_thread",
+	274877906944: "write_thread",
 };
 
 function groupBy(arr, property) {
@@ -28,16 +29,30 @@ function groupBy(arr, property) {
 }
 
 // make getting roles more readble, i am not a robot
-function parseRoleAccess(overwrites = [], roles = []) {
+function parseRoleAccess(overwrites = [], roles = [] /*this is the roles the user has*/, serverRoles = []) {
 	let obj = {};
+	if (serverRoles.length > 0)
+		[...serverRoles]
+			.sort((a, b) => a.position - b.position)
+			.filter((o) => roles.includes(o.id) || roles.position === 0)
+			.map((o) => o.permissions)
+			.forEach((perms) => {
+				Object.entries(bitwise2text).forEach(([num, perm]) => {
+					if ((num & perms) == num) obj[perm] = true;
+				});
+			});
+	if (obj.admin === true) {
+		Object.values(bitwise2text).forEach((a) => (obj[a] = true));
+		console.error("person is admin, gib all perms true", obj);
+		return obj;
+	}
 	let grouped = groupBy(overwrites, "type");
 	Object.keys(grouped)
 		.sort()
 		.forEach((a) => {
 			grouped[a].forEach((o) => {
 				if (roles.includes(o.id)) {
-					Object.entries(bitwise2text).forEach((ar) => {
-						let [num, perm] = ar;
+					Object.entries(bitwise2text).forEach(([num, perm]) => {
 						if ((o.allow & num) == num) obj[perm] = true;
 						if ((o.deny & num) == num) obj[perm] = false;
 					});
@@ -211,6 +226,8 @@ let dblclick = (el, bubbles = false) =>
 		})
 	);
 
+// returns a function that waits for another function to finish before running
+// also has caching abilities
 function asyncQueueGenerator(func) {
 	const cache = {};
 	let pending = Promise.resolve();
@@ -230,6 +247,7 @@ function asyncQueueGenerator(func) {
 	return final;
 }
 
+// returns a function which has a caching ability
 function asyncCachedGenerator(func) {
 	const cache = {};
 	const final = async function () {
@@ -241,14 +259,46 @@ function asyncCachedGenerator(func) {
 	return final;
 }
 
-function rgbaToHex(d, b, a) {
+// calculate the outputed color if a color has opacity
+// returns a color in hex
+function rgbaToHex(d = [0, 0, 0], b = [0, 0, 0], a = 1) {
 	var r = Math.floor(d[0] * a + b[0] * (1 - a));
 	var g = Math.floor(d[1] * a + b[1] * (1 - a));
 	var b = Math.floor(d[2] * a + b[2] * (1 - a));
 	return "#" + ((r << 16) | (g << 8) | b).toString(16);
 }
 
+// returns async function in which there's a limit to how many executions can be done
+// if number of unfinished request exceeds limit,
+// we wait for a request to finish before executing another
+// also caches
+function asyncRateLimitGenerator(func, limit = 5) {
+	const cache = {};
+	let current = 0;
+	function delay(timeout) {
+		return new Promise((res) => setTimeout(res, timeout));
+	}
+	const final = async function () {
+		const args = [...arguments];
+		const hash = hashCode(args.join(""));
+		if (cache[hash]) return cache[hash];
+		while (current >= limit && !cache[hash]) {
+			const min = 100,
+				max = 500;
+			await delay(1000 + Math.random() * (max - min) + min);
+		}
+		if (cache[hash]) return cache[hash];
+		current += 1;
+		const wait = await func(...args);
+		current -= 1;
+		return (cache[hash] = wait);
+	};
+	final.cache = cache;
+	return final;
+}
+
 export {
+	asyncRateLimitGenerator,
 	asyncCachedGenerator,
 	rgbaToHex,
 	asyncQueueGenerator,

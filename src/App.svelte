@@ -18,7 +18,7 @@
 		parseRoleAccess,
 		findUserByTag,
 		asyncQueueGenerator,
-		asyncCachedGenerator,
+		asyncRateLimitGenerator,
 	} from "./lib/helper";
 	var discordGateway = new (class extends EventEmitter {
 		constructor() {
@@ -219,7 +219,7 @@
 
 	let loadMessages = async () => {
 		if (!channel.dm) {
-			channelPermissions = parseRoleAccess(channel.permission_overwrites, serverProfile.roles.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]));
+			channelPermissions = parseRoleAccess(channel.permission_overwrites, serverProfile.roles.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]), roles);
 		} else channelPermissions = {};
 		messages = [];
 		let msgs = await discord.getMessages(channel.id, 30);
@@ -323,7 +323,6 @@
 		}
 	};
 	let selectServer = async (e) => {
-		console.error("on select working fine", e.detail);
 		let { id } = e.detail;
 		if (id === null) return (guild = id);
 		let sift = null;
@@ -415,13 +414,12 @@
 
 	const cachedMentions = (() => {
 		function delay(d = 1) {
-			console.log("delaying");
+			console.warn("delaying");
 			return new Promise((r) => setTimeout(r, d * 1000));
 		}
 
-		const final = asyncCachedGenerator(async function () {
+		const final = asyncRateLimitGenerator(async function () {
 			let args = [...arguments];
-			let hash = hashCode(args.join(""));
 			let type = args.shift();
 			let res = await discord[type](...args);
 			while (res.httpStatus === 429) {
@@ -429,7 +427,7 @@
 				res = await discord[type](...args);
 			}
 			return res;
-		});
+		}, 4);
 
 		final.getGuildMembers = asyncQueueGenerator(function (query = "", limit = 5) {
 			if (query === "") return Promise.resolve([]);
@@ -437,20 +435,9 @@
 				if (!channel.dm) {
 					discordGateway.send({
 						op: 8,
-						d: {
-							guild_id: guild.id,
-							query,
-							limit,
-						},
+						d: { guild_id: guild.id, query, limit },
 					});
-					discordGateway.once("t:guild_members_chunk", (d) => {
-						res(
-							d.members.map((a) => {
-								a.guild_id = guild.id;
-								return a;
-							})
-						);
-					});
+					discordGateway.once("t:guild_members_chunk", (d) => res(d.members.map((a) => ({ ...a, guild_id: guild.id }))));
 				} else
 					res(
 						channel.recipients
@@ -525,11 +512,6 @@
 
 	const typingState = new TypingState();
 	discordGateway.on("t:typing_start", (d) => typingState.add(d));
-	typingState.on("change", ({ id, state }) => {
-		if (channel.id === id) {
-			console.error("typing state:", state);
-		}
-	});
 </script>
 
 {#if ready}

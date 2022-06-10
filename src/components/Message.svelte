@@ -85,8 +85,8 @@
 			for (const a of getMentions("user")) {
 				let id = a.dataset.id;
 				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
-				if (!s_profile) s_profile = {};
-				a.innerText = "@" + (s_profile.nick || s_profile.user?.username || s_profile.username || message.author.username || "unknown-user");
+				if (!s_profile || s_profile.httpStatus === 404) s_profile = message.author.id === id ? message.author : await cachedMentions("getProfile", id);
+				a.innerText = "@" + (s_profile.nick || s_profile.user?.username || s_profile.username || (message.author.id === id ? message.author.username : null) || "unknown-user");
 			}
 		}
 		for (const a of getMentions("channel")) {
@@ -126,7 +126,7 @@
 					  })
 					: ref.content?.replace(_m, "") || "";
 			} else temp = ref.content;
-			if (channel.dm || ref.author.bot) temp = `<b>${"@" + ref.author.username} </b>` + toHTML(temp);
+			if (channel.dm || (ref.author.bot && ref.author.discriminator === "0000")) temp = `<b>${"@" + ref.author.username} </b>` + toHTML(temp);
 			else {
 				let id = ref.author.id;
 				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
@@ -186,7 +186,7 @@
 		for (const a of clone.querySelectorAll("span.mentions[data-type='user']")) {
 			let id = a.dataset.id;
 			let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
-			if (!s_profile || s_profile.code) s_profile = await cachedMentions("getProfile", id);
+			if (!s_profile || s_profile.httpStatus === 404) s_profile = message.author.id === id ? message.author : await cachedMentions("getProfile", id);
 			a.innerText = "@" + (s_profile.user?.username || s_profile.username || "unknown-user") + "#" + s_profile.user?.discriminator || s_profile.discriminator || "0000";
 		}
 		evtForward.emit("message_edit", message, clone.innerText);

@@ -41,7 +41,7 @@ class EventEmitter {
 				if (a.once) {
 					this.off(a.name, a.callback, a.id || null);
 				}
-				if (a.name === name) {
+				if (a.name === name || a.name === "*") {
 					a.callback.apply(this, args);
 				}
 			});

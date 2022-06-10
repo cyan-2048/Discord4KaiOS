@@ -68,10 +68,10 @@ class DiscordXHR {
 		if (xhr === null) return { args: [...arguments], message: "unknown error occured" };
 		let parsed = xhr.responseText;
 		try {
-			parsed = JSON.parse(parsed);
+			parsed = (parsed && JSON.parse(parsed)) || {};
 			parsed.__proto__.httpStatus = xhr.status; // if it's an array, we don't get an extra key
 		} catch (e) {
-			console.error("JSON.parse failed!", parsed);
+			console.error("JSON.parse failed!", parsed, xhr.responseText);
 			parsed = { httpStatus: xhr.status };
 		}
 		return parsed;
