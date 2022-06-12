@@ -1,3 +1,7 @@
+import App from "./App.svelte";
+import { polyfill } from "./lib/scrollBy.js";
+polyfill();
+
 document.documentElement.lang = navigator.language;
 
 function softkey(e) {
@@ -9,7 +13,6 @@ function softkey(e) {
 window.addEventListener("keyup", softkey);
 window.addEventListener("keydown", softkey);
 
-import App from "./App.svelte";
 const app = new App({
 	target: document.body,
 });

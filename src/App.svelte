@@ -19,6 +19,8 @@
 		findUserByTag,
 		asyncQueueGenerator,
 		asyncRateLimitGenerator,
+		syncCachedGenerator,
+		asyncCachedGenerator,
 	} from "./lib/helper";
 	var discordGateway = new (class extends EventEmitter {
 		constructor() {
@@ -45,6 +47,7 @@
 			id,
 			selector: `[data-${id}].selected [data-focusable]`,
 			rememberSource: true,
+			restrict: "self-only",
 		})
 	);
 	import Message from "./components/Message.svelte";
@@ -54,27 +57,27 @@
 	import Login from "./Login.svelte";
 	import DateSeparator from "./components/DateSeparator.svelte";
 	import TypingState from "./lib/TypingState";
+	import ImageViewer from "./ImageViewer.svelte";
 	let discord = new DiscordXHR({ cache: true });
 	let selected = 1;
 	let appState = "app";
+	let viewerSrc = null;
 
 	let ready = false;
 
 	window.addEventListener("keydown", (e) => {
-		if (appState !== "app" || e.shiftKey) return;
 		let { key, target } = e;
-		if (key === "Backspace" && !"value" in target) e.preventDefault();
+		if (key === "Backspace" && !("value" in target)) e.preventDefault();
+		if (appState !== "app" || e.shiftKey) return;
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
 			if (/Enter/.test(key)) target.click();
 		}
 		if (selected == 0 && (key == "Backspace" || key == "ArrowLeft" || key == "SoftLeft") && (target.tagName !== "TEXTAREA" || target.value === "")) {
-			e.preventDefault();
 			setTimeout(() => (selected = 1), 50);
 		}
 
 		if (selected === 1 && /-|Left|Back/.test(key)) {
-			e.preventDefault();
 			setTimeout(() => (selected = 2), 50);
 		}
 		if (selected === 2 && /=|Right/.test(key)) {
@@ -132,7 +135,6 @@
 
 	$: selected !== null &&
 		(() => {
-			console.log("selected changed", selected);
 			document.activeElement.blur();
 			setTimeout(() => {
 				let query = document.querySelector(".two.selected .selected");
@@ -184,6 +186,7 @@
 		});
 		sift.sort((a, b) => Number(b.last_message_id) - Number(a.last_message_id));
 		channels = sift;
+		console.log("dms:", channels);
 		if (selected !== 1) selected = 1;
 		setTimeout(() => sn.focus(), 50);
 		return sift;
@@ -209,6 +212,7 @@
 					: "text";
 			return { ...a, type, ch_type };
 		});
+		console.log("channels:", channels);
 		if (selected !== 1) selected = 1;
 		setTimeout(() => sn.focus(), 50);
 		return channels;
@@ -224,6 +228,7 @@
 		messages = [];
 		let msgs = await discord.getMessages(channel.id, 30);
 		messages = [...msgs].reverse();
+		console.log("messages:", messages);
 		selected = 0;
 		setTimeout(() => {
 			let zel = document.querySelector(".zero.selected");
@@ -378,10 +383,11 @@
 	discordGateway.on("t:message_create", async (d) => {
 		if (channel?.id == d.channel_id) {
 			messages = [...messages, d];
+			const _messages = document.querySelector("[data-messages]");
+			const shouldScroll = getScrollBottom(_messages) < 100;
 			setTimeout(() => {
-				let messages = document.querySelector("[data-messages]");
-				if (getScrollBottom(messages) < 100) {
-					centerScroll(last(messages.children));
+				if (shouldScroll) {
+					centerScroll(last(_messages.children));
 					ack(d.id);
 				}
 			}, 50);
@@ -447,7 +453,20 @@
 					);
 			});
 		});
-		final.findUserByTag = findUserByTag(final.cache, final.getGuildMembers.cache);
+		final.findUserByTag = syncCachedGenerator(findUserByTag(final.cache, final.getGuildMembers.cache));
+		final.findUserById = asyncCachedGenerator(async function (id) {
+			let cached = [final.cache, final.getGuildMembers.cache].map((a) => Object.values(a)).flat(2);
+			let len = cached.length;
+			let done = null;
+			for (let index = 0; index < len; index++) {
+				const obj = cached[index];
+				const user = obj.user || (obj.username ? obj : null);
+				if (!user || user.id !== id) continue;
+				done = user;
+				break;
+			}
+			return done || (await final("getProfile", id)).user;
+		});
 		window.cachedMentions = final;
 		return final;
 	})();
@@ -517,7 +536,7 @@
 {#if ready}
 	<Servers {appState} {selected}>
 		<Server on:select={selectServer} selected={!guild} {serverAck} {discord} dm={true} />
-		{#each servers as server}
+		{#each servers as server (server.id)}
 			{#if server.type === "folder"}
 				<ServerFolder {guild} on:select={selectServer} {serverAck} {discord} {...server} />
 			{:else}
@@ -529,7 +548,7 @@
 		{#if guild === null}
 			<Separator>DIRECT MESSAGES</Separator>
 		{/if}
-		{#each channels as channel}
+		{#each channels as channel (channel.id || channel.name)}
 			{#if isChannel(channel)}
 				<Channel {discord} {serverAck} guildID={guild ? guild.id : null} on:select={selectChannel} {...channel}>{channel.name || ""}</Channel>
 			{:else if channel.name !== 0}
@@ -537,7 +556,24 @@
 			{/if}
 		{/each}
 	</Channels>
-	<Messages {typingState} {evtForward} {sendMessage} {discord} {sn} {roles} {channel} {channelPermissions} {appState} {selected} guildID={guild ? guild.id : null}>
+	<Messages
+		on:v-image={({ detail: { src } }) => {
+			document.activeElement.blur();
+			viewerSrc = src;
+			appState = "viewer";
+		}}
+		{typingState}
+		{evtForward}
+		{sendMessage}
+		{discord}
+		{sn}
+		{roles}
+		{channel}
+		{channelPermissions}
+		{appState}
+		{selected}
+		guildID={guild ? guild.id : null}
+	>
 		{#each messages as message, i (message.id)}
 			{#if i !== 0 && new Date(messages[i - 1].timestamp).toLocaleDateString("en-us") !== new Date(message.timestamp).toLocaleDateString("en-us")}
 				<DateSeparator>{new Date(message.timestamp).toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })}</DateSeparator>
@@ -568,6 +604,17 @@
 {/if}
 {#if appState === "login"}
 	<Login {sn} on:login={(e) => login(e.detail.token)} />
+{:else if appState === "viewer"}
+	<ImageViewer
+		on:close={() => {
+			appState = "app";
+			setTimeout(() => {
+				document.activeElement.blur();
+				sn.focus();
+			}, 50);
+		}}
+		src={viewerSrc}
+	/>
 {/if}
 
 <style>

@@ -128,16 +128,10 @@ function findScrollParent(node) {
 	else return findScrollParent(node.parentNode);
 }
 
+import scrollIntoView from "scroll-into-view";
+
 function centerScroll(el, sync) {
-	const rect = el.getBoundingClientRect();
-	const elY = rect.top + rect.height / 2;
-	let e = findScrollParent(el);
-	if (!e || e === el) e = el.parentNode;
-	e.scrollBy({
-		left: 0,
-		top: elY - e.offsetHeight / 2,
-		behavior: sync ? "auto" : "smooth",
-	});
+	scrollIntoView(el, { time: sync ? 0 : 300, align: { left: 0 } });
 }
 
 function isChannelMuted(discordInstance, channel, guildID) {
@@ -200,11 +194,12 @@ function getScrollBottom(el) {
 function findUserByTag() {
 	const args = arguments;
 	return function (tag) {
-		const mentionCache = Object.assign({}, ...args);
+		const mentionCache = [...args].map((a) => Object.values(a)).flat(2);
 		const copy = (tag.startsWith("@") ? tag.slice(1) : tag).split("#");
 		let done = null;
-		for (const key in mentionCache) {
-			let test = mentionCache[key];
+		let len = mentionCache.length;
+		for (let index = 0; index < len; index++) {
+			const test = mentionCache[index];
 			let user = test?.user;
 			if (!user || !(user.username && user.discriminator)) continue;
 			let { discriminator: tag, username: name, id } = user;
@@ -297,7 +292,33 @@ function asyncRateLimitGenerator(func, limit = 5) {
 	return final;
 }
 
+let decideHeight = (e, size, minus) => {
+	if (!e || typeof e !== "object") return {};
+	let { height, width } = e;
+	if (!height || !width) return {};
+	if (minus && height - minus > 0 && width - minus > 0) {
+		height -= minus;
+		width -= minus;
+	}
+	if ((width || 0) > (size || 203)) {
+		return {
+			width: size || 203,
+			height: (height / width) * (size || 203),
+		};
+	} else return { height, width };
+};
+
+function syncCachedGenerator(func) {
+	const cache = {};
+	return function () {
+		let args = [...arguments];
+		return cache[hashCode(args.join(""))] || (cache[hashCode(args.join(""))] = func(...args));
+	};
+}
+
 export {
+	syncCachedGenerator,
+	decideHeight,
 	asyncRateLimitGenerator,
 	asyncCachedGenerator,
 	rgbaToHex,

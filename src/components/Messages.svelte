@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from "svelte";
+	import { createEventDispatcher, onMount } from "svelte";
 	import { last, hashCode } from "../lib/helper";
 
 	export let selected;
@@ -13,21 +13,17 @@
 	export let discord;
 	export let channel;
 	export let evtForward;
+	const dispatch = createEventDispatcher();
 
 	let textarea, after, con, messages, softkeys;
 	let textAreaHeight = 0;
 	let typingIndicatorBottom = 0;
 
-	window.addEventListener("sn:navigatefailed", (e) => {
-		if (selected !== 0) return;
-		let { direction } = e.detail;
-	});
-
-	let height = () => {
+	function height() {
 		after.scrollTop = textarea.scrollTop;
 		typingIndicatorBottom = con.offsetHeight + softkeys.offsetHeight;
 		textAreaHeight = window.innerHeight - typingIndicatorBottom;
-	};
+	}
 
 	window.onresize = height;
 
@@ -60,25 +56,52 @@
 		}
 	}
 
-	$: {
-		console.log("channel permissions:", channelPermissions);
-		setTimeout(() => con && height(), 50);
-		if (selected === 1) {
-			typingState.off("change", ontyping, "messages");
-		} else if (selected === 0) {
-			typingState.on("change", ontyping, "messages");
-			ontyping(typingState.getState(channel.id));
-		}
+	$: channelPermissions && console.log("channel permissions:", channelPermissions);
+	$: if (selected === 1) {
+		typingState.off("change", ontyping, "messages");
+	} else if (selected === 0) {
+		setTimeout(height, 50);
+		typingState.on("change", ontyping, "messages");
+		ontyping(typingState.getState(channel.id));
 	}
 
 	let messageFocused = true;
+	let enterFunc = null;
+
 	window.addEventListener("sn:focused", (e) => {
-		if (!messageFocused || selected !== 0) return;
+		if (!messageFocused || selected !== 0 || appState !== "app") return;
 		let { target } = e;
+		const f = (e) => !!target.querySelector(e);
+		if (f(".v-image")) {
+			enterFunc = "image";
+		} else if (f("span.spoiler")) {
+			enterFunc = f("span.spoiler.active") ? "unspoiler" : "spoiler";
+		} else {
+			enterFunc = null;
+		}
 	});
 
-	let queryCache = {};
-	let mentioned = [];
+	window.addEventListener("keydown", ({ key, target }) => {
+		if (!messageFocused || selected !== 0 || appState !== "app") return;
+		if (key === "Enter")
+			switch (enterFunc) {
+				case "image":
+					{
+						const images = target.querySelectorAll("img.v-image");
+						if (images.length === 1) dispatch("v-image", { src: images[0].src }); // to-do support multiple images
+					}
+					break;
+				case "unspoiler":
+				case "spoiler":
+					target.querySelectorAll(".spoiler").forEach((el) => el.classList.toggle("active"));
+					break;
+			}
+	});
+
+	window.addEventListener("sn:navigatefailed", (e) => {
+		if (selected !== 0 || appState !== "app") return;
+		let { direction } = e.detail;
+	});
 
 	let showQuery = false;
 	let query_members = [];
@@ -87,29 +110,33 @@
 	let query_channels = [];
 
 	let messageEditing = null;
-	let editHandler = (message, content) => {
-		messageEditing = message;
-		textarea.value = content;
-		textarea.oninput();
-		height();
-	};
-	evtForward.on("message_edit", editHandler);
-
-	let replaceMentions = (content) => {
-		mentioned.forEach((a) => {
-			if (typeof a !== "object") return;
-			if (a.username) {
-				let { discriminator: tag, username: name, id } = a;
-				content = content.replace(`@${name}#${tag}`, `<@${id}>`);
-			} else {
-			}
-		});
-		mentioned = [];
-		return content;
-	};
 
 	onMount(height);
 	onMount(() => {
+		// let queryCache = {};
+		let mentioned = [];
+
+		evtForward.on("message_edit", (message, content, mentions) => {
+			messageEditing = message;
+			textarea.value = content;
+			textarea.oninput();
+			height();
+			mentioned = mentions;
+		});
+
+		let replaceMentions = (content) => {
+			mentioned.forEach((a) => {
+				if (typeof a !== "object") return;
+				if (a.username) {
+					let { discriminator: tag, username: name, id } = a;
+					content = content.replace(`@${name}#${tag}`, `<@${id}>`);
+				} else {
+				}
+			});
+			mentioned = [];
+			return content;
+		};
+
 		textarea.onkeydown = function (e) {
 			let { key } = e;
 			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(messages.children)?.focus(), 50);
@@ -123,7 +150,7 @@
 				if (messageEditing) {
 					let end = () => (messageEditing = null);
 					if ("SoftLeft" === key || "End" === key) {
-						discord.editMessage(channel.id, messageEditing.id, this.value); // to do replace mention elements
+						discord.editMessage(channel.id, messageEditing.id, replaceMentions(this.value)); // to do replace mention elements
 						this.value = "";
 						this.oninput();
 						end();
@@ -154,21 +181,21 @@
 				}[copy[0]];
 				let query = copy.slice(1);
 				if (query === "") return (showQuery = false);
-				let insert = ({ user }) => {
-					let { discriminator: tag, username: name } = user;
-					this.value = this.value.replace(regex, `@${name}#${tag} `);
-					this.oninput();
-					this.selectionStart = this.value.length;
-					showQuery = false;
-					if (!mentioned.find((a) => a.id === user.id)) {
-						mentioned = [...mentioned, user];
-					}
-				};
 				if (type === "mention") {
 					query_members = await cachedMentions.getGuildMembers(query);
-					query_members.forEach((a) => {
-						queryCache[hashCode(a.guild_id + a.user.id)] = a;
-					});
+					// query_members.forEach((a) => {
+					// 	queryCache[hashCode(a.guild_id + a.user.id)] = a;
+					// });
+					const insert = ({ user }) => {
+						let { discriminator: tag, username: name } = user;
+						this.value = this.value.replace(regex, `@${name}#${tag} `);
+						this.oninput();
+						this.selectionStart = this.value.length;
+						showQuery = false;
+						if (!mentioned.find((a) => a.id === user.id)) {
+							mentioned = [...mentioned, user];
+						}
+					};
 					if (query_members.length === 1) insert(query_members[0]);
 					else if (query_members.length < 1) showQuery = false;
 					else {
@@ -221,14 +248,14 @@
 		{/if}
 	</div>
 {/if}
-<div bind:this={con} style={channelPermissions.write === false ? "bottom:0;" : null} class="grow-wrap {['zero', 'one'][selected] || ''}">
+<div bind:this={con} style="{channelPermissions.write === false ? 'bottom:0;' : ''}{appState !== 'app' ? 'display:none;' : ''}" class="grow-wrap {['zero', 'one'][selected] || ''}">
 	<textarea rows="1" style={channelPermissions.write === false ? "display:none;" : null} bind:this={textarea} />
 	<div style={channelPermissions.write === false ? "display:none;" : null} bind:this={after} class="after" />
 	{#if channelPermissions.write === false}
 		<div style="font-size: 10px; white-space: pre-wrap; word-wrap: break-word; height: 30px;">You do not have permission to send messages in this channel.</div>
 	{/if}
 </div>
-<div bind:this={softkeys} class="softkeys {['zero', 'one'][selected] || ''}" style={channelPermissions.write === false ? "display:none;" : null}>
+<div bind:this={softkeys} class="softkeys {['zero', 'one'][selected] || ''}" style={channelPermissions.write === false || appState !== "app" ? "display:none;" : null}>
 	<div>
 		{#if !messageEditing && !messageFocused && (textarea?.value || "") !== ""}
 			<svg id="send" fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"

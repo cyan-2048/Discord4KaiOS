@@ -15,6 +15,7 @@
 	export let discriminator;
 
 	let color;
+	let nick;
 
 	let image = avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.jpg?size=24` : null;
 
@@ -23,7 +24,7 @@
 		if (id && discriminator !== "0000" /*i think this is how we can differ webhooks*/) {
 			let s_profile = userID === id ? profile : await cachedMentions("getServerProfile", guildID, id);
 			if (!s_profile || !s_profile.roles) return;
-			if (s_profile.nick) name = s_profile.nick;
+			nick = s_profile.nick;
 			if (roles) {
 				let role = [...roles].sort((a, b) => b.position - a.position).find((o) => s_profile.roles.includes(o.id) && o.color > 0);
 				if (role) color = decimal2rgb(role.color, true);
@@ -33,7 +34,7 @@
 </script>
 
 <main data-separator>
-	<img src={image || "/css/default.png"} alt /><b style={color ? `color: rgb(${color});` : null}>{name}</b>{#if bot}
+	<img src={image || "/css/default.png"} alt /><b style={color ? `color: rgb(${color});` : null}>{nick || name}</b>{#if bot}
 		<div class="bot">{discriminator === "0000" ? "WEBHOOK" : "BOT"}</div>
 	{/if}
 </main>

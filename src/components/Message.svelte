@@ -10,7 +10,7 @@
 	export let evtForward;
 	import { createEventDispatcher, onDestroy, onMount } from "svelte";
 	const dispatch = createEventDispatcher();
-	import { decimal2rgb, hashCode, wouldMessagePing, toHTML, shuffle } from "../lib/helper.js";
+	import { decimal2rgb, hashCode, wouldMessagePing, toHTML, decideHeight } from "../lib/helper.js";
 	import EmojiDict from "../lib/EmojiDict.js";
 	import { toHTML as markdown } from "../lib/discord-markdown.js";
 	import LottieSticker from "./LottieSticker.svelte";
@@ -48,8 +48,7 @@
 			: linkify(message.content, { embed: !!message.author.bot });
 
 	let onchange = async (el = contentEl) => {
-		console.log(message);
-		if (!el) return console.error("element not there");
+		if (!el) return console.error("message element not found");
 		if (el.childNodes.length === 1) {
 			let embed_type = message.embeds[0]?.type;
 			if (el.firstElementChild?.tagName === "A" && (embed_type === "image" || embed_type === "gifv")) {
@@ -158,22 +157,6 @@
 		if (target.classList.contains("spoiler") && target.tagName === "SPAN") target.classList.toggle("active");
 	}
 
-	let decideHeight = (e, size, minus) => {
-		if (!e || typeof e !== "object") return {};
-		let { height, width } = e;
-		if (!height || !width) return {};
-		if (minus && height - minus > 0 && width - minus > 0) {
-			height -= minus;
-			width -= minus;
-		}
-		if ((width || 0) > (size || 203)) {
-			return {
-				width: size || 203,
-				height: (height / width) * (size || 203),
-			};
-		} else return { height, width };
-	};
-
 	function toggleFocus(e) {
 		let { type, target } = e;
 		let prev = target.previousElementSibling;
@@ -183,13 +166,19 @@
 	async function handleEdit(e) {
 		if (message.author.id !== discord.user.id) return;
 		let clone = contentEl.cloneNode(true);
+		let mentioned = [];
 		for (const a of clone.querySelectorAll("span.mentions[data-type='user']")) {
-			let id = a.dataset.id;
-			let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
-			if (!s_profile || s_profile.httpStatus === 404) s_profile = message.author.id === id ? message.author : await cachedMentions("getProfile", id);
-			a.innerText = "@" + (s_profile.user?.username || s_profile.username || "unknown-user") + "#" + s_profile.user?.discriminator || s_profile.discriminator || "0000";
+			const id = a.dataset.id;
+			let user = await cachedMentions.findUserById(id);
+			if (!user.username) user = { username: "unknown-user", discriminator: "0000" };
+			else if (!mentioned.find((a) => a.id === id)) mentioned.push(user);
+			a.innerText = `@${user.username}#${user.discriminator}`;
 		}
-		evtForward.emit("message_edit", message, clone.innerText);
+		message.mention_roles?.forEach((a) => {
+			const role = roles.find((e) => e.id === a);
+			role && mentioned.push(role);
+		});
+		evtForward.emit("message_edit", message, clone.innerText, mentioned);
 	}
 </script>
 
@@ -206,14 +195,14 @@
 	{#if message.attachments && message.attachments[0]}
 		{#each message.attachments as attachment (attachment.id)}
 			{#if attachment.content_type?.startsWith("image")}
-				<img src={attachment.proxy_url} {...decideHeight(attachment)} alt />
+				<img class="v-image" src={attachment.proxy_url} {...decideHeight(attachment)} alt />
 			{/if}
 		{/each}
 	{/if}
 	{#if message.embeds && message.embeds[0]}
 		{#each message.embeds as embed}
 			{#if embed.type === "image" || embed.type === "gifv"}
-				<img src={embed.type === "gifv" ? embed.url + ".gif" : embed.thumbnail.proxy_url} {...decideHeight(embed.thumbnail)} alt />
+				<img class="v-image" src={embed.type === "gifv" ? embed.url + ".gif" : embed.thumbnail.proxy_url} {...decideHeight(embed.thumbnail)} alt />
 			{:else}
 				<div style={embed.color ? `--line_color: rgb(${decimal2rgb(embed.color, true)});` : ""} class="embed">
 					{#if embed.provider}

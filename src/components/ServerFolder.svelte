@@ -8,6 +8,7 @@
 	export let guild;
 	export let color;
 	export let servers = [];
+	export let id;
 	let mentions = 0;
 	let unread = false;
 	let open = true;
@@ -28,6 +29,7 @@
 </script>
 
 <main
+	{id}
 	tabindex="0"
 	on:click={toggleOpen}
 	bind:this={main}
@@ -42,11 +44,11 @@
 			<div class="hover" />
 		</div>
 	{/if}
-	{#each servers as server, i}
+	{#each servers as server (server.id)}
 		<Server focusable={open} on:select selected={guild?.id === server.id} {serverAck} {server} {discord} />
 	{/each}
 	{#if mentions > 0 && !open}
-		<ServerMentions color={"#202225"}>{mentions}</ServerMentions>
+		<ServerMentions color="#202225">{mentions}</ServerMentions>
 	{/if}
 </main>
 

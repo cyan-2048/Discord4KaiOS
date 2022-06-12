@@ -55,7 +55,7 @@
 			.slice(0, 3) || "";
 
 	function onFocus() {
-		setTimeout(() => centerScroll(this), 400);
+		setTimeout(() => centerScroll(this), 50);
 	}
 
 	let main;

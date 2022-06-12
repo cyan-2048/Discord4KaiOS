@@ -250,7 +250,7 @@
 		font-weight: 500;
 		font-size: 16px;
 	}
-
+	
 	input {
 		height: 40px;
 		width: 100%;

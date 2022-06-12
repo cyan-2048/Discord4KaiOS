@@ -13,12 +13,11 @@ frontend ->
 - discord mentions✅(@ / #, partial you can only mention users by typing @<insert unique username/nickname and without spaces> at the very end of the textbox)
 - highlight message if user is mentioned✅
 - embed links✅(partial support, missing support for videos)
-
 - typing indicator✅(partial, other people can see you typing, you can only see other people typing on dms, unknown reason why servers don't work)
 - edit messages✅(partial, only works on desktop browser by double clicking on a message, will be fully supported once "more options" is partially supported)
+- image viewer✅(partial, not finished yet, does not support multiple images)
 - load more messages button
-- more options
-- image viewer
+- more options(includes ways of sending emojis/stickers/mentions or settings, i need to create an options menu for more stuff to do... but i am procrastinating)
 
 maybe ->
 - threads
@@ -28,11 +27,12 @@ backend or discord gateway ->
 - hide channels that are not supposed to be seen✅(bitwise was the weirdest thing ever...)
 - unread/read/mentions indicators✅(partial, dms do not work yet...)
 - discord presence in dms✅(partial no support for presences that are not the status of the user, no support for emojis as well)
+- update various cached stuff when it is changed(ye this is very necessary and I absolutely will not fully publish this app if this isn't ready...)
 
 no plans on supporting ->
 - a video player will probably not be supported because most video formats probably won't work
 - voice calls/chats, streaming, video calls... well it's obvious why
-- the end goal here is to have a usable discord client for KaiOS, I have no plans on fully replicating a discord client
+- the end goal here is to have a usable discord client for KaiOS, I have no plans on fully replicating a discord client(replicating it way too much could actually be dangerous... discord might think the api is being used maliciously and ban the user)
 ```
 
 ### Development and testing
