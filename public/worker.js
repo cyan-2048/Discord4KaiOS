@@ -102,6 +102,7 @@ class DiscordGateway {
 			this.debug("Sending Identity [OP 2]...");
 		});
 		this.ws.addEventListener("close", function (evt) {
+			this.ws = null;
 			console.error("Discord gateway closed!");
 			self.emit("close", evt);
 		});

@@ -44,6 +44,7 @@ class DiscordXHR {
 	xhrRequest(method, url, headers = {}, data = null) {
 		return new Promise((res, rej) => {
 			const xhr = new XMLHttpRequest({ mozAnon: true, mozSystem: true });
+			if (method.toLowerCase() === "post") xhr.upload.onprogress = this._postProgress;
 			xhr.open(method, this._fullUrl(url), true);
 
 			const hdr = this._fixHeaders(headers);
@@ -102,14 +103,57 @@ class DiscordXHR {
 		return String(Date.now() * 512 * 1024);
 	}
 
-	sendMessage(channel, message, opts = {}) {
-		return this.xhrRequestJSON("POST", `channels/${channel}/messages`, {}, Object.assign({ content: message, nonce: this.generateNonce() }, opts));
+	_postProgress(evt) {
+		if (!evt.lengthComputable) return;
+		console.info("POST progress:", (evt.loaded / evt.total) * 100);
+	}
+
+	/**
+	 * @param {String|Number} channel
+	 * @param {String} message
+	 * @param {object} opts
+	 * @param {File[]|Blob[]} attachments
+	 * @returns {Promise<object|XMLHttpRequest>} returns an xhr if you have attachments
+	 */
+	async sendMessage(channel, message = "", opts = {}, attachments = null) {
+		if (!message) return;
+
+		const obj = { content: message, nonce: this.generateNonce(), ...opts };
+		const url = `channels/${channel}/messages`;
+
+		if (!attachments) return await this.xhrRequestJSON("POST", url, {}, obj);
+
+		const form = new FormData();
+
+		obj.attachments = [];
+		const len = attachments.length;
+		for (let id = 0; id < len; id++) {
+			const file = attachments[id];
+			obj.attachments.push({ id, filename: file.name || "blob" });
+			form.append(`files[${id}]`, file);
+		}
+
+		form.append("payload_json", JSON.stringify(obj));
+
+		const xhr = new XMLHttpRequest({ mozAnon: true, mozSystem: true });
+		xhr.upload.onprogress = this._postProgress;
+		xhr.open("POST", this._fullUrl(url), true);
+		xhr.setRequestHeader("authorization", this.token);
+		xhr.send(form);
+		return xhr;
 	}
 
 	editMessage(channel_id, message_id, message, opts = {}) {
-		return this.xhrRequestJSON("PATCH", `channels/${channel_id}/messages/${message_id}`, {}, Object.assign({ content: message }, opts));
+		return this.xhrRequestJSON(
+			"PATCH",
+			`channels/${channel_id}/messages/${message_id}`,
+			{},
+			Object.assign({ content: message }, opts)
+		);
 	}
-
+	/**
+	 * @param {string|number} serverId
+	 */
 	getServer(serverId) {
 		if (this.cache) {
 			let e = this.cache.guilds.find((a) => a.id == serverId);
@@ -123,28 +167,20 @@ class DiscordXHR {
 		);
 	}
 
-	getServers() {
-		if (this.cache) {
+	/**
+	 * @param {boolean} noCache to use cache or to not use cache
+	 */
+	async getServers(noCache) {
+		if (this.cache && !noCache) {
 			return this._res(this.cache.guilds);
 		}
-		return this.xhrRequestJSON("GET", `users/@me/guilds`).then(
-			(re) =>
-				new Promise((res, err) => {
-					let arr = [],
-						len = re.length,
-						terminate = () => {
-							if (arr.length == len) res(arr);
-						};
-					re.forEach((a) => {
-						this.getServer(a.id).then((o) =>
-							setTimeout(() => {
-								arr.push(o);
-								terminate();
-							}, 100)
-						);
-					});
-				})
-		);
+		const re = await this.xhrRequestJSON("GET", `users/@me/guilds`);
+		const arr = [];
+		const len = re.length;
+		for (let i = 0; i < len; i++) {
+			arr.push(await this.getServer(re[i].id));
+		}
+		return arr;
 	}
 
 	getSettings() {

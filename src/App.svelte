@@ -39,7 +39,7 @@
 			this.worker.postMessage({ event: "send", object });
 		}
 	})();
-	import SpatialNavigation from "./lib/spatial_navigation.js";
+	import SpatialNavigation from "./lib/spatial_navigation.cjs";
 	const sn = SpatialNavigation;
 	sn.init();
 	["messages", "channels", "servers"].forEach((id) =>
@@ -73,7 +73,11 @@
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
 			if (/Enter/.test(key)) target.click();
 		}
-		if (selected == 0 && (key == "Backspace" || key == "ArrowLeft" || key == "SoftLeft") && (target.tagName !== "TEXTAREA" || target.value === "")) {
+		if (
+			selected == 0 &&
+			(key == "Backspace" || key == "ArrowLeft" || key == "SoftLeft") &&
+			(target.tagName !== "TEXTAREA" || target.value === "")
+		) {
 			setTimeout(() => (selected = 1), 50);
 		}
 
@@ -85,7 +89,8 @@
 			sn.focus();
 			selected = 1;
 		}
-		if (key === "Backspace" && (selected === 2 || !ready) && confirm("Are you sure you want to exit the app?")) window.close();
+		if (key === "Backspace" && (selected === 2 || !ready) && confirm("Are you sure you want to exit the app?"))
+			window.close();
 	});
 	window.addEventListener("sn:navigatefailed", (e) => {
 		if (appState !== "app") return;
@@ -181,7 +186,12 @@
 				dm: true,
 				recipients,
 				last_message_id,
-				avatar: !icon && !avatar ? "/css/default.png" : `https://cdn.discordapp.com/${icon ? "channel-icons" : "avatars"}/${icon ? id : user_id}/${icon || avatar}.jpg`,
+				avatar:
+					!icon && !avatar
+						? "/css/default.png"
+						: `https://cdn.discordapp.com/${icon ? "channel-icons" : "avatars"}/${icon ? id : user_id}/${
+								icon || avatar
+						  }.jpg`,
 			};
 		});
 		sift.sort((a, b) => Number(b.last_message_id) - Number(a.last_message_id));
@@ -223,7 +233,11 @@
 
 	let loadMessages = async () => {
 		if (!channel.dm) {
-			channelPermissions = parseRoleAccess(channel.permission_overwrites, serverProfile.roles.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]), roles);
+			channelPermissions = parseRoleAccess(
+				channel.permission_overwrites,
+				serverProfile.roles.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]),
+				roles
+			);
 		} else channelPermissions = {};
 		messages = [];
 		let msgs = await discord.getMessages(channel.id, 30);
@@ -259,7 +273,9 @@
 				let folder = serverFolders.find((e) => e.id && e.guild_ids?.includes(a.id));
 				if (folder) {
 					const found = temp.find((a) => a.type === "folder" && a.id === folder.id);
-					found ? found.servers.push(a) : temp.push({ type: "folder", id: folder.id, servers: [a], color: folder.color });
+					found
+						? found.servers.push(a)
+						: temp.push({ type: "folder", id: folder.id, servers: [a], color: folder.color });
 				} else temp.push(a);
 			});
 
@@ -281,10 +297,16 @@
 			} catch (e) {
 				internet = false;
 			}
-			if (!internet && !confirm("There seems to be no internet connection, do you want to retry connecting?")) return window.close();
+			if (!internet && !confirm("There seems to be no internet connection, do you want to retry connecting?"))
+				return window.close();
 			else attempts = -1;
 			if (attempts == 5) {
-				if (internet && confirm("The Discord gateway closed 5 times already! Do you want to retry connecting? You might get rate limited...")) {
+				if (
+					internet &&
+					confirm(
+						"The Discord gateway closed 5 times already! Do you want to retry connecting? You might get rate limited..."
+					)
+				) {
 					attempts = -1;
 				} else return window.close();
 			}
@@ -443,7 +465,9 @@
 						op: 8,
 						d: { guild_id: guild.id, query, limit },
 					});
-					discordGateway.once("t:guild_members_chunk", (d) => res(d.members.map((a) => ({ ...a, guild_id: guild.id }))));
+					discordGateway.once("t:guild_members_chunk", (d) =>
+						res(d.members.map((a) => ({ ...a, guild_id: guild.id })))
+					);
 				} else
 					res(
 						channel.recipients
@@ -550,7 +574,9 @@
 		{/if}
 		{#each channels as channel (channel.id || channel.name)}
 			{#if isChannel(channel)}
-				<Channel {discord} {serverAck} guildID={guild ? guild.id : null} on:select={selectChannel} {...channel}>{channel.name || ""}</Channel>
+				<Channel {discord} {serverAck} guildID={guild ? guild.id : null} on:select={selectChannel} {...channel}
+					>{channel.name || ""}</Channel
+				>
 			{:else if channel.name !== 0}
 				<Separator>{channel.name}</Separator>
 			{/if}
@@ -576,10 +602,24 @@
 	>
 		{#each messages as message, i (message.id)}
 			{#if i !== 0 && new Date(messages[i - 1].timestamp).toLocaleDateString("en-us") !== new Date(message.timestamp).toLocaleDateString("en-us")}
-				<DateSeparator>{new Date(message.timestamp).toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })}</DateSeparator>
+				<DateSeparator
+					>{new Date(message.timestamp).toLocaleDateString([], {
+						month: "long",
+						day: "numeric",
+						year: "numeric",
+					})}</DateSeparator
+				>
 			{/if}
 			{#if i === 0 || messages[i - 1]?.author.id != message.author?.id || (messages[i - 1] && diff_minutes(new Date(messages[i - 1].timestamp), new Date(message.timestamp)) > 0)}
-				<MessageSeparator {cachedMentions} userID={discord.user.id} {roles} {...spreadAuthor(message.author)} guildID={guild ? guild.id : null} {channel} profile={serverProfile} />
+				<MessageSeparator
+					{cachedMentions}
+					userID={discord.user.id}
+					{roles}
+					{...spreadAuthor(message.author)}
+					guildID={guild ? guild.id : null}
+					{channel}
+					profile={serverProfile}
+				/>
 			{/if}
 			<Message
 				on:update={(e) => (messages[i] = e.detail.message)}

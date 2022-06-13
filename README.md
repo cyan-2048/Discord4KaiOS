@@ -9,7 +9,7 @@ frontend ->
 - discord emojis✅(partial, you can't send discord emojis yet)
 - stickers✅(partial, you can't send stickers yet)
 - replies✅(partial, user can't reply to messages yet)
-- attachments✅(partial only supports images for now, you can't send attachments yet)
+- attachments✅(partial only supports images for now, you can't send attachments yet(the code is ready just doesn't have UI yet))
 - discord mentions✅(@ / #, partial you can only mention users by typing @<insert unique username/nickname and without spaces> at the very end of the textbox)
 - highlight message if user is mentioned✅
 - embed links✅(partial support, missing support for videos)

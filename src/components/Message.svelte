@@ -12,7 +12,7 @@
 	const dispatch = createEventDispatcher();
 	import { decimal2rgb, hashCode, wouldMessagePing, toHTML, decideHeight } from "../lib/helper.js";
 	import EmojiDict from "../lib/EmojiDict.js";
-	import { toHTML as markdown } from "../lib/discord-markdown.js";
+	import { toHTML as markdown } from "../lib/discord-markdown.cjs";
 	import LottieSticker from "./LottieSticker.svelte";
 	let message = { ...msg }; // get rid of reference, well let's just hope it doesn't change yeah
 	let main;

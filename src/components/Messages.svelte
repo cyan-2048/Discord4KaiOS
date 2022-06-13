@@ -1,13 +1,16 @@
 <script>
 	import { createEventDispatcher, onMount } from "svelte";
 	import { last, hashCode } from "../lib/helper";
+	import { FilePickerInstance } from "../lib/FileHandlers.js";
+	window.FilePickerInstance = FilePickerInstance;
+	const picker = new FilePickerInstance();
 
 	export let selected;
 	export let appState;
 	export let channelPermissions;
 	export let sendMessage;
-	export let sn;
-	export let roles;
+	// export let sn;
+	// export let roles;
 	export let guildID;
 	export let typingState;
 	export let discord;
