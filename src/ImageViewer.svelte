@@ -38,11 +38,13 @@
 </script>
 
 <main>
-	<img bind:this={img} {...ratio} {src} alt={JSON.stringify($$props)} />
+	<img bind:this={img} {...ratio} {src} alt/>
 </main>
 
 <style>
 	img {
+		display: block;
+		margin: auto;
 		image-rendering: pixelated;
 		image-rendering: optimizeSpeed;
 	}	main {

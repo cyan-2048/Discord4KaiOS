@@ -1,5 +1,4 @@
 <script>
-	export let msg;
 	export let roles;
 	export let profile;
 	export let discordGateway;
@@ -14,10 +13,10 @@
 	import EmojiDict from "../lib/EmojiDict.js";
 	import { toHTML as markdown } from "../lib/discord-markdown.cjs";
 	import LottieSticker from "./LottieSticker.svelte";
-	let message = { ...msg }; // get rid of reference, well let's just hope it doesn't change yeah
+	let message = { ...$$props.msg }; // get rid of reference, well let's just hope it doesn't change yeah
 	let main;
 
-	let greetings = [
+	const greetings = [
 		"$user joined the party.",
 		"$user is here.",
 		"Welcome, $user. We hope you brought pizza.",
@@ -47,64 +46,8 @@
 			? linkify(greetings[new Date(message.timestamp) % greetings.length].replace("$user", `<@${message.author.id}>`))
 			: linkify(message.content, { embed: !!message.author.bot });
 
-	let onchange = async (el = contentEl) => {
-		if (!el) return console.error("message element not found");
-		if (el.childNodes.length === 1) {
-			let embed_type = message.embeds[0]?.type;
-			if (el.firstElementChild?.tagName === "A" && (embed_type === "image" || embed_type === "gifv")) {
-				el.innerHTML = "";
-			} else if (el.firstChild.className === "emoji") {
-				let emoji = el.firstChild.style;
-				emoji.setProperty("--emoji_url", emoji.getPropertyValue("--emoji_url").replace("size=16", "size=32"));
-				el.firstChild.classList.add("emoji-big");
-			}
-		}
-		let getMentions = (e) => el.querySelectorAll(`span.mentions[data-type='${e}']`);
-		if (channel.dm) {
-			getMentions("user").forEach((a) => {
-				let id = a.dataset.id;
-				let user = channel.recipients.find((e) => e.id == id);
-				if (!user && discord.user.id === id) user = discord.user;
-				if (user) a.innerText = "@" + user.username;
-			});
-		} else {
-			getMentions("role").forEach((a) => {
-				let id = a.dataset.id;
-				let role = roles.find((e) => e.id === id);
-				let text = "@" + (role?.name || "deleted-role");
-				if (role && role.color > 0) {
-					let rgb = decimal2rgb(role.color, true);
-					Object.assign(a.style, {
-						color: `rgb(${rgb})`,
-						backgroundColor: `rgb(${rgb},0.3)`,
-					});
-				}
-				a.innerText = text;
-			});
-			for (const a of getMentions("user")) {
-				let id = a.dataset.id;
-				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
-				if (!s_profile || s_profile.httpStatus === 404) s_profile = message.author.id === id ? message.author : await cachedMentions("getProfile", id);
-				a.innerText = "@" + (s_profile.nick || s_profile.user?.username || s_profile.username || (message.author.id === id ? message.author.username : null) || "unknown-user");
-			}
-		}
-		for (const a of getMentions("channel")) {
-			let id = a.dataset.id;
-			let text = "deleted-channel";
-			if (channel.id === id) text = channel.name;
-			else {
-				let channel = await cachedMentions("getChannel", id);
-				text = channel.name;
-			}
-			a.innerText = "#" + text;
-		}
-		typeof el.parentNode.loaded === "function" && el.parentNode.loaded();
-		el.parentNode.loaded = true;
-	};
-
 	let reply;
 
-	onMount(onchange);
 	onMount(async () => {
 		if (pinged && main && main.previousElementSibling?.matches("[data-separator]")) {
 			main.previousElementSibling.classList.add("mentioned");
@@ -125,31 +68,101 @@
 					  })
 					: ref.content?.replace(_m, "") || "";
 			} else temp = ref.content;
-			if (channel.dm || (ref.author.bot && ref.author.discriminator === "0000")) temp = `<b>${"@" + ref.author.username} </b>` + toHTML(temp);
+			if (channel.dm || (ref.author.bot && ref.author.discriminator === "0000"))
+				temp = `<b>${"@" + ref.author.username} </b>` + toHTML(temp);
 			else {
 				let id = ref.author.id;
 				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
-				temp = `<b>${"@" + (s_profile.nick || s_profile.user?.username || ref.author.username || "unknown-user")} </b>` + toHTML(temp);
+				temp =
+					`<b>${"@" + (s_profile.nick || s_profile.user?.username || ref.author.username || "unknown-user")} </b>` +
+					toHTML(temp);
 			}
 			reply = temp;
 		}
 	});
-
-	let update = (d) => {
-		if (d.id == message.id) {
-			message = { ...message, ...d };
-			dispatch("update", { message });
-			content = "";
-			content = d.author.bot ? markdown(message.content, { embed: true }) : linkify(message.content);
-			setTimeout(onchange, 50);
-		}
-	};
-
-	discordGateway.on("t:message_update", update, "msg" + message.id);
-
-	onDestroy(() => {
-		// after death remove eventListener for message
-		discordGateway.off("t:message_update", update, "msg" + message.id);
+	onMount(() => {
+		let onchange = async (el = contentEl) => {
+			if (!el) return console.error("message element not found");
+			if (el.childNodes.length === 1) {
+				let embed_type = message.embeds[0]?.type;
+				if (el.firstElementChild?.tagName === "A" && (embed_type === "image" || embed_type === "gifv")) {
+					el.innerHTML = "";
+				} else if (el.firstChild.className === "emoji") {
+					let emoji = el.firstChild.style;
+					emoji.setProperty("--emoji_url", emoji.getPropertyValue("--emoji_url").replace("size=16", "size=32"));
+					el.firstChild.classList.add("emoji-big");
+				}
+			}
+			let getMentions = (e) => el.querySelectorAll(`span.mentions[data-type='${e}']`);
+			if (channel.dm) {
+				getMentions("user").forEach((a) => {
+					let id = a.dataset.id;
+					let user = channel.recipients.find((e) => e.id == id);
+					if (!user && discord.user.id === id) user = discord.user;
+					if (user) a.innerText = "@" + user.username;
+				});
+			} else {
+				getMentions("role").forEach((a) => {
+					let id = a.dataset.id;
+					let role = roles.find((e) => e.id === id);
+					let text = "@" + (role?.name || "deleted-role");
+					if (role && role.color > 0) {
+						let rgb = decimal2rgb(role.color, true);
+						Object.assign(a.style, {
+							color: `rgb(${rgb})`,
+							backgroundColor: `rgb(${rgb},0.3)`,
+						});
+					}
+					a.innerText = text;
+				});
+				let users = getMentions("user");
+				let l = users.length;
+				for (let i = 0; i < l; i++) {
+					const a = users[i];
+					let id = a.dataset.id;
+					let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
+					if (!s_profile || s_profile.httpStatus === 404)
+						s_profile = message.author.id === id ? message.author : await cachedMentions("getProfile", id);
+					a.innerText =
+						"@" +
+						(s_profile.nick ||
+							s_profile.user?.username ||
+							s_profile.username ||
+							(message.author.id === id ? message.author.username : null) ||
+							"unknown-user");
+				}
+			}
+			let channels = getMentions("channel");
+			let l = channels.length;
+			for (let i = 0; i < l; i++) {
+				const a = channel[i];
+				let id = a.dataset.id;
+				let text = "deleted-channel";
+				if (channel.id === id) text = channel.name;
+				else {
+					let channel = await cachedMentions("getChannel", id);
+					text = channel.name;
+				}
+				a.innerText = "#" + text;
+			}
+			typeof el.parentNode.loaded === "function" && el.parentNode.loaded();
+			el.parentNode.loaded = true;
+		};
+		let update = (d) => {
+			if (d.id == message.id) {
+				message = { ...message, ...d };
+				dispatch("update", { message });
+				content = "";
+				content = d.author.bot ? markdown(message.content, { embed: true }) : linkify(message.content);
+				setTimeout(onchange, 50);
+			}
+		};
+		onchange();
+		discordGateway.on("t:message_update", update, "msg" + message.id);
+		return () => {
+			// after death remove eventListener for message
+			discordGateway.off("t:message_update", update, "msg" + message.id);
+		};
 	});
 
 	function onClick(e) {
@@ -163,7 +176,10 @@
 		if (prev?.matches("[data-separator]")) prev.classList[type === "focus" ? "add" : "remove"]("focus");
 	}
 
-	async function handleEdit(e) {
+</script>
+
+<main
+	on:dblclick={async function handleEdit(e) {
 		if (message.author.id !== discord.user.id) return;
 		let clone = contentEl.cloneNode(true);
 		let mentioned = [];
@@ -179,10 +195,15 @@
 			role && mentioned.push(role);
 		});
 		evtForward.emit("message_edit", message, clone.innerText, mentioned);
-	}
-</script>
-
-<main on:dblclick={handleEdit} data-focusable on:blur={toggleFocus} on:focus={toggleFocus} class={pinged ? "mention" : ""} tabindex="0" bind:this={main} id={"msg" + message.id}>
+	}}
+	data-focusable
+	on:blur={toggleFocus}
+	on:focus={toggleFocus}
+	class={pinged ? "mention" : ""}
+	tabindex="0"
+	bind:this={main}
+	id={"msg" + message.id}
+>
 	{#if reply}
 		<div class="reply">
 			<div class="r-icon" />
@@ -202,7 +223,12 @@
 	{#if message.embeds && message.embeds[0]}
 		{#each message.embeds as embed}
 			{#if embed.type === "image" || embed.type === "gifv"}
-				<img class="v-image" src={embed.type === "gifv" ? embed.url + ".gif" : embed.thumbnail.proxy_url} {...decideHeight(embed.thumbnail)} alt />
+				<img
+					class="v-image"
+					src={embed.type === "gifv" ? embed.url + ".gif" : embed.thumbnail.proxy_url}
+					{...decideHeight(embed.thumbnail)}
+					alt
+				/>
 			{:else}
 				<div style={embed.color ? `--line_color: rgb(${decimal2rgb(embed.color, true)});` : ""} class="embed">
 					{#if embed.provider}
@@ -256,7 +282,12 @@
 			{#if sticker.format_type === 3}
 				<LottieSticker src="https://discord.com/stickers/{sticker.id}.json" />
 			{:else}
-				<img src="https://media.discordapp.net/stickers/{sticker.id}.png?size=160" width="160" height="160" alt="Sticker: {sticker.name}" />
+				<img
+					src="https://media.discordapp.net/stickers/{sticker.id}.png?size=160"
+					width="160"
+					height="160"
+					alt="Sticker: {sticker.name}"
+				/>
 			{/if}
 		{/each}
 	{/if}

@@ -315,8 +315,20 @@ function syncCachedGenerator(func) {
 		return cache[hashCode(args.join(""))] || (cache[hashCode(args.join(""))] = func(...args));
 	};
 }
+/**
+ * @param {Blob|File|string} blob 
+ */
+function downloadFile(blob, filename = ""){
+	const url = (typeof blob === "string" && blob) || URL.createObjectURL(blob);
+	const el = document.createElement("a");
+	el.href = url;
+	el.download = blob.name || filename;
+	el.click();
+	URL.revokeObjectURL(url);
+}
 
 export {
+	downloadFile,
 	syncCachedGenerator,
 	decideHeight,
 	asyncRateLimitGenerator,

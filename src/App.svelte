@@ -58,6 +58,7 @@
 	import DateSeparator from "./components/DateSeparator.svelte";
 	import TypingState from "./lib/TypingState";
 	import ImageViewer from "./ImageViewer.svelte";
+import Loading from "./components/Loading.svelte";
 	let discord = new DiscordXHR({ cache: true });
 	let selected = 1;
 	let appState = "app";
@@ -282,10 +283,7 @@
 		servers = temp;
 	}
 
-	let init = async () => {
-		ready = true;
-		guild = null;
-		await loadServers();
+	onMount(()=>{
 		let attempts = 0;
 		discordGateway.on("close", async function () {
 			let internet = false;
@@ -314,6 +312,12 @@
 			discordGateway.init(localStorage.token);
 			if (channel) loadMessages();
 		});
+	})
+
+	let init = async () => {
+		ready = true;
+		guild = null;
+		await loadServers();
 	};
 
 	let login = (e) => {
@@ -636,11 +640,7 @@
 		{/each}
 	</Messages>
 {:else}
-	<div id="loading">
-		<img src="/css/loading.png" alt />
-		<div id="dyk">DID YOU KNOW</div>
-		<div id="fact">svelte is awesome</div>
-	</div>
+<Loading></Loading>
 {/if}
 {#if appState === "login"}
 	<Login {sn} on:login={(e) => login(e.detail.token)} />
@@ -657,30 +657,3 @@
 	/>
 {/if}
 
-<style>
-	#loading {
-		width: 100vw;
-		height: 100vh;
-		position: absolute;
-		top: 0;
-		left: 0;
-		background-color: #2f3136;
-		text-align: center;
-	}
-	#loading img {
-		width: 200px;
-		height: 200px;
-		margin: 12px 0;
-		display: inline-block;
-	}
-	#dyk {
-		font-size: 12px;
-		margin-top: -35px;
-		font-weight: 600;
-		margin-bottom: 8px;
-	}
-	#fact {
-		font-size: 16px;
-		height: 75px;
-	}
-</style>

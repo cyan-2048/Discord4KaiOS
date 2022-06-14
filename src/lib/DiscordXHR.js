@@ -152,7 +152,8 @@ class DiscordXHR {
 		);
 	}
 	/**
-	 * @param {string|number} serverId
+	 * @param {string|number} serverId the guild_id
+	 * @description get a server the same way the discord gateway caches it
 	 */
 	getServer(serverId) {
 		if (this.cache) {
@@ -215,8 +216,23 @@ class DiscordXHR {
 		return this.xhrRequestJSON("GET", "users/@me/channels");
 	}
 
-	getMessages(channel, count) {
-		return this.xhrRequestJSON("GET", `channels/${channel}/messages?limit=${count}`);
+	_query(obj = {}) {
+		return new URLSearchParams(obj).toString();
+	}
+
+	_clean(obj = {}) {
+		return Object.entries(obj)
+			.filter(([_, v]) => v != null)
+			.reduce((acc, [k, v]) => ({ ...acc, [k]: v }), {});
+	}
+
+	/**
+	 * @param {number|string} channel channel_id
+	 * @param {number|string} limit how many messages to download
+	 * @param {number|string} before getMessages before this messageId
+	 */
+	getMessages(channel, limit = null, before = null) {
+		return this.xhrRequestJSON("GET", `channels/${channel}/messages?` + this._query(this._clean({ limit, before })));
 	}
 
 	getRoles(guildId) {
