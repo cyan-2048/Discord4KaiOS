@@ -76,50 +76,38 @@ function wouldMessagePing(message, roles, discordInstance) {
 }
 function wouldMessagePingDM(message) {}
 
-function siftChannels(raw, roles, profile, skipSeparators) {
+function siftChannels(raw, roles, profile, skipSeparators, serverRoles = []) {
 	let position = (a, b) => a.position - b.position;
-	let _channels = {
-		0: [],
-	};
-	let separators = [];
-	let channels_id = {};
-	raw.forEach((a) => {
+	let sorted = [...raw].sort(position);
+	let channels = { 0: [] };
+
+	sorted.forEach((a) => {
 		if (a.type == 4) {
-			_channels[a.name] = [];
-			channels_id[a.id] = a.name;
-			separators.push(a);
+			channels[a.id] = [{ ...a, type: "separator" }];
 		}
 	});
-	separators.sort(position);
-	separators = separators.map((a) => a.name);
-	separators.unshift(0);
 
-	raw.forEach((a) => {
+	sorted.forEach((a) => {
 		if (a.type == 0 || a.type == 5) {
-			let perms = parseRoleAccess(a.permission_overwrites, profile.roles.concat([roles.find((p) => p.position == 0).id, profile.user.id]));
+			let perms = parseRoleAccess(
+				a.permission_overwrites,
+				profile.roles.concat([roles.find((p) => p.position == 0).id, profile.user.id]),
+				serverRoles
+			);
 			let id = a.parent_id;
-			if (perms.read !== false) (_channels[id ? channels_id[id] : 0] || []).push(a);
-		}
-	});
-
-	Object.keys(_channels).forEach((a) => {
-		if (_channels[a].length == 0) {
-			_channels[a] = null; // playing safe
-		} else {
-			_channels[a].sort(position);
+			if (perms.read !== false) (channels[id] || channels[0] || []).push(a);
 		}
 	});
 
 	let final = [];
-
-	separators.forEach((a) => {
-		if (_channels[a]) {
-			if (!skipSeparators) final.push({ type: "separator", name: a });
-			final = final.concat(_channels[a]);
-		}
+	Object.values(channels).forEach((arr) => {
+		if (!arr[0] || arr[0].type !== "separator" || arr.length === 1) return;
+		final.push(arr);
 	});
+	final.sort(([a], [b]) => position(a, b));
+	if (channels[0].length > 0) final = [channels[0], ...final];
 
-	return final;
+	return final.flat();
 }
 
 function findScrollParent(node) {
@@ -151,7 +139,13 @@ function decimal2rgb(ns, arr) {
 	return arr ? [r, g, b] : { r, g, b };
 }
 
-let toHTML = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+let toHTML = (text) =>
+	text
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
 
 function shuffle(array) {
 	let currentIndex = array.length,
@@ -175,8 +169,18 @@ function inViewport(element, partial) {
 	let height = element.offsetHeight;
 	let width = element.offsetWidth;
 	return partial
-		? !!(bounding.top >= -height && bounding.left >= -width && bounding.right <= window.innerWidth + width && bounding.bottom <= window.innerHeight + height)
-		: !!(bounding.top >= 0 && bounding.left >= 0 && bounding.right <= window.innerWidth && bounding.bottom <= window.innerHeight);
+		? !!(
+				bounding.top >= -height &&
+				bounding.left >= -width &&
+				bounding.right <= window.innerWidth + width &&
+				bounding.bottom <= window.innerHeight + height
+		  )
+		: !!(
+				bounding.top >= 0 &&
+				bounding.left >= 0 &&
+				bounding.right <= window.innerWidth &&
+				bounding.bottom <= window.innerHeight
+		  );
 }
 
 function getTopBottom(el) {
@@ -316,9 +320,9 @@ function syncCachedGenerator(func) {
 	};
 }
 /**
- * @param {Blob|File|string} blob 
+ * @param {Blob|File|string} blob
  */
-function downloadFile(blob, filename = ""){
+function downloadFile(blob, filename = "") {
 	const url = (typeof blob === "string" && blob) || URL.createObjectURL(blob);
 	const el = document.createElement("a");
 	el.href = url;

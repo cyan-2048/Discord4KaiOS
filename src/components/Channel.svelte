@@ -7,92 +7,94 @@
 	export let discord;
 	export let recipients;
 	export let dm = false;
-	export let last_message_id;
 	export let name = null;
 
 	import { createEventDispatcher, onMount, onDestroy } from "svelte";
 	import { centerScroll, isChannelMuted, shuffle } from "../lib/helper";
 	const dispatch = createEventDispatcher();
 
-	let onClick = () => {
-		dispatch("select", { id });
-	};
+	let last_message_id = $$props.last_message_id;
 
 	let mentions = 0;
 	let unread = false;
 	let muted = false;
 
-	let change = () => {
-		muted = isChannelMuted(discord, { id }, guildID);
-		if (guildID) {
-			if (muted) unread = false;
-			let el = discord.cache.read_state.find((e) => e.id == id);
-			if (el) {
-				if (!muted) unread = last_message_id ? el.last_message_id != last_message_id : false;
-				mentions = el.mention_count;
-			}
-		}
-	};
-
-	let update = (d) => {
-		if (d.channel_id == id) {
-			last_message_id = d.last_message_id;
-			change();
-		}
-		let override = d.channel_overrides?.find((a) => a.channel_id == id);
-		if (override || muted) {
-			change();
-		}
-	};
-
 	let subtext;
 	let status;
 	let client;
 
-	function decideClient(clientsObj) {
-		let clone = { ...clientsObj };
-		Object.keys(clone).forEach((a) => {
-			if (a === client) return delete clone[a];
-			if (clone[a] !== status) return delete clone[a];
-		});
-		if (Object.keys(clone).length > 0) {
-			return shuffle(Object.keys(clone))[0];
-		} else return client;
-	}
+	onMount(() => {
+		const change = () => {
+			muted = isChannelMuted(discord, { id }, guildID);
+			if (guildID) {
+				if (muted) unread = false;
+				let el = discord.cache.read_state.find((e) => e.id == id);
+				if (el) {
+					if (!muted) unread = last_message_id ? el.last_message_id != last_message_id : false;
+					mentions = el.mention_count;
+				}
+			}
+		};
 
-	let makeSubtext = (d) => {
-		let s = d.activities?.find((a) => a.type === 4);
-		if (s) subtext = s.state;
-	};
+		change();
 
-	let onStatus = (d) => {
-		if (recipients?.length !== 1) return;
-		if (d && d.user?.id !== recipients[0].id) return;
-		let p;
-		if (d) {
-			status = d.status;
-		} else {
-			let found = discord.cache.guilds.find((a) => a.presences.find((e) => (e.user.id === recipients[0].id ? (p = e) : false)));
-			if (found) status = p.status;
+		let update = (d) => {
+			if (d.channel_id === id) {
+				last_message_id = d.last_message_id;
+				change();
+			}
+			let override = d.channel_overrides?.find((a) => a.channel_id == id);
+			if (override || muted) {
+				change();
+			}
+		};
+
+		function decideClient(clientsObj) {
+			let clone = { ...clientsObj };
+			Object.keys(clone).forEach((a) => {
+				if (a === client) return delete clone[a];
+				if (clone[a] !== status) return delete clone[a];
+			});
+			if (Object.keys(clone).length > 0) {
+				return shuffle(Object.keys(clone))[0];
+			} else return client;
 		}
-		if (!status) status = "offline";
-		else {
-			makeSubtext(d || p);
-			client = decideClient((d || p).client_status);
+
+		let makeSubtext = (d) => {
+			let s = d.activities?.find((a) => a.type === 4);
+			if (s) subtext = s.state;
+		};
+
+		const onStatus = (d) => {
+			if (recipients?.length !== 1) return;
+			if (d && d.user?.id !== recipients[0].id) return;
+			let p;
+			if (d) {
+				status = d.status;
+			} else {
+				let found = discord.cache.guilds.find((a) =>
+					a.presences.find((e) => (e.user.id === recipients[0].id ? (p = e) : false))
+				);
+				if (found) status = p.status;
+			}
+			if (!status) status = "offline";
+			else {
+				makeSubtext(d || p);
+				client = decideClient((d || p).client_status);
+			}
+		};
+
+		serverAck.on("update", update, "ch" + id);
+		if (dm) {
+			subtext = recipients.length > 1 ? recipients.length + " Members" : null;
+			onStatus();
+			serverAck.on("status", onStatus, "ch" + id);
 		}
-	};
 
-	onMount(change);
-	serverAck.on("update", update, "ch" + id);
-	if (dm) {
-		subtext = recipients.length > 1 ? recipients.length + " Members" : null;
-		onStatus();
-		serverAck.on("status", onStatus, "ch" + id);
-	}
-
-	onDestroy(() => {
-		serverAck.off("update", update, "ch" + id);
-		if (dm) serverAck.off("status", onStatus, "ch" + id);
+		return () => {
+			serverAck.off("update", update, "ch" + id);
+			if (dm) serverAck.off("status", onStatus, "ch" + id);
+		};
 	});
 
 	function onFocus() {
@@ -103,9 +105,11 @@
 <main
 	data-focusable
 	on:focus={onFocus}
-	on:click={onClick}
+	on:click={() => dispatch("select", { id })}
 	tabindex="0"
-	class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {(unread && !muted) || mentions > 0 ? 'unread' : ''}"
+	class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {(unread && !muted) || mentions > 0
+		? 'unread'
+		: ''}"
 >
 	{#if avatar}
 		<div class="avatar">
@@ -139,8 +143,8 @@
 
 <style>
 	.muted:not(:focus) .avatar {
-    opacity: 0.5;
-}
+		opacity: 0.5;
+	}
 	main:last-child {
 		margin-bottom: 6.5px;
 	}
@@ -226,8 +230,8 @@
 		min-width: 16px;
 		height: 100%;
 		right: 10px;
-		display: grid;
-		place-items: center;
+		display: flex;
+align-items: center;
 	}
 
 	.flow {

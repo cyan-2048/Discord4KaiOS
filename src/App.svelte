@@ -28,8 +28,8 @@
 			let worker = new Worker("/worker.js");
 			this.worker = worker;
 			worker.onmessage = (e) => {
-				let { event, data } = e.data;
-				this.emit(event, data);
+				let { event, args } = e.data;
+				this.emit(event, ...args);
 			};
 		}
 		init(token) {
@@ -58,7 +58,35 @@
 	import DateSeparator from "./components/DateSeparator.svelte";
 	import TypingState from "./lib/TypingState";
 	import ImageViewer from "./ImageViewer.svelte";
-import Loading from "./components/Loading.svelte";
+	import Loading from "./components/Loading.svelte";
+
+	let settings = (() => {
+		const defaultSettings = {
+			custom_rpc: true,
+		};
+		let fromStorage = localStorage.settings;
+		if (fromStorage) {
+			fromStorage = JSON.parse(fromStorage);
+			for (const key in defaultSettings) {
+				if (!(key in fromStorage)) {
+					fromStorage[key] = defaultSettings[key];
+				}
+			}
+			for (const key in fromStorage) {
+				if (!(key in defaultSettings)) {
+					delete fromStorage[key];
+				}
+			}
+			localStorage.settings = JSON.stringify(fromStorage);
+			return fromStorage;
+		} else {
+			return { ...defaultSettings };
+		}
+	})();
+
+	$: settings && (localStorage.settings = JSON.stringify(settings));
+	window.changeSettings = (e) => (settings = { ...settings, ...e });
+
 	let discord = new DiscordXHR({ cache: true });
 	let selected = 1;
 	let appState = "app";
@@ -68,7 +96,6 @@ import Loading from "./components/Loading.svelte";
 
 	window.addEventListener("keydown", (e) => {
 		let { key, target } = e;
-		if (key === "Backspace" && !("value" in target)) e.preventDefault();
 		if (appState !== "app" || e.shiftKey) return;
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
@@ -139,6 +166,11 @@ import Loading from "./components/Loading.svelte";
 		} else if (next && next.offsetHeight < messages.offsetHeight) setTimeout(() => centerScroll(next), 50);
 	});
 
+	window.addEventListener("sn:focused", ({ target, detail, native }) => {
+		if (appState !== "app" || selected !== 2) return;
+		setTimeout(() => centerScroll(target), 50);
+	});
+
 	$: selected !== null &&
 		(() => {
 			document.activeElement.blur();
@@ -203,13 +235,24 @@ import Loading from "./components/Loading.svelte";
 		return sift;
 	};
 
-	let loadChannels = async () => {
-		document.activeElement.blur();
-		channels = [];
+	let loadChannels = async (noSwitch = false) => {
+		if (!noSwitch) {
+			discordGateway.send({
+				op: 14,
+				d: {
+					activities: false,
+					guild_id: guild.id,
+					threads: true,
+					typing: true,
+				},
+			});
+			document.activeElement.blur();
+			channels = [];
+		}
 		roles = await discord.getRoles(guild.id);
 		serverProfile = await discord.getServerProfile(guild.id, discord.user.id);
 		let raw = await discord.getChannels(guild.id);
-		channels = siftChannels(raw, roles, serverProfile).map((a) => {
+		channels = siftChannels(raw, roles, serverProfile, roles).map((a) => {
 			let type = isNaN(a.type) ? a.type : "channel";
 			let ch_type =
 				a.type === 5
@@ -224,36 +267,40 @@ import Loading from "./components/Loading.svelte";
 			return { ...a, type, ch_type };
 		});
 		console.log("channels:", channels);
-		if (selected !== 1) selected = 1;
-		setTimeout(() => sn.focus(), 50);
+		if (!noSwitch) {
+			if (selected !== 1) selected = 1;
+			setTimeout(() => sn.focus(), 50);
+		}
 		return channels;
 	};
 
 	$: guild === null && loadDMS();
 	$: guild && loadChannels();
 
-	let loadMessages = async () => {
-		if (!channel.dm) {
-			channelPermissions = parseRoleAccess(
-				channel.permission_overwrites,
-				serverProfile.roles.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]),
-				roles
-			);
-		} else channelPermissions = {};
+	let loadMessages = async (noSwitch = false) => {
+		channelPermissions = channel.dm
+			? {}
+			: parseRoleAccess(
+					channel.permission_overwrites,
+					serverProfile.roles.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]),
+					roles
+			  );
 		messages = [];
 		let msgs = await discord.getMessages(channel.id, 30);
 		messages = [...msgs].reverse();
 		console.log("messages:", messages);
-		selected = 0;
-		setTimeout(() => {
-			let zel = document.querySelector(".zero.selected");
-			if (zel) zel.scrollTop = zel.scrollHeight;
-			let _last = last(zel.children);
-			if (_last) {
-				_last.focus();
-				ack(_last.id.slice(3));
-			}
-		}, 100);
+		if (!noSwitch) {
+			selected = 0;
+			setTimeout(() => {
+				let zel = document.querySelector(".zero.selected");
+				if (zel) zel.scrollTop = zel.scrollHeight;
+				let _last = last(zel.children);
+				if (_last) {
+					_last.focus();
+					ack(_last.id.slice(3));
+				}
+			}, 100);
+		}
 	};
 
 	$: channel && loadMessages();
@@ -276,14 +323,14 @@ import Loading from "./components/Loading.svelte";
 					const found = temp.find((a) => a.type === "folder" && a.id === folder.id);
 					found
 						? found.servers.push(a)
-						: temp.push({ type: "folder", id: folder.id, servers: [a], color: folder.color });
+						: temp.push({ type: "folder", id: folder.id, servers: [a], color: folder.color, name: folder.name });
 				} else temp.push(a);
 			});
 
 		servers = temp;
 	}
 
-	onMount(()=>{
+	onMount(() => {
 		let attempts = 0;
 		discordGateway.on("close", async function () {
 			let internet = false;
@@ -310,13 +357,49 @@ import Loading from "./components/Loading.svelte";
 			}
 			attempts++;
 			discordGateway.init(localStorage.token);
-			if (channel) loadMessages();
+			if (channel) loadMessages(true);
 		});
-	})
+	});
 
 	let init = async () => {
-		ready = true;
 		guild = null;
+		ready = true;
+
+		let { status } = discord.cache.user_settings;
+		function sendCustomPresence() {
+			if (status !== "invisible" && settings.custom_rpc) {
+				const activities = [
+					{
+						name: "Discord4KaiOS",
+						type: 0,
+						details: "discord.gg/W9DF2q3Vv2",
+						assets: {
+							large_image: "mp:attachments/813030840526569472/987002874032713818/unknown.png",
+							large_text: "https://github.com/cyan-2048/Discord4KaiOS/",
+						},
+					},
+				];
+				discordGateway.send({
+					op: 3,
+					d: {
+						since: Date.now(),
+						activities,
+						status,
+						afk: false,
+					},
+				});
+			}
+		}
+		sendCustomPresence();
+		discordGateway.on("t:user_settings_update", (d) => {
+			if (discord.cache) Object.assign(discord.cache.user_settings, d);
+			const newStat = discord.cache.user_settings.status;
+			if (status !== newStat) {
+				status = newStat;
+				sendCustomPresence();
+			}
+		});
+
 		await loadServers();
 	};
 
@@ -342,7 +425,6 @@ import Loading from "./components/Loading.svelte";
 	window.discordGateway = discordGateway;
 	window.changeAppState = (e) => (appState = e);
 	window.changeReadyState = (e) => (ready = e);
-	let isChannel = (o) => !!(o.name && o.type === "channel");
 
 	let selectChannel = async (e) => {
 		let { id } = e.detail;
@@ -383,9 +465,6 @@ import Loading from "./components/Loading.svelte";
 		}
 	});
 
-	discordGateway.on("t:user_settings_update", (d) => {
-		if (discord.cache) Object.assign(discord.cache.user_settings, d);
-	});
 	const serverAck = new EventEmitter();
 	discordGateway.on("t:presence_update", (d) => {
 		if (!discord.cache) return;
@@ -405,6 +484,16 @@ import Loading from "./components/Loading.svelte";
 			el.mention_count = 0;
 		}
 		serverAck.emit("update", a);
+	});
+	discordGateway.on("t:channel_unread_update", ({ channel_unread_updates: read_updates, guild_id }) => {
+		if (!discord.cache) return;
+		read_updates.forEach((state) => {
+			let el = discord.cache.read_state.find((e) => e.id == state.id);
+			if (el && el.last_message_id !== state.last_message_id) {
+				el.last_message_id = state.last_message_id;
+				serverAck.emit("update", state);
+			}
+		});
 	});
 	discordGateway.on("t:message_create", async (d) => {
 		if (channel?.id == d.channel_id) {
@@ -439,7 +528,16 @@ import Loading from "./components/Loading.svelte";
 		else m.push(d);
 		serverAck.emit("update", d);
 	});
-	let spreadAuthor = (e) => {
+	discordGateway.on("t:channel_update", (d) => {
+		if (d.guild_id) {
+			const e = discord.cache.guilds.find((a) => a.id === d.guild_id);
+			const sift = e.channels.find((e) => e.id === d.id);
+			Object.assign(sift, d);
+			if (guild && guild.id === d.guild_id) loadChannels(true);
+		}
+	});
+
+	const spreadAuthor = (e) => {
 		let { bot, discriminator, id, username, avatar } = e;
 		return { bot, discriminator, id, name: username, avatar };
 	};
@@ -559,8 +657,18 @@ import Loading from "./components/Loading.svelte";
 
 	const typingState = new TypingState();
 	discordGateway.on("t:typing_start", (d) => typingState.add(d));
+
+	let statusBar = "#36393f";
+	$: if (appState !== null && selected !== null) {
+		if (appState === "app") {
+			statusBar = selected === 0 ? "#36393f" : "#2f3136";
+		}
+	}
 </script>
 
+<svelte:head>
+	<meta name="theme-color" content={statusBar} />
+</svelte:head>
 {#if ready}
 	<Servers {appState} {selected}>
 		<Server on:select={selectServer} selected={!guild} {serverAck} {discord} dm={true} />
@@ -577,7 +685,7 @@ import Loading from "./components/Loading.svelte";
 			<Separator>DIRECT MESSAGES</Separator>
 		{/if}
 		{#each channels as channel (channel.id || channel.name)}
-			{#if isChannel(channel)}
+			{#if channel.type !== "separator"}
 				<Channel {discord} {serverAck} guildID={guild ? guild.id : null} on:select={selectChannel} {...channel}
 					>{channel.name || ""}</Channel
 				>
@@ -611,8 +719,8 @@ import Loading from "./components/Loading.svelte";
 						month: "long",
 						day: "numeric",
 						year: "numeric",
-					})}</DateSeparator
-				>
+					})}
+				</DateSeparator>
 			{/if}
 			{#if i === 0 || messages[i - 1]?.author.id != message.author?.id || (messages[i - 1] && diff_minutes(new Date(messages[i - 1].timestamp), new Date(message.timestamp)) > 0)}
 				<MessageSeparator
@@ -640,7 +748,7 @@ import Loading from "./components/Loading.svelte";
 		{/each}
 	</Messages>
 {:else}
-<Loading></Loading>
+	<Loading />
 {/if}
 {#if appState === "login"}
 	<Login {sn} on:login={(e) => login(e.detail.token)} />
@@ -656,4 +764,3 @@ import Loading from "./components/Loading.svelte";
 		src={viewerSrc}
 	/>
 {/if}
-

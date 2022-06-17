@@ -70,7 +70,7 @@ class DiscordXHR {
 		let parsed = xhr.responseText;
 		try {
 			parsed = (parsed && JSON.parse(parsed)) || {};
-			parsed.__proto__.httpStatus = xhr.status; // if it's an array, we don't get an extra key
+			Object.defineProperty(parsed, "httpStatus", { value: xhr.status, enumerable: false }); // if it's an array, we don't get an extra key
 		} catch (e) {
 			console.error("JSON.parse failed!", parsed, xhr.responseText);
 			parsed = { httpStatus: xhr.status };

@@ -20,6 +20,7 @@ specifiers:
   rollup-plugin-copy: ^3.4.0
   rollup-plugin-css-only: ^3.1.0
   rollup-plugin-livereload: ^2.0.0
+  rollup-plugin-string: ^3.0.0
   rollup-plugin-svelte: ^7.0.0
   rollup-plugin-terser: ^7.0.0
   scroll-into-view: ^1.16.0
@@ -51,6 +52,7 @@ devDependencies:
   rollup-plugin-copy: 3.4.0
   rollup-plugin-css-only: 3.1.0_rollup@2.72.1
   rollup-plugin-livereload: 2.0.5
+  rollup-plugin-string: 3.0.0
   rollup-plugin-svelte: 7.1.0_mei3nah5xaomx72ncrerzbgdge
   rollup-plugin-terser: 7.0.2_rollup@2.72.1
   sirv-cli: 2.0.2
@@ -2159,6 +2161,12 @@ packages:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    dev: true
+
+  /rollup-plugin-string/3.0.0:
+    resolution: {integrity: sha512-vqyzgn9QefAgeKi+Y4A7jETeIAU1zQmS6VotH6bzm/zmUQEnYkpIGRaOBPY41oiWYV4JyBoGAaBjYMYuv+6wVw==}
+    dependencies:
+      rollup-pluginutils: 2.8.2
     dev: true
 
   /rollup-plugin-svelte/7.1.0_mei3nah5xaomx72ncrerzbgdge:

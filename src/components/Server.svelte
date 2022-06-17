@@ -1,6 +1,6 @@
 <script>
 	import { createEventDispatcher, onMount } from "svelte";
-	import { isChannelMuted, siftChannels, centerScroll } from "../lib/helper.js";
+	import { isChannelMuted, siftChannels }from "../lib/helper.js";
 	import ServerMentions from "./ServerMentions.svelte";
 	export let dm = false;
 	export let discord;
@@ -54,10 +54,6 @@
 			.join("")
 			.slice(0, 3) || "";
 
-	function onFocus() {
-		setTimeout(() => centerScroll(this), 50);
-	}
-
 	let main;
 </script>
 
@@ -67,7 +63,6 @@
 	data-focusable={focusable ? "" : null}
 	class="{unread ? 'unread' : ''} {dm ? 'dm' : ''} {selected ? 'selected' : ''}"
 	tabindex="0"
-	on:focus={onFocus}
 	bind:this={main}
 >
 	{#if focusable}

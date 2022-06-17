@@ -9,15 +9,23 @@
 	export let color;
 	export let servers = [];
 	export let id;
+//	export let name;
 	let mentions = 0;
 	let unread = false;
 	let open = true;
 	let main;
 
+//	console.log("server color",name, color)
+
 	let update = () => {
 		unread = !!main.querySelector(".unread");
-		mentions = [...main.querySelectorAll("[data-mentions]")].map((a) => Number(a.dataset.mentions) || 0).reduce((a, b) => a + b, 0);
+		mentions = [...main.querySelectorAll("[data-mentions]")]
+			.map((a) => Number(a.dataset.mentions) || 0)
+			.reduce((a, b) => a + b, 0);
 	};
+
+	
+
 	function toggleOpen(e) {
 		if (this !== e.target) return;
 		open = !open;
@@ -33,7 +41,7 @@
 	tabindex="0"
 	on:click={toggleOpen}
 	bind:this={main}
-	style={!open ? `background-color: ${rgbaToHex(decimal2rgb(color, true), decimal2rgb(3092790, true), 0.3)}` : null}
+	style={!open ? `background-color: rgba(${ color ? decimal2rgb(color, true):[88, 101, 242] },0.3)` : null}
 	data-focusable={open ? null : ""}
 	data-folder
 	class="{open ? 'open' : ''} {unread ? 'unread' : ''}"

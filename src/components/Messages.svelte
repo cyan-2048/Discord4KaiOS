@@ -18,14 +18,14 @@
 	export let evtForward;
 	const dispatch = createEventDispatcher();
 
-	let textarea, after, con, messages, softkeys;
+	let textarea, after, con, messages, softkeys, typing_indicator;
 	let textAreaHeight = 0;
 	let typingIndicatorBottom = 0;
 
 	function height() {
 		after.scrollTop = textarea.scrollTop;
 		typingIndicatorBottom = con.offsetHeight + softkeys.offsetHeight;
-		textAreaHeight = window.innerHeight - typingIndicatorBottom;
+		textAreaHeight = window.innerHeight - typingIndicatorBottom ;
 	}
 
 	window.onresize = height;
@@ -57,6 +57,7 @@
 			} else current = state;
 			currentTypingState = current;
 		}
+		height();
 	}
 
 	$: channelPermissions && console.log("channel permissions:", channelPermissions);
@@ -232,18 +233,24 @@
 			}, 1);
 		};
 	});
+
+	$: display = appState !== 'app' ? "none" : null;
+	$: readOnly = channelPermissions.write === false;
+
 </script>
 
 <div
 	bind:this={messages}
 	data-messages
-	style="{appState !== 'app' ? 'display:none;' : ''} height:{textAreaHeight}px;"
-	class="{['zero', 'one'][selected] || ''} {selected === 0 ? 'selected' : ''}"
+	class="{['zero', 'one'][selected] || ''}"
+	style:display
+	style:height={(textAreaHeight - (typing_indicator?.offsetHeight || 0)) + "px"}
+	class:selected={selected===0}
 >
 	<slot />
 </div>
 {#if currentTypingState.length > 0}
-	<div style="bottom: {typingIndicatorBottom}px;" id="typing">
+	<div bind:this={typing_indicator} style:bottom="{typingIndicatorBottom}px" id="typing">
 		{#if currentTypingState.length < 4}
 			{oxford(currentTypingState, "and", "an error occured so no one")} {currentTypingState.length > 1 ? "are" : "is"} typing...
 		{:else}
@@ -251,14 +258,14 @@
 		{/if}
 	</div>
 {/if}
-<div bind:this={con} style="{channelPermissions.write === false ? 'bottom:0;' : ''}{appState !== 'app' ? 'display:none;' : ''}" class="grow-wrap {['zero', 'one'][selected] || ''}">
-	<textarea rows="1" style={channelPermissions.write === false ? "display:none;" : null} bind:this={textarea} />
-	<div style={channelPermissions.write === false ? "display:none;" : null} bind:this={after} class="after" />
-	{#if channelPermissions.write === false}
+<div bind:this={con} style:bottom={readOnly ? 0 : null} style:display class="grow-wrap {['zero', 'one'][selected] || ''}">
+	<textarea rows="1" style:display={readOnly ? "none" : null} bind:this={textarea} />
+	<div style={readOnly ? "display:none;" : null} bind:this={after} class="after" />
+	{#if readOnly}
 		<div style="font-size: 10px; white-space: pre-wrap; word-wrap: break-word; height: 30px;">You do not have permission to send messages in this channel.</div>
 	{/if}
 </div>
-<div bind:this={softkeys} class="softkeys {['zero', 'one'][selected] || ''}" style={channelPermissions.write === false || appState !== "app" ? "display:none;" : null}>
+<div bind:this={softkeys} class="softkeys {['zero', 'one'][selected] || ''}" style:display={readOnly || display ? "none" : null}>
 	<div>
 		{#if !messageEditing && !messageFocused && (textarea?.value || "") !== ""}
 			<svg id="send" fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"

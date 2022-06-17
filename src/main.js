@@ -6,6 +6,7 @@ document.documentElement.lang = navigator.language;
 
 function softkey(e) {
 	let { target, key, shiftKey, bubbles, cancelable, repeat, type } = e;
+	if (key === "Backspace" && (!("value" in target) || target.value === "")) e.preventDefault();
 	if (!/Left|Right/.test(key) || !key.startsWith("Arrow") || !shiftKey) return;
 	target.dispatchEvent(new KeyboardEvent(type, { key: "Soft" + key.slice(5), bubbles, cancelable, repeat }));
 }

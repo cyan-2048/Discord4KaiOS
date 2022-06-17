@@ -20,6 +20,7 @@ class DiscordGateway {
 		this.token = token;
 	}
 	send(data) {
+		this.debug("send:", data);
 		this.ws.send(JSON.stringify(data));
 	}
 	handlePacket(message) {
@@ -95,6 +96,10 @@ class DiscordGateway {
 		this.persist = {};
 
 		this.debug("Connecting to gateway...");
+		if (this.ws) {
+			this.ws.close();
+			this.ws = null;
+		}
 		this.ws = new WebSocket(this.streamURL);
 
 		this.ws.addEventListener("message", this.handlePacket.bind(this));
@@ -117,12 +122,11 @@ self.onmessage = (e) => {
 		if (typeof gateway == "object" && gateway.ws) gateway.ws.close();
 		gateway = new DiscordGateway({ debug: true });
 		gateway.login(token);
-		gateway.emit = (e, d) => {
+		gateway.emit = function (e, ...args) {
 			let event = String(e);
-			let data;
 			try {
-				data = JSON.parse(JSON.stringify(d));
-				self.postMessage({ event, data });
+				args = JSON.parse(JSON.stringify(args));
+				self.postMessage({ event, args });
 			} catch (e) {}
 		};
 		gateway.init();

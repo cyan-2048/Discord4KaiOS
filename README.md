@@ -1,39 +1,55 @@
 ## join the [discord server](https://discord.gg/W9DF2q3Vv2) to get more up to date information...
 
 ```
+legend:
+- ** -> does not support sending
+- * -> only supports_
+- \ -> partially
+- ! -> does not support_
+- ✅ -> supported
+
 frontend ->
-- markdown support✅
+- markdown✅
 - sed or s/e/x✅
-- server folders✅
-- qrcode scanner to scan token✅
-- discord emojis✅(partial, you can't send discord emojis yet)
-- stickers✅(partial, you can't send stickers yet)
-- replies✅(partial, user can't reply to messages yet)
-- attachments✅(partial only supports images for now, you can't send attachments yet(the code is ready just doesn't have UI yet))
-- discord mentions✅(@ / #, partial you can only mention users by typing @<insert unique username/nickname and without spaces> at the very end of the textbox)
-- highlight message if user is mentioned✅
-- embed links✅(partial support, missing support for videos)
-- typing indicator✅(partial, other people can see you typing, you can only see other people typing on dms, unknown reason why servers don't work)
-- edit messages✅(partial, only works on desktop browser by double clicking on a message, will be fully supported once "more options" is partially supported)
-- image viewer✅(partial, not finished yet, does not support multiple images)
-- load more messages button
-- more options(includes ways of sending emojis/stickers/mentions or settings, i need to create an options menu for more stuff to do... but i am procrastinating)
+- folders✅
+- qrcode scanner✅
+- discord emojis✅**
+- stickers✅**
+- replies✅**
+- attachments✅(*images, \**)
+- discord mentions✅(@ / #, \*(no spaces username))
+- highlight message if mentioned✅
+- embed links✅(\)
+- hide channels with no read perms✅
+- typing indicators✅
+- edit messages✅(*desktop)
+- load more button
+- more options
+- image viewer
+- reactions
 
 maybe ->
 - threads
+- plugins
 
-backend or discord gateway ->
-- change edited/deleted messages✅
-- hide channels that are not supposed to be seen✅(bitwise was the weirdest thing ever...)
-- unread/read/mentions indicators✅(partial, dms do not work yet...)
-- discord presence in dms✅(partial no support for presences that are not the status of the user, no support for emojis as well)
-- update various cached stuff when it is changed(ye this is very necessary and I absolutely will not fully publish this app if this isn't ready...)
+backend ->
+- unread/read/mentions indicators✅(\!dms)
+- discord presence in dms✅(\*custom_status!emojis)
+- update cached data when needed
+
+events ->
+(updates):
+- message✅
+- channel✅
+- read state✅
+- presence✅(\)
 
 no plans on supporting ->
-- a video player will probably not be supported because most video formats probably won't work
-- voice calls/chats, streaming, video calls... well it's obvious why
-- the end goal here is to have a usable discord client for KaiOS, I have no plans on fully replicating a discord client(replicating it way too much could actually be dangerous... discord might think the api is being used maliciously and ban the user)
+- a video player
+- voice calls/chats, streaming, video calls...
 ```
+
+the end goal here is to have a usable discord client for KaiOS, I have no plans on fully replicating a discord client(replicating it way too much could actually be dangerous... discord might think the api is being used maliciously and ban the user)
 
 ### Development and testing
 
@@ -47,3 +63,6 @@ no plans on supporting ->
 
 Pre-built app packages will only be available through select users of the discord server.
 The app will be fully published to the KaiStore once fully ready.
+
+### Special Thanks!
+- [Zero Tsus](https://github.com/LolloDev5123)

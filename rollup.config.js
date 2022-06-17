@@ -7,8 +7,10 @@ import css from "rollup-plugin-css-only";
 import babel from "@rollup/plugin-babel";
 import copy from "rollup-plugin-copy";
 import json from "@rollup/plugin-json";
+import { string } from "rollup-plugin-string";
 
 const production = !process.env.ROLLUP_WATCH;
+const quick = process.env.quick === "true";
 
 function serve() {
 	let server;
@@ -19,14 +21,10 @@ function serve() {
 	return {
 		writeBundle() {
 			if (server) return;
-			server = require("child_process").spawn(
-				"npm",
-				["run", "start", "--", "--dev"],
-				{
-					stdio: ["ignore", "inherit", "inherit"],
-					shell: true,
-				}
-			);
+			server = require("child_process").spawn("npm", ["run", "start", "--", "--dev"], {
+				stdio: ["ignore", "inherit", "inherit"],
+				shell: true,
+			});
 
 			process.on("SIGTERM", toExit);
 			process.on("exit", toExit);
@@ -40,10 +38,14 @@ export default {
 		sourcemap: false,
 		format: "iife",
 		name: "app",
-		file: `${production ? "dist" : "public"}/build/bundle.js`,
+		file: `${production && !quick ? "dist" : "public"}/build/bundle.js`,
 	},
 	plugins: [
+		string({
+			include: "**/*.webapp",
+		}),
 		production &&
+			!quick &&
 			copy({
 				targets: [{ src: "public/*", dest: "dist/" }],
 			}),
@@ -59,32 +61,18 @@ export default {
 		// a separate file - better for performance
 		css({ output: "bundle.css" }),
 
-		production && // don't transpile on new browser, does not work properly
-			babel({
-				extensions: [".js", ".mjs", ".html", ".svelte"],
-				babelHelpers: "runtime",
-				exclude: ["node_modules/@babel/**", /\/core-js\//],
-				presets: [
-					[
-						"@babel/preset-env",
-						{
-							targets: { firefox: "48" },
-							useBuiltIns: "usage",
-							corejs: 3,
-						},
-					],
-				],
-				plugins: [
-					"@babel/plugin-syntax-dynamic-import",
-					"babel-plugin-transform-async-to-promises",
-					[
-						"@babel/plugin-transform-runtime",
-						{
-							useESModules: true,
-						},
-					],
-				],
-			}),
+		//production && // don't transpile on new browser, does not work properly
+		babel({
+			extensions: [".js", ".mjs", ".html", ".svelte"],
+			babelHelpers: "runtime",
+			exclude: ["node_modules/@babel/**", /\/core-js\//],
+			presets: [["@babel/preset-env", { targets: { firefox: "48" }, useBuiltIns: "usage", corejs: 3 }]],
+			plugins: [
+				"@babel/plugin-syntax-dynamic-import",
+				"babel-plugin-transform-async-to-promises",
+				["@babel/plugin-transform-runtime", { useESModules: true }],
+			],
+		}),
 
 		// If you have external dependencies installed from
 		// npm, you'll most likely need these plugins. In
@@ -105,7 +93,7 @@ export default {
 
 		// If we're building for production (npm run build
 		// instead of npm run dev), minify
-		production && terser(),
+		production && !quick && terser(),
 	],
 	watch: {
 		buildDelay: 5000,

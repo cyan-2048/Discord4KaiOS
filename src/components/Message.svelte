@@ -13,6 +13,7 @@
 	import EmojiDict from "../lib/EmojiDict.js";
 	import { toHTML as markdown } from "../lib/discord-markdown.cjs";
 	import LottieSticker from "./LottieSticker.svelte";
+	import ReactionButton from "./ReactionButton.svelte";
 	let message = { ...$$props.msg }; // get rid of reference, well let's just hope it doesn't change yeah
 	let main;
 
@@ -115,10 +116,7 @@
 					}
 					a.innerText = text;
 				});
-				let users = getMentions("user");
-				let l = users.length;
-				for (let i = 0; i < l; i++) {
-					const a = users[i];
+				for (const a of getMentions("user")) {
 					let id = a.dataset.id;
 					let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
 					if (!s_profile || s_profile.httpStatus === 404)
@@ -132,10 +130,7 @@
 							"unknown-user");
 				}
 			}
-			let channels = getMentions("channel");
-			let l = channels.length;
-			for (let i = 0; i < l; i++) {
-				const a = channel[i];
+			for (const a of getMentions("channel")) {
 				let id = a.dataset.id;
 				let text = "deleted-channel";
 				if (channel.id === id) text = channel.name;
@@ -159,23 +154,62 @@
 		};
 		onchange();
 		discordGateway.on("t:message_update", update, "msg" + message.id);
+
+		if (main.previousElementSibling?.matches("[data-separator]")) {
+			main.onfocus = main.onblur = function toggleFocus(e) {
+				let { type, target } = e;
+				let prev = target.previousElementSibling;
+				if (prev) prev.classList[type === "focus" ? "add" : "remove"]("focus");
+			};
+		}
+
+		let updateReactions = ({ message_id, emoji, user_id }, remove = false) => {
+			if (message_id !== message.id) return;
+			let reaction, reactionIndex;
+			if (!message.reactions) message.reactions = [];
+			else
+				reaction = message.reactions.find(({ emoji: e }, i) => {
+					if (emoji.name === e.name && emoji.id === e.id) {
+						reactionIndex = i;
+						return true;
+					}
+				});
+			const me = user_id === discord.user.id;
+			if (reaction) {
+				let original = { ...reaction };
+
+				if (remove) {
+					if (me) original.me = false;
+					original.count -= 1;
+				} else {
+					if (me) original.me = true;
+					original.count += 1;
+				}
+				console.log("original count:", original.count);
+				if (original.count > 0)
+					message.reactions = message.reactions.map((item, i) => {
+						if (i === reactionIndex) return original;
+						return item;
+					});
+				else message.reactions = message.reactions.filter((e, i) => i !== reactionIndex);
+			} else if (!remove) {
+				const temp = { me, count: 1, emoji };
+				if (message.reactions.length === 0) message.reactions = [temp];
+				else message.reactions = [...message.reactions, temp];
+			}
+		};
+		let removeReaction = (d) => updateReactions(d, true);
+
+		discordGateway.on("t:message_reaction_add", updateReactions, "msg" + message.id);
+		discordGateway.on("t:message_reaction_remove", removeReaction, "msg" + message.id);
+
 		return () => {
 			// after death remove eventListener for message
 			discordGateway.off("t:message_update", update, "msg" + message.id);
+			discordGateway.off("t:message_reaction_add", updateReactions, "msg" + message.id);
+			discordGateway.off("t:message_reaction_remove", removeReaction, "msg" + message.id);
 		};
 	});
-
-	function onClick(e) {
-		let { target } = e;
-		if (target.classList.contains("spoiler") && target.tagName === "SPAN") target.classList.toggle("active");
-	}
-
-	function toggleFocus(e) {
-		let { type, target } = e;
-		let prev = target.previousElementSibling;
-		if (prev?.matches("[data-separator]")) prev.classList[type === "focus" ? "add" : "remove"]("focus");
-	}
-
 </script>
 
 <main
@@ -197,8 +231,6 @@
 		evtForward.emit("message_edit", message, clone.innerText, mentioned);
 	}}
 	data-focusable
-	on:blur={toggleFocus}
-	on:focus={toggleFocus}
 	class={pinged ? "mention" : ""}
 	tabindex="0"
 	bind:this={main}
@@ -210,7 +242,14 @@
 			<div class="r-text">{@html reply}</div>
 		</div>
 	{/if}
-	<div on:click={onClick} class="content {message.edited_timestamp ? 'edited' : ''}" bind:this={contentEl}>
+	<div
+		on:click={function onClick(e) {
+			let { target } = e;
+			if (target.classList.contains("spoiler") && target.tagName === "SPAN") target.classList.toggle("active");
+		}}
+		class="content {message.edited_timestamp ? 'edited' : ''}"
+		bind:this={contentEl}
+	>
 		{@html content}
 	</div>
 	{#if message.attachments && message.attachments[0]}
@@ -290,6 +329,13 @@
 				/>
 			{/if}
 		{/each}
+	{/if}
+	{#if message.reactions && message.reactions[0]}
+		<div class="reactions">
+			{#each message.reactions as reaction ((reaction.emoji.id || "") + reaction.emoji.name)}
+				<ReactionButton {...reaction} />
+			{/each}
+		</div>
 	{/if}
 </main>
 

@@ -3,7 +3,7 @@
 	export let appState;
 </script>
 
-<div data-servers style={appState !== "app" ? "display:none;" : null} class="{['', '', 'two'][selected] || ''} {selected === 2 ? 'selected' : ''}"><slot /></div>
+<div data-servers style:display={appState !== "app" ? "none" : null} class={['', '', 'two'][selected] || ''} class:selected={selected === 2}><slot /></div>
 
 <style>
 	div {

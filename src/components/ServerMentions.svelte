@@ -3,7 +3,7 @@
 	let main;
 </script>
 
-<div bind:this={main} style={color ? `border-color: ${color};` : null}>
+<div bind:this={main} style:border-color={color}>
 	<slot />
 </div>
 

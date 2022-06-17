@@ -3,7 +3,7 @@
 	export let appState;
 </script>
 
-<div style={appState !== "app" ? "display:none;" : null} data-channels class="{['zero', '', 'two'][selected] || ''} {selected === 1 ? 'selected' : ''}"><slot /></div>
+<div style:display={appState !== "app" ? "none" : null} data-channels class={['zero', '', 'two'][selected] || ''} class:selected={selected === 1}><slot /></div>
 
 <style>
 	div {
