@@ -1,19 +1,18 @@
 <script>
+	// js imports
+	import { serverAck, discord } from "../lib/shared";
+	import { createEventDispatcher, onMount } from "svelte";
+	import { centerScroll, isChannelMuted, shuffle } from "../lib/helper";
+
 	export let avatar = null;
 	export let ch_type = "text";
 	export let id = null;
 	export let guildID;
-	export let serverAck;
-	export let discord;
 	export let recipients;
 	export let dm = false;
 	export let name = null;
 
-	import { createEventDispatcher, onMount, onDestroy } from "svelte";
-	import { centerScroll, isChannelMuted, shuffle } from "../lib/helper";
 	const dispatch = createEventDispatcher();
-
-	let last_message_id = $$props.last_message_id;
 
 	let mentions = 0;
 	let unread = false;
@@ -24,6 +23,8 @@
 	let client;
 
 	onMount(() => {
+		let last_message_id = $$props.last_message_id;
+
 		const change = () => {
 			muted = isChannelMuted(discord, { id }, guildID);
 			if (guildID) {
@@ -231,7 +232,7 @@
 		height: 100%;
 		right: 10px;
 		display: flex;
-align-items: center;
+		align-items: center;
 	}
 
 	.flow {

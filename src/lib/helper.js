@@ -1,7 +1,15 @@
-// prettier-ignore
-function hashCode(r){var n,t=String(r),o=0;if(0===t.length)return o;for(n=0;n<t.length;n++)o=(o<<5)-o+t.charCodeAt(n),o|=0;return Array.from(o.toString()).map(r=>"ledoshcyan"[r]).join("")}
+export function hashCode(r) {
+	var n,
+		t = String(r),
+		o = 0;
+	if (0 === t.length) return o;
+	for (n = 0; n < t.length; n++) (o = (o << 5) - o + t.charCodeAt(n)), (o |= 0);
+	return Array.from(o.toString())
+		.map((r) => "ledoshcyan"[r])
+		.join("");
+}
 
-let bitwise2text = {
+export const bitwise2text = {
 	64: "add_reactions",
 	8: "admin",
 	1024: "read",
@@ -18,7 +26,7 @@ let bitwise2text = {
 	274877906944: "write_thread",
 };
 
-function groupBy(arr, property) {
+export function groupBy(arr, property) {
 	return arr.reduce(function (memo, x) {
 		if (!memo[x[property]]) {
 			memo[x[property]] = [];
@@ -29,7 +37,7 @@ function groupBy(arr, property) {
 }
 
 // make getting roles more readble, i am not a robot
-function parseRoleAccess(overwrites = [], roles = [] /*this is the roles the user has*/, serverRoles = []) {
+export function parseRoleAccess(overwrites = [], roles = [] /*this is the roles the user has*/, serverRoles = []) {
 	let obj = {};
 	if (serverRoles.length > 0)
 		[...serverRoles]
@@ -62,7 +70,7 @@ function parseRoleAccess(overwrites = [], roles = [] /*this is the roles the use
 	return obj;
 }
 
-function wouldMessagePing(message, roles, discordInstance) {
+export function wouldMessagePing(message, roles, discordInstance) {
 	let check = (e) => e instanceof Array && !!e[0];
 	let { mention_everyone, mentions, mention_roles, guild_id } = message;
 	if (mention_everyone) return true;
@@ -74,9 +82,9 @@ function wouldMessagePing(message, roles, discordInstance) {
 	}
 	return false;
 }
-function wouldMessagePingDM(message) {}
+export function wouldMessagePingDM(message) {}
 
-function siftChannels(raw, roles, profile, skipSeparators, serverRoles = []) {
+export function siftChannels(raw, roles, profile, skipSeparators, serverRoles = []) {
 	let position = (a, b) => a.position - b.position;
 	let sorted = [...raw].sort(position);
 	let channels = { 0: [] };
@@ -110,7 +118,7 @@ function siftChannels(raw, roles, profile, skipSeparators, serverRoles = []) {
 	return final.flat();
 }
 
-function findScrollParent(node) {
+export function findScrollParent(node) {
 	if (node == null) return null;
 	if (node.scrollHeight > node.clientHeight) return node;
 	else return findScrollParent(node.parentNode);
@@ -118,11 +126,11 @@ function findScrollParent(node) {
 
 import scrollIntoView from "scroll-into-view";
 
-function centerScroll(el, sync) {
+export function centerScroll(el, sync) {
 	scrollIntoView(el, { time: sync ? 0 : 300, align: { left: 0 } });
 }
 
-function isChannelMuted(discordInstance, channel, guildID) {
+export function isChannelMuted(discordInstance, channel, guildID) {
 	let settings = discordInstance.cache.user_guild_settings;
 	let guild = settings.find((e) => e.guild_id === guildID);
 	if (!guild) return false;
@@ -131,15 +139,16 @@ function isChannelMuted(discordInstance, channel, guildID) {
 	return false;
 }
 
-let last = (e) => e[e.length - 1];
-function decimal2rgb(ns, arr) {
+export const last = (e) => e[e.length - 1];
+
+export function decimal2rgb(ns, arr) {
 	let r = Math.floor(ns / (256 * 256)),
 		g = Math.floor(ns / 256) % 256,
 		b = ns % 256;
 	return arr ? [r, g, b] : { r, g, b };
 }
 
-let toHTML = (text) =>
+export const toHTML = (text) =>
 	text
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")
@@ -147,7 +156,7 @@ let toHTML = (text) =>
 		.replace(/"/g, "&quot;")
 		.replace(/'/g, "&#039;");
 
-function shuffle(array) {
+export function shuffle(array) {
 	let currentIndex = array.length,
 		randomIndex;
 
@@ -164,7 +173,7 @@ function shuffle(array) {
 	return array;
 }
 
-function inViewport(element, partial) {
+export function inViewport(element, partial) {
 	let bounding = element.getBoundingClientRect();
 	let height = element.offsetHeight;
 	let width = element.offsetWidth;
@@ -183,7 +192,7 @@ function inViewport(element, partial) {
 		  );
 }
 
-function getTopBottom(el) {
+export function getTopBottom(el) {
 	let bounding = el.getBoundingClientRect();
 	return {
 		top: bounding.top,
@@ -191,11 +200,11 @@ function getTopBottom(el) {
 	};
 }
 
-function getScrollBottom(el) {
+export function getScrollBottom(el) {
 	return el.scrollHeight - el.offsetHeight - el.scrollTop;
 }
 
-function findUserByTag() {
+export function findUserByTag() {
 	const args = arguments;
 	return function (tag) {
 		const mentionCache = [...args].map((a) => Object.values(a)).flat(2);
@@ -216,7 +225,7 @@ function findUserByTag() {
 	};
 }
 
-let dblclick = (el, bubbles = false) =>
+export const dblclick = (el, bubbles = false) =>
 	el.dispatchEvent(
 		new MouseEvent("dblclick", {
 			view: window,
@@ -227,7 +236,7 @@ let dblclick = (el, bubbles = false) =>
 
 // returns a function that waits for another function to finish before running
 // also has caching abilities
-function asyncQueueGenerator(func) {
+export function asyncQueueGenerator(func) {
 	const cache = {};
 	let pending = Promise.resolve();
 	const run = async function () {
@@ -247,7 +256,7 @@ function asyncQueueGenerator(func) {
 }
 
 // returns a function which has a caching ability
-function asyncCachedGenerator(func) {
+export function asyncCachedGenerator(func) {
 	const cache = {};
 	const final = async function () {
 		let args = [...arguments];
@@ -260,7 +269,7 @@ function asyncCachedGenerator(func) {
 
 // calculate the outputed color if a color has opacity
 // returns a color in hex
-function rgbaToHex(d = [0, 0, 0], b = [0, 0, 0], a = 1) {
+export function rgbaToHex(d = [0, 0, 0], b = [0, 0, 0], a = 1) {
 	var r = Math.floor(d[0] * a + b[0] * (1 - a));
 	var g = Math.floor(d[1] * a + b[1] * (1 - a));
 	var b = Math.floor(d[2] * a + b[2] * (1 - a));
@@ -271,7 +280,7 @@ function rgbaToHex(d = [0, 0, 0], b = [0, 0, 0], a = 1) {
 // if number of unfinished request exceeds limit,
 // we wait for a request to finish before executing another
 // also caches
-function asyncRateLimitGenerator(func, limit = 5) {
+export function asyncRateLimitGenerator(func, limit = 5) {
 	const cache = {};
 	let current = 0;
 	function delay(timeout) {
@@ -296,7 +305,7 @@ function asyncRateLimitGenerator(func, limit = 5) {
 	return final;
 }
 
-let decideHeight = (e, size, minus) => {
+export const decideHeight = (e, size, minus) => {
 	if (!e || typeof e !== "object") return {};
 	let { height, width } = e;
 	if (!height || !width) return {};
@@ -312,7 +321,7 @@ let decideHeight = (e, size, minus) => {
 	} else return { height, width };
 };
 
-function syncCachedGenerator(func) {
+export function syncCachedGenerator(func) {
 	const cache = {};
 	return function () {
 		let args = [...arguments];
@@ -322,7 +331,7 @@ function syncCachedGenerator(func) {
 /**
  * @param {Blob|File|string} blob
  */
-function downloadFile(blob, filename = "") {
+export function downloadFile(blob, filename = "") {
 	const url = (typeof blob === "string" && blob) || URL.createObjectURL(blob);
 	const el = document.createElement("a");
 	el.href = url;
@@ -330,32 +339,3 @@ function downloadFile(blob, filename = "") {
 	el.click();
 	URL.revokeObjectURL(url);
 }
-
-export {
-	downloadFile,
-	syncCachedGenerator,
-	decideHeight,
-	asyncRateLimitGenerator,
-	asyncCachedGenerator,
-	rgbaToHex,
-	asyncQueueGenerator,
-	dblclick,
-	findUserByTag,
-	getScrollBottom,
-	getTopBottom,
-	inViewport,
-	shuffle,
-	toHTML,
-	decimal2rgb,
-	last,
-	isChannelMuted,
-	findScrollParent,
-	centerScroll,
-	siftChannels,
-	hashCode,
-	bitwise2text,
-	groupBy,
-	parseRoleAccess,
-	wouldMessagePing,
-	wouldMessagePingDM,
-};

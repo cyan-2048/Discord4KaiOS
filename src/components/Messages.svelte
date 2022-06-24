@@ -1,6 +1,7 @@
 <script>
 	import { createEventDispatcher, onMount } from "svelte";
 	import { last, hashCode } from "../lib/helper";
+	import { typingState, discord, evtForward } from "../lib/shared.js";
 	import { FilePickerInstance } from "../lib/FileHandlers.js";
 	window.FilePickerInstance = FilePickerInstance;
 	const picker = new FilePickerInstance();
@@ -12,10 +13,7 @@
 	// export let sn;
 	// export let roles;
 	export let guildID;
-	export let typingState;
-	export let discord;
 	export let channel;
-	export let evtForward;
 	const dispatch = createEventDispatcher();
 
 	let textarea, after, con, messages, softkeys, typing_indicator;
@@ -25,7 +23,7 @@
 	function height() {
 		after.scrollTop = textarea.scrollTop;
 		typingIndicatorBottom = con.offsetHeight + softkeys.offsetHeight;
-		textAreaHeight = window.innerHeight - typingIndicatorBottom ;
+		textAreaHeight = window.innerHeight - typingIndicatorBottom;
 	}
 
 	window.onresize = height;
@@ -234,38 +232,49 @@
 		};
 	});
 
-	$: display = appState !== 'app' ? "none" : null;
+	$: display = appState !== "app" ? "none" : null;
 	$: readOnly = channelPermissions.write === false;
-
 </script>
 
 <div
 	bind:this={messages}
 	data-messages
-	class="{['zero', 'one'][selected] || ''}"
+	class={["zero", "one"][selected] || ""}
 	style:display
-	style:height={(textAreaHeight - (typing_indicator?.offsetHeight || 0)) + "px"}
-	class:selected={selected===0}
+	style:height={textAreaHeight - (typing_indicator?.offsetHeight || 0) + "px"}
+	class:selected={selected === 0}
 >
 	<slot />
 </div>
 {#if currentTypingState.length > 0}
 	<div bind:this={typing_indicator} style:bottom="{typingIndicatorBottom}px" id="typing">
 		{#if currentTypingState.length < 4}
-			{oxford(currentTypingState, "and", "an error occured so no one")} {currentTypingState.length > 1 ? "are" : "is"} typing...
+			{oxford(currentTypingState, "and", "an error occured so no one")}
+			{currentTypingState.length > 1 ? "are" : "is"} typing...
 		{:else}
 			Several people are typing...
 		{/if}
 	</div>
 {/if}
-<div bind:this={con} style:bottom={readOnly ? 0 : null} style:display class="grow-wrap {['zero', 'one'][selected] || ''}">
+<div
+	bind:this={con}
+	style:bottom={readOnly ? 0 : null}
+	style:display
+	class="grow-wrap {['zero', 'one'][selected] || ''}"
+>
 	<textarea rows="1" style:display={readOnly ? "none" : null} bind:this={textarea} />
 	<div style={readOnly ? "display:none;" : null} bind:this={after} class="after" />
 	{#if readOnly}
-		<div style="font-size: 10px; white-space: pre-wrap; word-wrap: break-word; height: 30px;">You do not have permission to send messages in this channel.</div>
+		<div style="font-size: 10px; white-space: pre-wrap; word-wrap: break-word; height: 30px;">
+			You do not have permission to send messages in this channel.
+		</div>
 	{/if}
 </div>
-<div bind:this={softkeys} class="softkeys {['zero', 'one'][selected] || ''}" style:display={readOnly || display ? "none" : null}>
+<div
+	bind:this={softkeys}
+	class="softkeys {['zero', 'one'][selected] || ''}"
+	style:display={readOnly || display ? "none" : null}
+>
 	<div>
 		{#if !messageEditing && !messageFocused && (textarea?.value || "") !== ""}
 			<svg id="send" fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
@@ -275,7 +284,12 @@
 			>
 		{:else if messageEditing && !messageFocused}
 			<svg id="checkmark" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-				<path fill="currentColor" fillrule="evenodd" cliprule="evenodd" d="M8.99991 16.17L4.82991 12L3.40991 13.41L8.99991 19L20.9999 7.00003L19.5899 5.59003L8.99991 16.17Z" />
+				<path
+					fill="currentColor"
+					fillrule="evenodd"
+					cliprule="evenodd"
+					d="M8.99991 16.17L4.82991 12L3.40991 13.41L8.99991 19L20.9999 7.00003L19.5899 5.59003L8.99991 16.17Z"
+				/>
 			</svg>
 		{:else}
 			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
@@ -297,7 +311,10 @@
 	<div>
 		{#if !messageFocused && messageEditing}
 			<svg id="close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-				<path fill="currentColor" d="M18.4 4L12 10.4L5.6 4L4 5.6L10.4 12L4 18.4L5.6 20L12 13.6L18.4 20L20 18.4L13.6 12L20 5.6L18.4 4Z" />
+				<path
+					fill="currentColor"
+					d="M18.4 4L12 10.4L5.6 4L4 5.6L10.4 12L4 18.4L5.6 20L12 13.6L18.4 20L20 18.4L13.6 12L20 5.6L18.4 4Z"
+				/>
 			</svg>
 		{:else}
 			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"

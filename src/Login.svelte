@@ -1,5 +1,5 @@
 <script>
-	export let sn;
+	import { sn } from "./lib/shared";
 	import { createEventDispatcher, onDestroy, onMount } from "svelte";
 	import { DiscordXHR } from "./lib/DiscordXHR.js";
 	import { centerScroll } from "./lib/helper.js";
@@ -7,7 +7,7 @@
 	const dispatch = createEventDispatcher();
 	const discord = new DiscordXHR();
 
-	function testToken(authorization) {
+	async function testToken(authorization) {
 		return discord.xhrRequestJSON("get", "users/@me/settings", { authorization }).then((a) => {
 			if (a.code === 0) throw a;
 			else return a;
@@ -225,7 +225,10 @@
 		<Button onclick={() => (page = 0)}>Go Back</Button>
 	{:else if page === 2}
 		<div class="separator {state.auth ? 'red' : ''}">
-			ENTER DISCORD AUTH/BACKUP CODE{#if state.auth === "required"}{@html required}{/if}{#if state.auth === "invalid"}<i> - Invalid two-factor auth ticket</i>{/if}
+			ENTER DISCORD AUTH/BACKUP CODE{#if state.auth === "required"}{@html required}{/if}{#if state.auth === "invalid"}<i
+				>
+					- Invalid two-factor auth ticket</i
+				>{/if}
 		</div>
 		<input bind:value={auth} placeholder="Authentication code" type="tel" />
 		<Button onclick={auth_onclick}>Login</Button>
@@ -250,7 +253,7 @@
 		font-weight: 500;
 		font-size: 16px;
 	}
-	
+
 	input {
 		height: 40px;
 		width: 100%;

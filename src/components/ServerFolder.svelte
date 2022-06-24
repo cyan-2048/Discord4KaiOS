@@ -1,21 +1,24 @@
 <script>
-	import { onMount } from "svelte";
-	import { decimal2rgb, rgbaToHex } from "../lib/helper";
+	// components
 	import Server from "./Server.svelte";
 	import ServerMentions from "./ServerMentions.svelte";
-	export let discord;
-	export let serverAck;
+
+	// js imports
+	import { serverAck, discord } from "../lib/shared";
+	import { onMount } from "svelte";
+	import { decimal2rgb } from "../lib/helper";
+
 	export let guild;
 	export let color;
 	export let servers = [];
 	export let id;
-//	export let name;
+	//	export let name;
 	let mentions = 0;
 	let unread = false;
 	let open = true;
 	let main;
 
-//	console.log("server color",name, color)
+	//	console.log("server color",name, color)
 
 	let update = () => {
 		unread = !!main.querySelector(".unread");
@@ -23,8 +26,6 @@
 			.map((a) => Number(a.dataset.mentions) || 0)
 			.reduce((a, b) => a + b, 0);
 	};
-
-	
 
 	function toggleOpen(e) {
 		if (this !== e.target) return;
@@ -41,7 +42,7 @@
 	tabindex="0"
 	on:click={toggleOpen}
 	bind:this={main}
-	style={!open ? `background-color: rgba(${ color ? decimal2rgb(color, true):[88, 101, 242] },0.3)` : null}
+	style={!open ? `background-color: rgba(${color ? decimal2rgb(color, true) : [88, 101, 242]},0.3)` : null}
 	data-focusable={open ? null : ""}
 	data-folder
 	class="{open ? 'open' : ''} {unread ? 'unread' : ''}"

@@ -1,12 +1,13 @@
 <script>
+	// js imports
+	import { serverAck, discord } from "../lib/shared";
+
 	import { createEventDispatcher, onMount } from "svelte";
-	import { isChannelMuted, siftChannels }from "../lib/helper.js";
+	import { isChannelMuted, siftChannels } from "../lib/helper.js";
 	import ServerMentions from "./ServerMentions.svelte";
 	export let dm = false;
-	export let discord;
 	export let server;
 	export let selected;
-	export let serverAck;
 	export let focusable = true;
 	const dispatch = createEventDispatcher();
 

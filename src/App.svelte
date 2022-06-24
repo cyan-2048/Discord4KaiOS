@@ -1,12 +1,21 @@
 <script>
+	// components
 	import Channel from "./components/Channel.svelte";
 	import Channels from "./components/Channels.svelte";
 	import Messages from "./components/Messages.svelte";
 	import Separator from "./components/Separator.svelte";
 	import Servers from "./components/Servers.svelte";
+	import Message from "./components/Message.svelte";
+	import Server from "./components/Server.svelte";
+	import ServerFolder from "./components/ServerFolder.svelte";
+	import MessageSeparator from "./components/MessageSeparator.svelte";
+	import Login from "./Login.svelte";
+	import DateSeparator from "./components/DateSeparator.svelte";
+	import ImageViewer from "./ImageViewer.svelte";
+	import Loading from "./components/Loading.svelte";
+
+	// js
 	import { onMount } from "svelte";
-	import { DiscordXHR } from "./lib/DiscordXHR.js";
-	import { EventEmitter } from "./lib/EventEmitter.js";
 	import {
 		wouldMessagePing,
 		getScrollBottom,
@@ -22,26 +31,9 @@
 		syncCachedGenerator,
 		asyncCachedGenerator,
 	} from "./lib/helper";
-	var discordGateway = new (class extends EventEmitter {
-		constructor() {
-			super();
-			let worker = new Worker("/worker.js");
-			this.worker = worker;
-			worker.onmessage = (e) => {
-				let { event, args } = e.data;
-				this.emit(event, ...args);
-			};
-		}
-		init(token) {
-			this.worker.postMessage({ event: "init", token });
-		}
-		send(object) {
-			this.worker.postMessage({ event: "send", object });
-		}
-	})();
-	import SpatialNavigation from "./lib/spatial_navigation.cjs";
-	const sn = SpatialNavigation;
+	import { discordGateway, sn, discord, typingState, serverAck } from "./lib/shared";
 	sn.init();
+
 	["messages", "channels", "servers"].forEach((id) =>
 		sn.add({
 			id,
@@ -50,15 +42,6 @@
 			restrict: "self-only",
 		})
 	);
-	import Message from "./components/Message.svelte";
-	import Server from "./components/Server.svelte";
-	import ServerFolder from "./components/ServerFolder.svelte";
-	import MessageSeparator from "./components/MessageSeparator.svelte";
-	import Login from "./Login.svelte";
-	import DateSeparator from "./components/DateSeparator.svelte";
-	import TypingState from "./lib/TypingState";
-	import ImageViewer from "./ImageViewer.svelte";
-	import Loading from "./components/Loading.svelte";
 
 	let settings = (() => {
 		const defaultSettings = {
@@ -87,7 +70,6 @@
 	$: settings && (localStorage.settings = JSON.stringify(settings));
 	window.changeSettings = (e) => (settings = { ...settings, ...e });
 
-	let discord = new DiscordXHR({ cache: true });
 	let selected = 1;
 	let appState = "app";
 	let viewerSrc = null;
@@ -200,7 +182,7 @@
 
 	let channelPermissions = {};
 
-	let loadDMS = async () => {
+	const loadDMS = async () => {
 		document.activeElement.blur();
 		channels = [];
 		serverProfile = null;
@@ -235,7 +217,7 @@
 		return sift;
 	};
 
-	let loadChannels = async (noSwitch = false) => {
+	const loadChannels = async (noSwitch = false) => {
 		if (!noSwitch) {
 			discordGateway.send({
 				op: 14,
@@ -277,7 +259,7 @@
 	$: guild === null && loadDMS();
 	$: guild && loadChannels();
 
-	let loadMessages = async (noSwitch = false) => {
+	const loadMessages = async (noSwitch = false) => {
 		channelPermissions = channel.dm
 			? {}
 			: parseRoleAccess(
@@ -361,7 +343,52 @@
 		});
 	});
 
-	let init = async () => {
+	const login = (e) => {
+		appState = "app";
+		localStorage.token = e;
+		discord.login(e);
+		discordGateway.init(e);
+	};
+
+	onMount(() => {
+		const token = localStorage.token;
+		if (token) {
+			discord.login(token);
+			discordGateway.init(token);
+		} else {
+			appState = "login";
+			window.login = login;
+		}
+	});
+
+	window.discord = discord;
+	window.discordGateway = discordGateway;
+	window.changeAppState = (e) => (appState = e);
+	window.changeReadyState = (e) => (ready = e);
+
+	const selectServer = async (e) => {
+		let { id } = e.detail;
+		if (id === null) return (guild = id);
+		let sift = null;
+		let found = servers.find((d) => {
+			if (d.type === "folder") {
+				return (sift = d.servers.find((l) => l.id === id));
+			} else return d.id === id;
+		});
+		if (found.type !== "folder") sift = found;
+		if (sift && guild?.id != sift.id) {
+			guild = sift;
+		} else {
+			selected = 1;
+		}
+	};
+
+	discordGateway.on("t:ready", (a) => {
+		discord.user = a.user;
+		let { user_settings, guilds, read_state, user_guild_settings } = a;
+		Object.assign(discord.cache, { user_settings, guilds, read_state, user_guild_settings });
+	});
+	discordGateway.once("t:ready", async () => {
 		guild = null;
 		ready = true;
 
@@ -401,63 +428,7 @@
 		});
 
 		await loadServers();
-	};
-
-	let login = (e) => {
-		appState = "app";
-		localStorage.token = e;
-		discord.login(e);
-		discordGateway.init(e);
-	};
-
-	onMount(() => {
-		let token = localStorage.token;
-		if (token) {
-			discord.login(token);
-			discordGateway.init(token);
-		} else {
-			appState = "login";
-			window.login = login;
-		}
 	});
-
-	window.discord = discord;
-	window.discordGateway = discordGateway;
-	window.changeAppState = (e) => (appState = e);
-	window.changeReadyState = (e) => (ready = e);
-
-	let selectChannel = async (e) => {
-		let { id } = e.detail;
-		let sift = channels.find((d) => d.id == id);
-		if (sift && channel?.id != sift.id) {
-			channel = sift;
-		} else {
-			selected = 0;
-		}
-	};
-	let selectServer = async (e) => {
-		let { id } = e.detail;
-		if (id === null) return (guild = id);
-		let sift = null;
-		let found = servers.find((d) => {
-			if (d.type === "folder") {
-				return (sift = d.servers.find((l) => l.id === id));
-			} else return d.id === id;
-		});
-		if (found.type !== "folder") sift = found;
-		if (sift && guild?.id != sift.id) {
-			guild = sift;
-		} else {
-			selected = 1;
-		}
-	};
-
-	discordGateway.on("t:ready", (a) => {
-		discord.user = a.user;
-		let { user_settings, guilds, read_state, user_guild_settings } = a;
-		Object.assign(discord.cache, { user_settings, guilds, read_state, user_guild_settings });
-	});
-	discordGateway.once("t:ready", init);
 	discordGateway.on("t:message_delete", (d) => {
 		if (!channel) return;
 		if (d.channel_id == channel.id && messages.find((e) => e.id == d.id)) {
@@ -465,7 +436,6 @@
 		}
 	});
 
-	const serverAck = new EventEmitter();
 	discordGateway.on("t:presence_update", (d) => {
 		if (!discord.cache) return;
 		let e = discord.cache.guilds.find((a) => a.id == d.guild_id);
@@ -626,7 +596,7 @@
 
 	onMount(() => {
 		function initEmoji(link, toSave) {
-			let xhr = new XMLHttpRequest({ mozSystem: true });
+			const xhr = new XMLHttpRequest({ mozSystem: true });
 			xhr.open("get", link, true);
 			xhr.responseType = "blob";
 			xhr.onload = () => {
@@ -643,19 +613,10 @@
 			};
 			xhr.send();
 		}
-		let emoji = localStorage.getItem("emoji-font");
+		const emoji = localStorage.getItem("emoji-font");
 		initEmoji(emoji || "https://github.com/mozilla/twemoji-colr/releases/latest/download/TwemojiMozilla.ttf", !!!emoji);
 	});
 
-	function diff_minutes(dt2, dt1) {
-		var diff = (dt2.getTime() - dt1.getTime()) / 1000;
-		diff /= 60;
-		return Math.abs(Math.round(diff));
-	}
-
-	const evtForward = new EventEmitter();
-
-	const typingState = new TypingState();
 	discordGateway.on("t:typing_start", (d) => typingState.add(d));
 
 	let statusBar = "#36393f";
@@ -671,12 +632,12 @@
 </svelte:head>
 {#if ready}
 	<Servers {appState} {selected}>
-		<Server on:select={selectServer} selected={!guild} {serverAck} {discord} dm={true} />
+		<Server on:select={selectServer} selected={!guild} dm={true} />
 		{#each servers as server (server.id)}
 			{#if server.type === "folder"}
-				<ServerFolder {guild} on:select={selectServer} {serverAck} {discord} {...server} />
+				<ServerFolder {guild} on:select={selectServer} {...server} />
 			{:else}
-				<Server on:select={selectServer} selected={guild?.id === server.id} {serverAck} {server} {discord} />
+				<Server on:select={selectServer} selected={guild?.id === server.id} {server} />
 			{/if}
 		{/each}
 	</Servers>
@@ -686,8 +647,18 @@
 		{/if}
 		{#each channels as channel (channel.id || channel.name)}
 			{#if channel.type !== "separator"}
-				<Channel {discord} {serverAck} guildID={guild ? guild.id : null} on:select={selectChannel} {...channel}
-					>{channel.name || ""}</Channel
+				<Channel
+					guildID={guild ? guild.id : null}
+					on:select={async (e) => {
+						let { id } = e.detail;
+						let sift = channels.find((d) => d.id == id);
+						if (sift && channel?.id != sift.id) {
+							channel = sift;
+						} else {
+							selected = 0;
+						}
+					}}
+					{...channel}>{channel.name || ""}</Channel
 				>
 			{:else if channel.name !== 0}
 				<Separator>{channel.name}</Separator>
@@ -700,11 +671,7 @@
 			viewerSrc = src;
 			appState = "viewer";
 		}}
-		{typingState}
-		{evtForward}
 		{sendMessage}
-		{discord}
-		{sn}
 		{roles}
 		{channel}
 		{channelPermissions}
@@ -722,7 +689,11 @@
 					})}
 				</DateSeparator>
 			{/if}
-			{#if i === 0 || messages[i - 1]?.author.id != message.author?.id || (messages[i - 1] && diff_minutes(new Date(messages[i - 1].timestamp), new Date(message.timestamp)) > 0)}
+			{#if i === 0 || messages[i - 1]?.author.id != message.author?.id || (messages[i - 1] && (function diff_minutes(dt2, dt1) {
+						var diff = (dt2.getTime() - dt1.getTime()) / 1000;
+						diff /= 60;
+						return Math.abs(Math.round(diff));
+					})(new Date(messages[i - 1].timestamp), new Date(message.timestamp)) > 0)}
 				<MessageSeparator
 					{cachedMentions}
 					userID={discord.user.id}
@@ -739,11 +710,8 @@
 				{cachedMentions}
 				{roles}
 				{channel}
-				{discord}
 				profile={serverProfile}
-				{discordGateway}
 				msg={message}
-				{evtForward}
 			/>
 		{/each}
 	</Messages>
@@ -751,7 +719,7 @@
 	<Loading />
 {/if}
 {#if appState === "login"}
-	<Login {sn} on:login={(e) => login(e.detail.token)} />
+	<Login on:login={(e) => login(e.detail.token)} />
 {:else if appState === "viewer"}
 	<ImageViewer
 		on:close={() => {

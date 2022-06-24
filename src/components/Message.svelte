@@ -1,19 +1,27 @@
+<script context="module">
+	import discord_markdown from "../lib/discord-markdown.js";
+	const markdown = discord_markdown.toHTML;
+</script>
+
 <script>
-	export let roles;
-	export let profile;
-	export let discordGateway;
-	export let cachedMentions;
-	export let discord;
-	export let channel;
-	export let guildID;
-	export let evtForward;
-	import { createEventDispatcher, onDestroy, onMount } from "svelte";
-	const dispatch = createEventDispatcher();
-	import { decimal2rgb, hashCode, wouldMessagePing, toHTML, decideHeight } from "../lib/helper.js";
-	import EmojiDict from "../lib/EmojiDict.js";
-	import { toHTML as markdown } from "../lib/discord-markdown.cjs";
+	// components
 	import LottieSticker from "./LottieSticker.svelte";
 	import ReactionButton from "./ReactionButton.svelte";
+
+	// js imports
+	import { evtForward, discord, discordGateway } from "../lib/shared";
+	import { createEventDispatcher, onMount } from "svelte";
+	const dispatch = createEventDispatcher();
+	import { decimal2rgb, wouldMessagePing, toHTML, decideHeight } from "../lib/helper.js";
+	import EmojiDict from "../lib/EmojiDict.js";
+
+	// props
+	export let roles;
+	export let profile;
+	export let cachedMentions;
+	export let channel;
+	export let guildID;
+
 	let message = { ...$$props.msg }; // get rid of reference, well let's just hope it doesn't change yeah
 	let main;
 

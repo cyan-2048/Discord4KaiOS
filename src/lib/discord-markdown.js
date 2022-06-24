@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
 
-const markdown = require("simple-markdown");
+import markdown from "simple-markdown";
 
 function htmlTag(tagName, content, attributes, isClosed = true, state = {}) {
 	if (typeof isClosed === "object") {
@@ -50,7 +50,9 @@ markdown.htmlTag = htmlTag;
 const rules = {
 	blockQuote: Object.assign({}, markdown.defaultRules.blockQuote, {
 		match: function (source, state, prevSource) {
-			return !/^$|\n *$/.test(prevSource) || state.inQuote ? null : /^( *>>> ([\s\S]*))|^( *> [^\n]*(\n *> [^\n]*)*\n?)/.exec(source);
+			return !/^$|\n *$/.test(prevSource) || state.inQuote
+				? null
+				: /^( *>>> ([\s\S]*))|^( *> [^\n]*(\n *> [^\n]*)*\n?)/.exec(source);
 		},
 		parse: function (capture, parse, state) {
 			const all = capture[0];
@@ -74,7 +76,12 @@ const rules = {
 			};
 		},
 		html: (node, output, state) => {
-			return htmlTag("pre", htmlTag("code", markdown.sanitizeText(node.content), { "data-lang": node.lang }, state), null, state);
+			return htmlTag(
+				"pre",
+				htmlTag("code", markdown.sanitizeText(node.content), { "data-lang": node.lang }, state),
+				null,
+				state
+			);
 		},
 	}),
 	newline: markdown.defaultRules.newline,
@@ -184,7 +191,12 @@ const rulesDiscord = {
 			};
 		},
 		html: function (node, output, state) {
-			return htmlTag("span", state.discordCallback.user(node), { class: "mentions", "data-id": node.id, "data-type": "user" }, state);
+			return htmlTag(
+				"span",
+				state.discordCallback.user(node),
+				{ class: "mentions", "data-id": node.id, "data-type": "user" },
+				state
+			);
 		},
 	},
 	discordChannel: {
@@ -196,7 +208,12 @@ const rulesDiscord = {
 			};
 		},
 		html: function (node, output, state) {
-			return htmlTag("span", state.discordCallback.channel(node), { class: "mentions", "data-id": node.id, "data-type": "channel" }, state);
+			return htmlTag(
+				"span",
+				state.discordCallback.channel(node),
+				{ class: "mentions", "data-id": node.id, "data-type": "channel" },
+				state
+			);
 		},
 	},
 	discordRole: {
@@ -208,7 +225,12 @@ const rulesDiscord = {
 			};
 		},
 		html: function (node, output, state) {
-			return htmlTag("span", state.discordCallback.role(node), { class: "mentions", "data-id": node.id, "data-type": "role" }, state);
+			return htmlTag(
+				"span",
+				state.discordCallback.role(node),
+				{ class: "mentions", "data-id": node.id, "data-type": "role" },
+				state
+			);
 		},
 	},
 	discordEmoji: {
@@ -225,7 +247,12 @@ const rulesDiscord = {
 			return htmlTag(
 				"div",
 				"",
-				{ class: "emoji", style: `--emoji_url: url('https://cdn.discordapp.com/emojis/${node.id}.${node.animated ? "gif" : "png"}?size=32');` },
+				{
+					class: "emoji",
+					style: `--emoji_url: url('https://cdn.discordapp.com/emojis/${node.id}.${
+						node.animated ? "gif" : "png"
+					}?size=32');`,
+				},
 				true,
 				state
 			);
@@ -324,7 +351,7 @@ function toHTML(source, options, customParser, customHtmlOutput) {
 	return _htmlOutput(_parser(source, state), state);
 }
 
-module.exports = {
+const toExport = {
 	parser: (source) => parser(source, { inline: true }),
 	htmlOutput,
 	toHTML,
@@ -334,3 +361,5 @@ module.exports = {
 	markdownEngine: markdown,
 	htmlTag,
 };
+
+export default toExport;
