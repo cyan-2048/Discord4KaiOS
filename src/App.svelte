@@ -88,7 +88,7 @@
 		let { key, target } = e;
 		repeatTimeout = setTimeout(() => {
 			isRepeating = true;
-		}, 200);
+		}, 600);
 		if (appState !== "app" || e.shiftKey) return;
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
@@ -570,7 +570,7 @@
 		window.cachedMentions = final;
 		return final;
 	})();
-	function sendMessage(e, opts = {}) {
+	async function sendMessage(e, opts = {}) {
 		return discord.sendMessage(channel.id, e, opts);
 	}
 

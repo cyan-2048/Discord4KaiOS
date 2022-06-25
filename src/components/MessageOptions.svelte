@@ -60,7 +60,7 @@
 
 <style>
 	.closing {
-		transform: translateY(100vh);
+		bottom: -100vh;
 	}
 
 	main {
@@ -72,7 +72,7 @@
 		background-color: #18191c;
 		z-index: 3;
 		animation: opening 0.3s ease;
-		transition: transform ease 0.3s;
+		transition: bottom ease 0.3s;
 		border-radius: 5px;
 	}
 	main > div {
@@ -88,10 +88,10 @@
 
 	@keyframes opening {
 		from {
-			transform: translateY(100vh);
+			bottom: -100vh;
 		}
 		to {
-			transform: none;
+			bottom: 5px;
 		}
 	}
 </style>

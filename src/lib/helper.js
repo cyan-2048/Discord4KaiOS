@@ -127,7 +127,7 @@ export function findScrollParent(node) {
 import scrollIntoView from "scroll-into-view";
 
 export function centerScroll(el, sync) {
-	scrollIntoView(el, { time: sync ? 1 : 300, align: { left: 0 } });
+	scrollIntoView(el, { time: sync ? 0 : 300, align: { left: 0 } });
 }
 
 export function isChannelMuted(discordInstance, channel, guildID) {

@@ -259,7 +259,8 @@
 			let { target } = e;
 			if (target.classList.contains("spoiler") && target.tagName === "SPAN") target.classList.toggle("active");
 		}}
-		class="content {message.edited_timestamp ? 'edited' : ''}"
+		class="content"
+		class:edited={!!message.edited_timestamp}
 		bind:this={contentEl}
 	>
 		{@html content}
@@ -446,5 +447,90 @@
 		color: rgb(163, 166, 170);
 		margin-left: 3px;
 		font-size: 0.7em;
+	}
+
+	.content :global(.emoji) {
+		position: relative;
+		width: 16px;
+		height: 16px;
+		display: inline-block;
+	}
+
+	.content :global(.emoji::after) {
+		content: "";
+		position: absolute;
+		background-image: var(--emoji_url);
+		width: 16px;
+		height: 16px;
+		top: 3px;
+		background-position: center;
+		background-repeat: no-repeat;
+		background-attachment: local;
+		overflow: hidden;
+		background-size: contain;
+	}
+
+	.after :global(.mentions),
+	.after :global(.mentions::after),
+	.content :global(.mentions),
+	.content :global(.mentions::after) {
+		background-color: var(--color, rgba(88, 101, 242, 0.3));
+		border-radius: 2px;
+		color: #dee0fc;
+	}
+
+	.content :global(.emoji-big),
+	.content :global(.emoji-big::after) {
+		width: 32px !important;
+		height: 32px !important;
+	}
+
+	.content :global(pre),
+	.content :global(code) {
+		font-family: "Droid Sans Mono", monospace;
+		border-radius: 3px;
+		background-color: #2f3136;
+	}
+
+	.content :global(code) {
+		font-size: 0.9em;
+		padding: 1px;
+	}
+
+	.content :global(pre) {
+		margin: 2px 0;
+		border: solid 1.5px #202225;
+		padding: 2px 5px;
+		word-break: break-all;
+		white-space: pre-wrap;
+	}
+
+	.content :global(.spoiler) {
+		width: 100%;
+		height: 100%;
+		background-color: #202225;
+		color: transparent;
+	}
+
+	.spoiler.active {
+		background-color: hsla(0, 0%, 100%, 0.1);
+		color: white;
+	}
+
+	.content :global(blockquote) {
+		margin: 0;
+		padding-left: 8px;
+		position: relative;
+	}
+
+	.content :global(blockquote::before) {
+		content: "";
+		position: absolute;
+		height: 100%;
+		width: 3px;
+		left: 0;
+		top: 0;
+		background-color: #4f545c;
+		border-radius: 3px;
 	}
 </style>
