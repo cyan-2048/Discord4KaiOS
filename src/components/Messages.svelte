@@ -1,8 +1,19 @@
 <script>
+	// components
+	import MessageOptions from "./MessageOptions.svelte";
+
+	// js imports
 	import { createEventDispatcher, onMount } from "svelte";
 	import { last, hashCode } from "../lib/helper";
-	import { typingState, discord, evtForward } from "../lib/shared.js";
+	import { typingState, discord, evtForward, sn } from "../lib/shared.js";
 	import { FilePickerInstance } from "../lib/FileHandlers.js";
+
+	sn.add({
+		id: "message-opts",
+		selector: "[data-msg-options] > *",
+		restrict: "self-only",
+	});
+
 	window.FilePickerInstance = FilePickerInstance;
 	const picker = new FilePickerInstance();
 
@@ -49,6 +60,7 @@
 			let current = [];
 			if (state.length < 4) {
 				for (const user of state) {
+					if (user === discord.user.id) continue;
 					let s_profile = await cachedMentions("getServerProfile", guildID, user);
 					current.push(s_profile.nick || s_profile.user?.username || "unknown-user");
 				}
@@ -81,23 +93,6 @@
 		} else {
 			enterFunc = null;
 		}
-	});
-
-	window.addEventListener("keydown", ({ key, target }) => {
-		if (!messageFocused || selected !== 0 || appState !== "app") return;
-		if (key === "Enter")
-			switch (enterFunc) {
-				case "image":
-					{
-						const images = target.querySelectorAll("img.v-image");
-						if (images.length === 1) dispatch("v-image", { src: images[0].src }); // to-do support multiple images
-					}
-					break;
-				case "unspoiler":
-				case "spoiler":
-					target.querySelectorAll(".spoiler").forEach((el) => el.classList.toggle("active"));
-					break;
-			}
 	});
 
 	window.addEventListener("sn:navigatefailed", (e) => {
@@ -234,12 +229,67 @@
 
 	$: display = appState !== "app" ? "none" : null;
 	$: readOnly = channelPermissions.write === false;
+
+	let showOptions = false;
+	$: selected !== 0 && (showOptions = false);
+	let selectedMessage = null;
+	let selectedElement = null;
+
+	window.addEventListener("keydown", ({ key, target }) => {
+		if (selected !== 0 || appState !== "app") return;
+		if (
+			!showOptions &&
+			(key == "Backspace" || key == "ArrowLeft" || key == "SoftLeft") &&
+			(target.tagName !== "TEXTAREA" || target.value === "")
+		) {
+			setTimeout(() => (selected = 1), 50);
+		}
+		if (showOptions || !messageFocused) return;
+		if (key === "Enter")
+			switch (enterFunc) {
+				case "image":
+					const images = target.querySelectorAll("img.v-image");
+					if (images.length === 1) dispatch("v-image", { src: images[0].src }); // to-do support multiple images
+
+					break;
+				case "unspoiler":
+				case "spoiler":
+					target.querySelectorAll(".spoiler").forEach((el) => el.classList.toggle("active"));
+					break;
+			}
+		if (key === "SoftRight") {
+			target.dispatchEvent(new CustomEvent("option"));
+		}
+	});
+
+	function resetSelected() {
+		selectedElement = null;
+		showOptions = false;
+		selectedMessage = null;
+	}
+
+	evtForward.on("message_options", (message, el) => {
+		resetSelected();
+		selectedMessage = message;
+		selectedElement = el;
+		showOptions = true;
+	});
 </script>
 
+{#if showOptions}
+	<MessageOptions
+		on:close={resetSelected}
+		{channel}
+		el={selectedElement}
+		message={selectedMessage}
+		{channelPermissions}
+	/>
+{/if}
 <div
 	bind:this={messages}
 	data-messages
-	class={["zero", "one"][selected] || ""}
+	class:zero={selected === 0}
+	class:one={selected === 1}
 	style:display
 	style:height={textAreaHeight - (typing_indicator?.offsetHeight || 0) + "px"}
 	class:selected={selected === 0}

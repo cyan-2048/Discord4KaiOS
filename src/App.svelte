@@ -76,19 +76,23 @@
 
 	let ready = false;
 
+	let isRepeating = false;
+	let repeatTimeout = null;
+
+	window.addEventListener("keyup", (e) => {
+		isRepeating = false;
+		clearTimeout(repeatTimeout);
+	});
+
 	window.addEventListener("keydown", (e) => {
 		let { key, target } = e;
+		repeatTimeout = setTimeout(() => {
+			isRepeating = true;
+		}, 200);
 		if (appState !== "app" || e.shiftKey) return;
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
 			if (/Enter/.test(key)) target.click();
-		}
-		if (
-			selected == 0 &&
-			(key == "Backspace" || key == "ArrowLeft" || key == "SoftLeft") &&
-			(target.tagName !== "TEXTAREA" || target.value === "")
-		) {
-			setTimeout(() => (selected = 1), 50);
 		}
 
 		if (selected === 1 && /-|Left|Back/.test(key)) {
@@ -114,7 +118,7 @@
 		if (actEl.offsetHeight > messages.offsetHeight) {
 			messages.scrollBy({
 				top: direction === "up" ? -66 : 66,
-				behavior: "smooth",
+				behavior: isRepeating ? "auto" : "smooth",
 			});
 		}
 		if (direction === "down" && getScrollBottom(messages) === 0) {
@@ -133,7 +137,7 @@
 			e.preventDefault();
 			messages.scrollBy({
 				top: direction === "up" ? -66 : 66,
-				behavior: "smooth",
+				behavior: isRepeating ? "auto" : "smooth",
 			});
 			// if (!next) // console.warn("next element to focus not found!");
 			if (!next) return;
@@ -143,14 +147,14 @@
 			} else if (inViewport(next)) {
 				// console.warn("next element is not bigger than viewport and is in viewport right now");
 				next.focus();
-				setTimeout(() => centerScroll(next), 50);
+				setTimeout(() => centerScroll(next, isRepeating), 50);
 			}
-		} else if (next && next.offsetHeight < messages.offsetHeight) setTimeout(() => centerScroll(next), 50);
+		} else if (next && next.offsetHeight < messages.offsetHeight) setTimeout(() => centerScroll(next, isRepeating), 50);
 	});
 
 	window.addEventListener("sn:focused", ({ target, detail, native }) => {
 		if (appState !== "app" || selected !== 2) return;
-		setTimeout(() => centerScroll(target), 50);
+		setTimeout(() => centerScroll(target, isRepeating), 50);
 	});
 
 	$: selected !== null &&
@@ -673,7 +677,7 @@
 		{channel}
 		{channelPermissions}
 		{appState}
-		{selected}
+		bind:selected
 		guildID={guild ? guild.id : null}
 	>
 		{#each messages as message, i (message.id)}

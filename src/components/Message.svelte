@@ -238,8 +238,12 @@
 		});
 		evtForward.emit("message_edit", message, clone.innerText, mentioned);
 	}}
+	on:option={function () {
+		console.log("OPTION");
+		evtForward.emit("message_options", message, this);
+	}}
 	data-focusable
-	class={pinged ? "mention" : ""}
+	class:mention={pinged}
 	tabindex="0"
 	bind:this={main}
 	id={"msg" + message.id}

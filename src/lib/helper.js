@@ -127,7 +127,7 @@ export function findScrollParent(node) {
 import scrollIntoView from "scroll-into-view";
 
 export function centerScroll(el, sync) {
-	scrollIntoView(el, { time: sync ? 0 : 300, align: { left: 0 } });
+	scrollIntoView(el, { time: sync ? 1 : 300, align: { left: 0 } });
 }
 
 export function isChannelMuted(discordInstance, channel, guildID) {
@@ -276,6 +276,10 @@ export function rgbaToHex(d = [0, 0, 0], b = [0, 0, 0], a = 1) {
 	return "#" + ((r << 16) | (g << 8) | b).toString(16);
 }
 
+export function delay(timeout) {
+	return new Promise((res) => setTimeout(res, timeout));
+}
+
 // returns async function in which there's a limit to how many executions can be done
 // if number of unfinished request exceeds limit,
 // we wait for a request to finish before executing another
@@ -283,9 +287,7 @@ export function rgbaToHex(d = [0, 0, 0], b = [0, 0, 0], a = 1) {
 export function asyncRateLimitGenerator(func, limit = 5) {
 	const cache = {};
 	let current = 0;
-	function delay(timeout) {
-		return new Promise((res) => setTimeout(res, timeout));
-	}
+
 	const final = async function () {
 		const args = [...arguments];
 		const hash = hashCode(args.join(""));

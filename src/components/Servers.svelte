@@ -3,7 +3,14 @@
 	export let appState;
 </script>
 
-<div data-servers style:display={appState !== "app" ? "none" : null} class={['', '', 'two'][selected] || ''} class:selected={selected === 2}><slot /></div>
+<div
+	data-servers
+	style:display={appState !== "app" ? "none" : null}
+	class:two={selected === 2}
+	class:selected={selected === 2}
+>
+	<slot />
+</div>
 
 <style>
 	div {
@@ -18,6 +25,7 @@
 		background-color: #202225;
 		padding: 8px 12px;
 		overflow-y: auto;
+		z-index: 3;
 	}
 	.two {
 		transform: none;
