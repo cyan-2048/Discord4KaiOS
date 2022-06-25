@@ -625,6 +625,15 @@
 			statusBar = selected === 0 ? "#36393f" : "#2f3136";
 		}
 	}
+	function selectChannel(e) {
+		let { id } = e.detail;
+		let sift = channels.find((d) => d.id == id);
+		if (sift && channel?.id != sift.id) {
+			channel = sift;
+		} else {
+			selected = 0;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -647,19 +656,7 @@
 		{/if}
 		{#each channels as channel (channel.id || channel.name)}
 			{#if channel.type !== "separator"}
-				<Channel
-					guildID={guild ? guild.id : null}
-					on:select={async (e) => {
-						let { id } = e.detail;
-						let sift = channels.find((d) => d.id == id);
-						if (sift && channel?.id != sift.id) {
-							channel = sift;
-						} else {
-							selected = 0;
-						}
-					}}
-					{...channel}>{channel.name || ""}</Channel
-				>
+				<Channel guildID={guild ? guild.id : null} on:select={selectChannel} {...channel}>{channel.name || ""}</Channel>
 			{:else if channel.name !== 0}
 				<Separator>{channel.name}</Separator>
 			{/if}
