@@ -27,12 +27,14 @@
 		"rollup-plugin-svelte": "^7.0.0",
 		"rollup-plugin-terser": "^7.0.0",
 		"svelte": "^3.44.0",
-		"vite": "^2.9.9"
+		"vite": "^2.9.9",
+		"vite-plugin-full-reload": "^1.0.0"
 	},
 	"dependencies": {
 		"emojibase": "*",
 		"emojibase-data": "^7.0.1",
 		"jsqr": "^1.4.0",
+		"localforage": "^1.10.0",
 		"lottie-web": "^5.9.4",
 		"scroll-into-view": "^1.16.0",
 		"simple-markdown": "^0.7.3"

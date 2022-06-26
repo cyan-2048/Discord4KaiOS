@@ -8,7 +8,7 @@
 	export let ch_type = "text";
 	export let id = null;
 	export let guildID;
-	export let recipients;
+	export let recipients = [];
 	export let dm = false;
 	export let name = null;
 

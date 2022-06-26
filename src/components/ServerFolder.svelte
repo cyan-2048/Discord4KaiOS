@@ -8,10 +8,8 @@
 	import { onMount } from "svelte";
 	import { decimal2rgb } from "../lib/helper";
 
-	export let guild;
-	export let color;
+	export let guild, color, id, name, type;
 	export let servers = [];
-	export let id;
 	//	export let name;
 	let mentions = 0;
 	let unread = false;
@@ -39,6 +37,8 @@
 
 <main
 	{id}
+	data-type={type}
+	data-name={name}
 	tabindex="0"
 	on:click={toggleOpen}
 	bind:this={main}
@@ -54,7 +54,7 @@
 		</div>
 	{/if}
 	{#each servers as server (server.id)}
-		<Server focusable={open} on:select selected={guild?.id === server.id} {serverAck} {server} {discord} />
+		<Server focusable={open} on:select selected={guild?.id === server.id} {server} />
 	{/each}
 	{#if mentions > 0 && !open}
 		<ServerMentions color="#202225">{mentions}</ServerMentions>

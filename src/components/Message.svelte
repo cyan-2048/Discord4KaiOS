@@ -238,9 +238,11 @@
 		});
 		evtForward.emit("message_edit", message, clone.innerText, mentioned);
 	}}
-	on:option={function () {
-		console.log("OPTION");
+	on:options={function () {
 		evtForward.emit("message_options", message, this);
+	}}
+	on:reply={function () {
+		evtForward.emit("message_reply", message, this);
 	}}
 	data-focusable
 	class:mention={pinged}
@@ -513,7 +515,7 @@
 		color: transparent;
 	}
 
-	.spoiler.active {
+	.content :global(.spoiler.active) {
 		background-color: hsla(0, 0%, 100%, 0.1);
 		color: white;
 	}

@@ -248,7 +248,7 @@ class DiscordXHR {
 			let g = this.cache.guilds.find((a) => a.id == guildId);
 			if (g) {
 				let e = g.members.find((a) => a.user.id == userId);
-				if (e) return this._res(e);
+				if (e) return this._res({ ...e, guild_id: guildId });
 			}
 		}
 		return this.xhrRequestJSON("GET", `guilds/${guildId}/members/${userId == "@me" ? this.user.id : userId}`);

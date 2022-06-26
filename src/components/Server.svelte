@@ -6,7 +6,7 @@
 	import { isChannelMuted, siftChannels } from "../lib/helper.js";
 	import ServerMentions from "./ServerMentions.svelte";
 	export let dm = false;
-	export let server;
+	export let server = null;
 	export let selected;
 	export let focusable = true;
 	const dispatch = createEventDispatcher();

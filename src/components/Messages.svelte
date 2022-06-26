@@ -5,7 +5,7 @@
 	// js imports
 	import { createEventDispatcher, onMount } from "svelte";
 	import { last, hashCode } from "../lib/helper";
-	import { typingState, discord, evtForward, sn } from "../lib/shared.js";
+	import { typingState, discord, evtForward } from "../lib/shared.js";
 	import { FilePickerInstance } from "../lib/FileHandlers.js";
 
 	window.FilePickerInstance = FilePickerInstance;
@@ -15,7 +15,7 @@
 	export let appState;
 	export let channelPermissions;
 	export let sendMessage;
-	// export let sn;
+	export let _messages;
 	// export let roles;
 	export let guildID;
 	export let channel;
@@ -24,6 +24,8 @@
 	let textarea, after, con, messages, softkeys, typing_indicator;
 	let textAreaHeight = 0;
 	let typingIndicatorBottom = 0;
+
+	let slowmode = null;
 
 	function height() {
 		after.scrollTop = textarea.scrollTop;
@@ -113,6 +115,7 @@
 			textarea.oninput();
 			height();
 			mentioned = mentions;
+			textarea.focus();
 		});
 
 		let replaceMentions = (content) => {
@@ -131,10 +134,23 @@
 		textarea.onkeydown = function (e) {
 			let { key } = e;
 			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(messages.children)?.focus(), 50);
-			setTimeout(() => {
+			setTimeout(async () => {
 				if (!messageEditing && ("SoftLeft" === key || "End" === key) && this.value !== "") {
 					if (this.value.startsWith("s/")) sendMessage.sed(this.value);
-					else sendMessage(replaceMentions(this.value)); // to do replace mention elements
+					else {
+						if (slowmode !== null && slowmode !== 0) return;
+						const promise = sendMessage(replaceMentions(this.value)); // to do replace mention elements;
+						const send = slowmode === null ? null : await promise;
+						if (send) {
+							slowmode = channel.rate_limit_per_user;
+							if (slowmode) startTick();
+							if (send.retry_after) {
+								slowmode = Math.round(send.retry_after) + 1;
+								startTick();
+								return;
+							}
+						}
+					}
 					this.value = "";
 					this.oninput();
 				}
@@ -253,7 +269,7 @@
 					break;
 			}
 		if (key === "SoftRight") {
-			target.dispatchEvent(new CustomEvent("option"));
+			target.dispatchEvent(new CustomEvent("options"));
 		}
 	});
 
@@ -269,6 +285,36 @@
 		selectedElement = el;
 		showOptions = true;
 	});
+
+	let tick;
+
+	function startTick() {
+		clearTimeout(tick);
+		tick = setTimeout(function tick() {
+			if (slowmode < 1) return;
+			slowmode -= 1;
+			setTimeout(tick, 1000);
+		}, 1000);
+	}
+
+	$: if (channel && selected === 0) {
+		if (channelPermissions.manage_messages !== true) {
+			const rate = channel.rate_limit_per_user;
+			const now = Date.now() / 1000;
+			const find = last(_messages.filter((a) => a.author.id === discord.user.id))?.timestamp;
+			const lastMessage = find ? new Date(find) / 1000 : now;
+			if (rate > 0) {
+				const diff = Math.round(now - lastMessage);
+				if (diff === 0 || diff > rate) slowmode = 0;
+				else if (diff < rate) {
+					slowmode = rate - diff;
+				}
+				startTick();
+			} else {
+				slowmode = null;
+			}
+		} else slowmode = null;
+	}
 </script>
 
 {#if showOptions}
@@ -290,6 +336,30 @@
 	class:selected={selected === 0}
 >
 	<slot />
+</div>
+<div
+	class="frame"
+	class:zero={selected === 0}
+	class:one={selected === 1}
+	style:display
+	style:height={textAreaHeight - (typing_indicator?.offsetHeight || 0) + "px"}
+>
+	{#if slowmode !== null}
+		<div class="slowmode">
+			<span>
+				{slowmode}
+			</span>
+			<svg width="16" height="16" viewBox="0 0 24 24"
+				><g fill="none" fill-rule="evenodd"
+					><path
+						fill="currentColor"
+						fill-rule="nonzero"
+						d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"
+					/></g
+				></svg
+			>
+		</div>
+	{/if}
 </div>
 {#if currentTypingState.length > 0 && appState === "app" && selected === 0}
 	<div bind:this={typing_indicator} style:bottom="{typingIndicatorBottom}px" id="typing">
@@ -317,7 +387,9 @@
 </div>
 <div
 	bind:this={softkeys}
-	class="softkeys {['zero', 'one'][selected] || ''}"
+	class:zero={selected === 0}
+	class:one={selected === 1}
+	class="softkeys"
 	style:display={readOnly || display ? "none" : null}
 >
 	<div>
@@ -372,6 +444,23 @@
 </div>
 
 <style>
+	.slowmode {
+		position: absolute;
+		bottom: 1px;
+		font-size: 14px;
+		height: 20px;
+		padding: 2px 5px;
+		display: flex;
+		line-height: 15px;
+		right: 4px;
+		bottom: 3px;
+		color: rgb(220, 221, 222);
+		background-color: #2f3136;
+		border-radius: 15px;
+	}
+	.slowmode span {
+		margin-right: 3px;
+	}
 	#typing {
 		width: 100vw;
 		position: absolute;
@@ -388,20 +477,22 @@
 		margin: 2px 0;
 		height: 18px;
 	}
-	svg {
+	.softkeys svg {
 		height: 20px;
 		border-radius: 20px;
 		width: auto;
 		padding: 0 5px;
 		background-color: #2f3136;
 	}
-	[data-messages] {
+	[data-messages],
+	.frame {
 		position: absolute;
 		top: 0;
 		left: 0;
 		overflow: auto;
 	}
 	[data-messages],
+	.frame,
 	.grow-wrap,
 	.softkeys,
 	.softkeys-icon {
@@ -409,6 +500,11 @@
 		transform: translateX(100vw);
 		transition: transform 0.4s ease;
 		background-color: #36393f;
+	}
+	.frame {
+		z-index: 0;
+		background-color: unset;
+		pointer-events: none;
 	}
 	.one {
 		transform: translateX(50vw);

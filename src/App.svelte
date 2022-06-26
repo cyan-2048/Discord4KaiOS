@@ -15,6 +15,7 @@
 	import Loading from "./components/Loading.svelte";
 
 	// js
+	import localforage from "localforage";
 	import { onMount } from "svelte";
 	import {
 		wouldMessagePing,
@@ -32,33 +33,9 @@
 		asyncCachedGenerator,
 	} from "./lib/helper";
 	import { discordGateway, sn, discord, typingState, serverAck } from "./lib/shared";
+	import { settings } from "./lib/stores";
 
-	let settings = (() => {
-		const defaultSettings = {
-			custom_rpc: true,
-		};
-		let fromStorage = localStorage.settings;
-		if (fromStorage) {
-			fromStorage = JSON.parse(fromStorage);
-			for (const key in defaultSettings) {
-				if (!(key in fromStorage)) {
-					fromStorage[key] = defaultSettings[key];
-				}
-			}
-			for (const key in fromStorage) {
-				if (!(key in defaultSettings)) {
-					delete fromStorage[key];
-				}
-			}
-			localStorage.settings = JSON.stringify(fromStorage);
-			return fromStorage;
-		} else {
-			return { ...defaultSettings };
-		}
-	})();
-
-	$: settings && (localStorage.settings = JSON.stringify(settings));
-	window.changeSettings = (e) => (settings = { ...settings, ...e });
+	window.changeSettings = (e) => ($settings = { ...$settings, ...e });
 
 	let selected = 1;
 	let appState = "app";
@@ -167,6 +144,13 @@
 	let serverProfile = null;
 	let roles = null;
 	let channel = null;
+
+	discordGateway.on("t:guild_member_update", (d) => {
+		if (!serverProfile) return;
+		if (serverProfile.guild_id === d.guild_id && serverProfile.user.id === d.user.id) {
+			serverProfile = { ...serverProfile, ...d };
+		}
+	});
 
 	const ack = (e) => discord.xhrRequestJSON("post", `channels/${channel.id}/messages/${e}/ack`, {}, { token: "null" });
 
@@ -496,8 +480,9 @@
 		if (d.guild_id) {
 			const e = discord.cache.guilds.find((a) => a.id === d.guild_id);
 			const sift = e.channels.find((e) => e.id === d.id);
-			Object.assign(sift, d);
+			const updated = Object.assign(sift, d);
 			if (guild && guild.id === d.guild_id) loadChannels(true);
+			if (channel && channel.id === d.id) channel = updated;
 		}
 	});
 
@@ -557,6 +542,16 @@
 			}
 			return done || (await final("getProfile", id)).user;
 		});
+
+		discordGateway.on("t:guild_member_update", (d) => {
+			Object.values(final.cache).forEach((a) => {
+				if (!a) return;
+				if (d.guild_id === a.guild_id && a.user?.id === d.user.id) {
+					Object.assign(a, d);
+				}
+			});
+		});
+
 		window.cachedMentions = final;
 		return final;
 	})();
@@ -588,27 +583,24 @@
 		if (modified !== original) discord.editMessage(channel.id, findMessage.id, modified);
 	};
 
-	onMount(() => {
-		function initEmoji(link, toSave) {
-			const xhr = new XMLHttpRequest({ mozSystem: true });
-			xhr.open("get", link, true);
-			xhr.responseType = "blob";
-			xhr.onload = () => {
-				let r = xhr.response;
-				let el = document.createElement("style");
-				let url = URL.createObjectURL(r);
-				el.innerHTML = `@font-face { font-family: twemoji; src: url("${url}");}`;
-				document.documentElement.appendChild(el);
-				if (toSave === true) {
-					let reader = new FileReader();
-					reader.readAsDataURL(r);
-					reader.onloadend = () => localStorage.setItem("emoji-font", reader.result);
-				}
-			};
-			xhr.send();
+	onMount(async () => {
+		function append(blob) {
+			let el = document.createElement("style");
+			el.innerHTML = `@font-face { font-family: twemoji; src: url("${URL.createObjectURL(blob)}");}`;
+			document.documentElement.appendChild(el);
 		}
-		const emoji = localStorage.getItem("emoji-font");
-		initEmoji(emoji || "https://github.com/mozilla/twemoji-colr/releases/latest/download/TwemojiMozilla.ttf", !!!emoji);
+		async function downloadEmoji(link) {
+			const res = await fetch(link);
+			const blob = await res.blob();
+			append(blob);
+			await localforage.setItem("emoji-font", blob);
+		}
+		const emoji = await localforage.getItem("emoji-font");
+		if (emoji) append(emoji);
+		else
+			await downloadEmoji(
+				"https://api.allorigins.win/raw?url=https://github.com/mozilla/twemoji-colr/releases/latest/download/TwemojiMozilla.ttf"
+			);
 	});
 
 	discordGateway.on("t:typing_start", (d) => typingState.add(d));
@@ -662,6 +654,7 @@
 			viewerSrc = { src, url };
 			appState = "viewer";
 		}}
+		_messages={messages}
 		{sendMessage}
 		{roles}
 		{channel}

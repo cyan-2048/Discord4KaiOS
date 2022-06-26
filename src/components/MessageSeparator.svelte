@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from "svelte";
 	import { decimal2rgb } from "../lib/helper";
+	import { discordGateway } from "../lib/shared";
 
 	export let id = null;
 	export let name = null;
@@ -19,22 +20,38 @@
 
 	let image = avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.jpg?size=24` : null;
 
-	onMount(async () => {
+	async function update(_profile = profile) {
 		if (channel.dm) return;
 		if (id && discriminator !== "0000" /*i think this is how we can differ webhooks*/) {
-			let s_profile = userID === id ? profile : await cachedMentions("getServerProfile", guildID, id);
+			let s_profile = userID === id ? _profile : await cachedMentions("getServerProfile", guildID, id);
 			if (!s_profile || !s_profile.roles) return;
 			nick = s_profile.nick;
 			if (roles) {
-				let role = [...roles].sort((a, b) => b.position - a.position).find((o) => s_profile.roles.includes(o.id) && o.color > 0);
+				let role = [...roles]
+					.sort((a, b) => b.position - a.position)
+					.find((o) => s_profile.roles.includes(o.id) && o.color > 0);
 				if (role) color = decimal2rgb(role.color, true);
 			}
 		}
+	}
+
+	onMount(() => {
+		update();
+		function member_handler(d) {
+			if (d.user.id === id) {
+				update(d);
+			}
+		}
+		discordGateway.on("t:guild_member_update", member_handler);
+		return () => {
+			discordGateway.off("t:guild_member_update", member_handler);
+		};
 	});
 </script>
 
 <main data-separator>
-	<img src={image || "/css/default.png"} alt /><b style={color ? `color: rgb(${color});` : null}>{nick || name}</b>{#if bot}
+	<img src={image || "/css/default.png"} alt /><b style={color ? `color: rgb(${color});` : null}>{nick || name}</b
+	>{#if bot}
 		<div class="bot">{discriminator === "0000" ? "WEBHOOK" : "BOT"}</div>
 	{/if}
 </main>
