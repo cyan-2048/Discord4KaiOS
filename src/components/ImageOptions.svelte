@@ -103,7 +103,7 @@
 
 	main {
 		width: calc(100vw - 10px);
-		position: absolute;
+		position: fixed;
 		bottom: 5px;
 		left: 5px;
 		padding: 8px;

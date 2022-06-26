@@ -28,10 +28,9 @@ frontend ->
 - discord mentions✅(@ / #, \*(no spaces username))
 - edit messages✅(*desktop)
 - image viewer✅(\*(messages with one image))
-- more options(?)
+- more options(\*(ui))
 - settings(?)
 - load more button
-- replies
 
 maybe ->
 - threads
