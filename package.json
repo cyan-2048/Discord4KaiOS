@@ -4,8 +4,7 @@
 	"private": true,
 	"scripts": {
 		"build": "rollup -c",
-		"dev": "rollup -c -w",
-		"start": "sirv public --no-clear",
+		"dev": "vite",
 		"quick": "quick=true rollup -c"
 	},
 	"devDependencies": {
@@ -18,22 +17,22 @@
 		"@rollup/plugin-commonjs": "^17.0.0",
 		"@rollup/plugin-json": "^4.1.0",
 		"@rollup/plugin-node-resolve": "^11.0.0",
+		"@sveltejs/vite-plugin-svelte": "^1.0.0-next.30",
 		"babel-plugin-transform-async-to-promises": "^0.8.18",
 		"core-js": "^3.22.5",
 		"rollup": "^2.3.4",
 		"rollup-plugin-copy": "^3.4.0",
 		"rollup-plugin-css-only": "^3.1.0",
 		"rollup-plugin-livereload": "^2.0.0",
-		"rollup-plugin-string": "^3.0.0",
 		"rollup-plugin-svelte": "^7.0.0",
 		"rollup-plugin-terser": "^7.0.0",
-		"sirv-cli": "^2.0.0",
-		"svelte": "^3.0.0"
+		"svelte": "^3.44.0",
+		"vite": "^2.9.9"
 	},
 	"dependencies": {
 		"emojibase": "*",
 		"emojibase-data": "^7.0.1",
-		"kaios-lib": "^1.6.0",
+		"jsqr": "^1.4.0",
 		"lottie-web": "^5.9.4",
 		"scroll-into-view": "^1.16.0",
 		"simple-markdown": "^0.7.3"

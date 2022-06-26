@@ -268,7 +268,7 @@
 	{#if message.attachments && message.attachments[0]}
 		{#each message.attachments as attachment (attachment.id)}
 			{#if attachment.content_type?.startsWith("image")}
-				<img class="v-image" src={attachment.proxy_url} {...decideHeight(attachment)} alt />
+				<img class="v-image" data-url={attachment.url} src={attachment.proxy_url} {...decideHeight(attachment)} alt />
 			{/if}
 		{/each}
 	{/if}
@@ -276,6 +276,7 @@
 		{#each message.embeds as embed}
 			{#if embed.type === "image" || embed.type === "gifv"}
 				<img
+					data-url={embed.url}
 					class="v-image"
 					src={embed.type === "gifv" ? embed.url + ".gif" : embed.thumbnail.proxy_url}
 					{...decideHeight(embed.thumbnail)}

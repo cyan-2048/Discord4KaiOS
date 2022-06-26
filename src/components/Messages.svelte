@@ -8,12 +8,6 @@
 	import { typingState, discord, evtForward, sn } from "../lib/shared.js";
 	import { FilePickerInstance } from "../lib/FileHandlers.js";
 
-	sn.add({
-		id: "message-opts",
-		selector: "[data-msg-options] > *",
-		restrict: "self-only",
-	});
-
 	window.FilePickerInstance = FilePickerInstance;
 	const picker = new FilePickerInstance();
 
@@ -249,7 +243,8 @@
 			switch (enterFunc) {
 				case "image":
 					const images = target.querySelectorAll("img.v-image");
-					if (images.length === 1) dispatch("v-image", { src: images[0].src }); // to-do support multiple images
+					if (images.length === 1)
+						dispatch("v-image", { src: images[0].src, url: images[0].dataset.url || images[0].src }); // to-do support multiple images
 
 					break;
 				case "unspoiler":
@@ -296,7 +291,7 @@
 >
 	<slot />
 </div>
-{#if currentTypingState.length > 0}
+{#if currentTypingState.length > 0 && appState === "app" && selected === 0}
 	<div bind:this={typing_indicator} style:bottom="{typingIndicatorBottom}px" id="typing">
 		{#if currentTypingState.length < 4}
 			{oxford(currentTypingState, "and", "an error occured so no one")}

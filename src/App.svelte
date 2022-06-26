@@ -32,16 +32,6 @@
 		asyncCachedGenerator,
 	} from "./lib/helper";
 	import { discordGateway, sn, discord, typingState, serverAck } from "./lib/shared";
-	sn.init();
-
-	["messages", "channels", "servers"].forEach((id) =>
-		sn.add({
-			id,
-			selector: `[data-${id}].selected [data-focusable]`,
-			rememberSource: true,
-			restrict: "self-only",
-		})
-	);
 
 	let settings = (() => {
 		const defaultSettings = {
@@ -667,9 +657,9 @@
 		{/each}
 	</Channels>
 	<Messages
-		on:v-image={({ detail: { src } }) => {
+		on:v-image={({ detail: { src, url } }) => {
 			document.activeElement.blur();
-			viewerSrc = src;
+			viewerSrc = { src, url };
 			appState = "viewer";
 		}}
 		{sendMessage}
@@ -730,6 +720,6 @@
 				sn.focus();
 			}, 50);
 		}}
-		src={viewerSrc}
+		view={viewerSrc}
 	/>
 {/if}

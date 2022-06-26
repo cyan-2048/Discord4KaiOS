@@ -11,7 +11,7 @@
  * get rid of JQuery support
  */
 
-(function () {
+export default (function () {
 	"use strict";
 
 	/************************/
@@ -287,7 +287,11 @@
 					},
 					{
 						group: groups[0].concat(groups[6]),
-						distance: [distanceFunction.nearHorizonIsBetter, distanceFunction.rightIsBetter, distanceFunction.nearTargetTopIsBetter],
+						distance: [
+							distanceFunction.nearHorizonIsBetter,
+							distanceFunction.rightIsBetter,
+							distanceFunction.nearTargetTopIsBetter,
+						],
 					},
 				];
 				break;
@@ -303,7 +307,11 @@
 					},
 					{
 						group: groups[2].concat(groups[8]),
-						distance: [distanceFunction.nearHorizonIsBetter, distanceFunction.leftIsBetter, distanceFunction.nearTargetTopIsBetter],
+						distance: [
+							distanceFunction.nearHorizonIsBetter,
+							distanceFunction.leftIsBetter,
+							distanceFunction.nearTargetTopIsBetter,
+						],
 					},
 				];
 				break;
@@ -319,7 +327,11 @@
 					},
 					{
 						group: groups[0].concat(groups[2]),
-						distance: [distanceFunction.nearPlumbLineIsBetter, distanceFunction.bottomIsBetter, distanceFunction.nearTargetLeftIsBetter],
+						distance: [
+							distanceFunction.nearPlumbLineIsBetter,
+							distanceFunction.bottomIsBetter,
+							distanceFunction.nearTargetLeftIsBetter,
+						],
 					},
 				];
 				break;
@@ -335,7 +347,11 @@
 					},
 					{
 						group: groups[6].concat(groups[8]),
-						distance: [distanceFunction.nearPlumbLineIsBetter, distanceFunction.topIsBetter, distanceFunction.nearTargetLeftIsBetter],
+						distance: [
+							distanceFunction.nearPlumbLineIsBetter,
+							distanceFunction.topIsBetter,
+							distanceFunction.nearTargetLeftIsBetter,
+						],
 					},
 				];
 				break;
@@ -353,7 +369,12 @@
 		}
 
 		var dest = null;
-		if (config.rememberSource && config.previous && config.previous.destination === target && config.previous.reverse === direction) {
+		if (
+			config.rememberSource &&
+			config.previous &&
+			config.previous.destination === target &&
+			config.previous.reverse === direction
+		) {
 			for (var j = 0; j < destGroup.length; j++) {
 				if (destGroup[j].element === config.previous.target) {
 					dest = destGroup[j].element;
@@ -689,10 +710,20 @@
 		if (config.restrict == "self-only" || config.restrict == "self-first") {
 			var currentSectionNavigableElements = sectionNavigableElements[currentSectionId];
 
-			next = navigate(currentFocusedElement, direction, exclude(currentSectionNavigableElements, currentFocusedElement), config);
+			next = navigate(
+				currentFocusedElement,
+				direction,
+				exclude(currentSectionNavigableElements, currentFocusedElement),
+				config
+			);
 
 			if (!next && config.restrict == "self-first") {
-				next = navigate(currentFocusedElement, direction, exclude(allNavigableElements, currentSectionNavigableElements), config);
+				next = navigate(
+					currentFocusedElement,
+					direction,
+					exclude(allNavigableElements, currentSectionNavigableElements),
+					config
+				);
 			}
 		} else {
 			next = navigate(currentFocusedElement, direction, exclude(allNavigableElements, currentFocusedElement), config);
@@ -838,7 +869,14 @@
 
 	function onBlur(evt) {
 		var target = evt.target;
-		if (target !== window && target !== document && !_pause && _sectionCount && !_duringFocusChange && getSectionId(target)) {
+		if (
+			target !== window &&
+			target !== document &&
+			!_pause &&
+			_sectionCount &&
+			!_duringFocusChange &&
+			getSectionId(target)
+		) {
 			var unfocusProperties = {
 				native: true,
 			};
@@ -1065,7 +1103,8 @@
 		// makeFocusable(<sectionId>)
 		makeFocusable: function (sectionId) {
 			var doMakeFocusable = function (section) {
-				var tabIndexIgnoreList = section.tabIndexIgnoreList !== undefined ? section.tabIndexIgnoreList : GlobalConfig.tabIndexIgnoreList;
+				var tabIndexIgnoreList =
+					section.tabIndexIgnoreList !== undefined ? section.tabIndexIgnoreList : GlobalConfig.tabIndexIgnoreList;
 				parseSelector(section.selector).forEach(function (elem) {
 					if (!matchSelector(elem, tabIndexIgnoreList)) {
 						if (!elem.getAttribute("tabindex")) {
@@ -1101,10 +1140,5 @@
 
 	window.SpatialNavigation = SpatialNavigation;
 
-	/**********************/
-	/* CommonJS Interface */
-	/**********************/
-	if (typeof module === "object") {
-		module.exports = SpatialNavigation;
-	}
+	return SpatialNavigation;
 })();

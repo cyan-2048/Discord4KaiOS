@@ -296,6 +296,8 @@
 		top: 10.5px;
 		left: 50px;
 		width: calc(100vw - 80px);
+		line-height: 20px;
+		height: 20px;
 	}
 	main > * {
 		color: #72767d;

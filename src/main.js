@@ -1,5 +1,5 @@
 import App from "./App.svelte";
-import { polyfill } from "./lib/scrollBy.js";
+import polyfill from "./lib/scrollBy.js";
 polyfill();
 
 document.documentElement.lang = navigator.language;

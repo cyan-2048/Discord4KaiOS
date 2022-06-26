@@ -1,34 +1,67 @@
 <script>
+	import ImageOptions from "./components/ImageOptions.svelte";
 	import { createEventDispatcher, onMount } from "svelte";
-	export let src;
+	export let view;
+	const { src, url } = view;
 	const dispatch = createEventDispatcher();
-	let img;
-	let ratio = {};
+
+	let img,
+		main,
+		state = 0,
+		scale = 1,
+		width = null,
+		height = null;
+
 	onMount(() => {
-		let _ratio = {};
-		img.onload = () => {
-			const { naturalHeight: srcHeight, naturalWidth: srcWidth } = img;
-			const c_ratio = Math.min(window.innerWidth / srcWidth, window.innerHeight / srcHeight);
-			ratio = { width: srcWidth * c_ratio, height: srcHeight * c_ratio };
-			_ratio = { ...ratio };
-		};
+		let originalHeight = img.offsetHeight;
+		let originalWidth = img.offsetWidth;
 
-		function zoomIn() {
-			if (ratio.height > _ratio.height * 5) return;
-			ratio.height += _ratio.height / 5;
-			ratio.width += _ratio.width / 5;
+		function set() {
+			originalHeight = img.offsetHeight;
+			originalWidth = img.offsetWidth;
+			height = originalHeight + "px";
+			width = originalWidth + "px";
 		}
 
-		function zoomOut() {
-			if (ratio.width <= _ratio.width) return;
-			ratio.height -= _ratio.height / 5;
-			ratio.width -= _ratio.width / 5;
-		}
+		if (!img.complete) {
+			img.onload = set;
+		} else set();
 
 		let keydown_handler = ({ key }) => {
-			if (key === "Backspace") dispatch("close");
-			if (key === "SoftLeft") zoomOut();
-			if (key === "SoftRight") zoomIn();
+			if (state === 0) {
+				if (key === "Backspace") dispatch("close");
+				if (key === "SoftLeft") {
+				}
+				if (key === "SoftRight") {
+					state = 1;
+				}
+			}
+			if (state === 2) {
+				if (key.includes("Arrow")) {
+					main.scrollBy(
+						...{
+							Left: [-66, 0],
+							Right: [66, 0],
+							Up: [0, -66],
+							Down: [0, 66],
+						}[key.replace("Arrow", "")]
+					);
+				} else {
+					if (key === "SoftLeft" && scale !== 1) {
+						scale -= 0.5;
+					}
+					if (key === "SoftRight" && scale !== 5) {
+						scale += 0.5;
+					}
+					height = originalHeight * scale + "px";
+					width = originalWidth * scale + "px";
+					if (key === "Backspace") {
+						height = originalHeight + "px";
+						width = originalWidth + "px";
+						state = 0;
+					}
+				}
+			}
 		};
 		window.addEventListener("keydown", keydown_handler);
 		return () => {
@@ -37,17 +70,30 @@
 	});
 </script>
 
-<main>
-	<img bind:this={img} {...ratio} {src} alt/>
+<main bind:this={main}>
+	<img
+		style:max-height={state === 2 ? "unset" : null}
+		style:max-width={state === 2 ? "unset" : null}
+		style:width
+		style:height
+		bind:this={img}
+		{src}
+		alt
+	/>
+	{#if state === 1}
+		<ImageOptions bind:state {url} />
+	{/if}
 </main>
 
 <style>
 	img {
 		display: block;
-		margin: auto;
 		image-rendering: pixelated;
 		image-rendering: optimizeSpeed;
-	}	main {
+		max-width: 100vw;
+		max-height: 100vh;
+	}
+	main {
 		position: absolute;
 		height: 100vh;
 		width: 100vw;
@@ -55,5 +101,6 @@
 		left: 0;
 		display: grid;
 		place-items: center;
+		overflow: hidden;
 	}
 </style>

@@ -1,4 +1,4 @@
-import SpatialNavigation from "./spatial_navigation.cjs";
+import SpatialNavigation from "./spatial_navigation.js";
 import { DiscordXHR } from "./DiscordXHR.js";
 import TypingState from "./TypingState.js";
 import { EventEmitter } from "./EventEmitter";
@@ -8,6 +8,24 @@ export const serverAck = new EventEmitter();
 export const typingState = new TypingState();
 
 export const sn = SpatialNavigation;
+sn.init();
+
+["messages", "channels", "servers"].forEach((id) =>
+	sn.add({
+		id,
+		selector: `[data-${id}].selected [data-focusable]`,
+		rememberSource: true,
+		restrict: "self-only",
+	})
+);
+
+["message", "image"].forEach((i) =>
+	sn.add({
+		id: i + "-opts",
+		selector: `[data-${i}-options] > *`,
+		restrict: "self-only",
+	})
+);
 
 export const discord = new DiscordXHR({ cache: true });
 export const discordGateway = new (class extends EventEmitter {

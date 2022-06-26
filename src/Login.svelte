@@ -120,7 +120,7 @@
 		}
 	}
 
-	import { QRCode } from "kaios-lib";
+	import QRCode from "./lib/qrCode";
 
 	async function scanToken() {
 		const qrcode = new QRCode();

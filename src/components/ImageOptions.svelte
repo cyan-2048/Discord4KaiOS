@@ -1,0 +1,141 @@
+<script>
+	import { onMount } from "svelte";
+	import { delay, downloadFile } from "../lib/helper";
+	import { sn } from "../lib/shared";
+
+	export let url;
+	export let state;
+
+	let closing = false;
+	let selected = null;
+
+	async function close() {
+		closing = true;
+		await delay(200);
+		if (selected !== null) {
+			if (selected === 0) {
+				state = 2;
+			} else {
+				window.open(url);
+				state = 0;
+			}
+		} else {
+			state = 0;
+		}
+	}
+
+	onMount(() => {
+		sn.focus("image-opts");
+
+		function onkeydown({ target, key }) {
+			if (key === "Enter") {
+				target.click();
+			}
+			if (key === "Backspace") {
+				close();
+			}
+		}
+		window.addEventListener("keydown", onkeydown);
+		return () => {
+			window.removeEventListener("keydown", onkeydown);
+		};
+	});
+</script>
+
+<main class:closing data-image-options>
+	<div
+		tabindex="0"
+		on:click={() => {
+			selected = 0;
+			close();
+		}}
+	>
+		Zoom
+		<svg data-name="Fullscreen" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+			<path fill="currentColor" d="M19,3H14V5h5v5h2V5A2,2,0,0,0,19,3Z" />
+			<path fill="currentColor" d="M19,19H14v2h5a2,2,0,0,0,2-2V14H19Z" />
+			<path fill="currentColor" d="M3,5v5H5V5h5V3H5A2,2,0,0,0,3,5Z" />
+			<path fill="currentColor" d="M5,14H3v5a2,2,0,0,0,2,2h5V19H5Z" />
+		</svg>
+	</div>
+	<div
+		tabindex="0"
+		on:click={() => {
+			selected = 1;
+			close();
+		}}
+	>
+		Open Original
+		<svg data-name="Launch" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+			<path
+				fill="currentColor"
+				d="M10 5V3H5.375C4.06519 3 3 4.06519 3 5.375V18.625C3 19.936 4.06519 21 5.375 21H18.625C19.936 21 21 19.936 21 18.625V14H19V19H5V5H10Z"
+			/>
+			<path
+				fill="currentColor"
+				d="M21 2.99902H14V4.99902H17.586L9.29297 13.292L10.707 14.706L19 6.41302V9.99902H21V2.99902Z"
+			/>
+		</svg>
+	</div>
+	<div
+		tabindex="0"
+		on:click={() => {
+			downloadFile(url);
+			close();
+		}}
+	>
+		Download
+		<svg data-name="Download" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+			<path
+				fill="currentColor"
+				fillrule="evenodd"
+				cliprule="evenodd"
+				d="M16.293 9.293L17.707 10.707L12 16.414L6.29297 10.707L7.70697 9.293L11 12.586V2H13V12.586L16.293 9.293ZM18 20V18H20V20C20 21.102 19.104 22 18 22H6C4.896 22 4 21.102 4 20V18H6V20H18Z"
+			/>
+		</svg>
+	</div>
+</main>
+
+<style>
+	.closing {
+		bottom: -100vh;
+	}
+
+	main {
+		width: calc(100vw - 10px);
+		position: absolute;
+		bottom: 5px;
+		left: 5px;
+		padding: 8px;
+		background-color: #18191c;
+		z-index: 3;
+		animation: opening 0.2s ease;
+		transition: bottom ease 0.2s;
+		border-radius: 5px;
+	}
+	main > div {
+		height: 32px;
+		font-size: 14px;
+		font-weight: 600;
+		user-select: none;
+		border-radius: 3px;
+		line-height: 18px;
+		padding: 7px 7px;
+		display: flex;
+		color: rgb(185, 187, 190);
+		justify-content: space-between;
+	}
+	main > div:focus {
+		background-color: #4752c4;
+		color: white !important;
+	}
+
+	@keyframes opening {
+		from {
+			bottom: -100vh;
+		}
+		to {
+			bottom: 5px;
+		}
+	}
+</style>
