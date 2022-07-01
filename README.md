@@ -19,16 +19,17 @@ frontend ->
 - highlight message if mentioned✅
 - typing indicators✅
 - a custom rpc that shows you are using Discord4KaiOS✅
+- edit messages✅
+- delete messages✅
+- replies✅
 - discord emojis✅**
 - stickers✅**
-- replies✅**
 - reactions✅**
 - embed links✅(\)
 - attachments✅(*images, \?**)
 - discord mentions✅(@ / #, \*(no spaces username))
-- edit messages✅(*desktop)
 - image viewer✅(\*(messages with one image))
-- more options(\*(ui))
+- more options✅(\)
 - settings(?)
 - load more button
 
@@ -51,13 +52,14 @@ events ->
 no plans on supporting ->
 - video player
 - voice calls/chats, streaming, video calls...
+- moderating servers
 ```
 
 the end goal here is to have a usable discord client for KaiOS, I have no plans on fully replicating a discord client(replicating it way too much could actually be dangerous... discord might think the api is being used maliciously and ban the user)
 
 ### Development and testing
 
-`npm run dev` builds the app in watch mode and serves the site. Great for testing your app in a desktop browser. CORS may or may not work properly on non-KaiOS devices, please use a browser extension.
+`npm run dev` builds the app in watch mode and serves the site. Great for testing the app in a desktop browser. CORS may or may not work properly on non-KaiOS devices, please use a browser extension.
 
 ### Deploying to a device
 

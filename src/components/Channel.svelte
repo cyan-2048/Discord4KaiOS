@@ -152,11 +152,6 @@
 	main:first-child {
 		margin-top: 6.5px;
 	}
-	img {
-		image-rendering: pixelated;
-		image-rendering: -moz-crisp-edges;
-		image-rendering: optimizespeed;
-	}
 
 	.bar {
 		width: 10px;

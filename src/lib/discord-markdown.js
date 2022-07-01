@@ -351,15 +351,15 @@ function toHTML(source, options, customParser, customHtmlOutput) {
 	return _htmlOutput(_parser(source, state), state);
 }
 
-const toExport = {
-	parser: (source) => parser(source, { inline: true }),
+const x_parser = (source) => parser(source, { inline: true });
+
+export {
+	x_parser as parser,
 	htmlOutput,
 	toHTML,
 	rules,
 	rulesDiscordOnly,
 	rulesEmbed,
-	markdownEngine: markdown,
+	markdown as markdownEngine,
 	htmlTag,
 };
-
-export default toExport;

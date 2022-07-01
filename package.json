@@ -36,6 +36,7 @@
 		"jsqr": "^1.4.0",
 		"localforage": "^1.10.0",
 		"lottie-web": "^5.9.4",
+		"mime-db": "^1.52.0",
 		"scroll-into-view": "^1.16.0",
 		"simple-markdown": "^0.7.3"
 	}

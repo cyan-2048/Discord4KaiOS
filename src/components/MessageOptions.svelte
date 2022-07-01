@@ -1,15 +1,14 @@
 <script>
-	import { createEventDispatcher, onMount } from "svelte";
-	import { delay } from "../lib/helper";
+	import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
+	import { dblclick, delay, customDispatch } from "../lib/helper";
 	const dispatch = createEventDispatcher();
 	import { discord, sn } from "../lib/shared";
+	import Options from "./Options.svelte";
 
 	export let channelPermissions;
 	export let message;
 	export let channel;
 	export let el;
-
-	let closing = false;
 
 	const userMessage = message.author.id === discord.user.id;
 	const manageMessage = channelPermissions.manage_messages === true;
@@ -19,33 +18,40 @@
 			dispatch("close");
 			return;
 		}
-		sn.focus("message-opts");
+	});
 
-		async function close() {
-			closing = true;
-			await delay(300);
+	let selected = null;
+
+	$: if (selected !== null) dispatch("close");
+
+	onDestroy(async () => {
+		await tick();
+		await delay(20); // delay because keydown enter gets dispatched
+		if (selected !== null) {
+			switch (selected) {
+				case 0:
+					dblclick(el);
+					break;
+				case 1:
+					alert("not implemented!");
+					break;
+				case 2:
+					customDispatch(el, "reply");
+					break;
+				case 3:
+					customDispatch(el, "delete");
+					break;
+			}
+		}
+		if (selected !== 0 || selected !== 2) {
 			sn.focus("messages");
-			dispatch("close");
 		}
-
-		function onkeydown({ target, key }) {
-			if (key === "Enter") {
-				target.click();
-			}
-			if (key === "Backspace") {
-				close();
-			}
-		}
-		window.addEventListener("keydown", onkeydown);
-		return () => {
-			window.removeEventListener("keydown", onkeydown);
-		};
 	});
 </script>
 
-<main class:closing data-message-options>
-	{#if userMessage}
-		<div tabindex="0">
+<Options on:close>
+	{#if userMessage && !el.querySelector("[data-sticker]")}
+		<div on:click={() => (selected = 0)} tabindex="0">
 			Edit Message
 			<svg data-name="Pencil" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
 				<path
@@ -58,7 +64,7 @@
 		</div>
 	{/if}
 	{#if manageMessage || channel.dm}
-		<div tabindex="0">
+		<div on:click={() => (selected = 1)} tabindex="0">
 			Pin Message
 			<svg data-name="Pin" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
 				<path
@@ -69,7 +75,7 @@
 		</div>
 	{/if}
 	{#if channelPermissions.write !== false}
-		<div tabindex="0">
+		<div on:click={() => (selected = 2)} tabindex="0">
 			Reply
 			<svg data-name="Reply" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
 				<path
@@ -80,7 +86,7 @@
 		</div>
 	{/if}
 	{#if userMessage || manageMessage}
-		<div style:color="rgb(237, 66, 69)" tabindex="0">
+		<div on:click={() => (selected = 3)} style:color="rgb(237, 66, 69)" tabindex="0">
 			Delete Message
 			<svg data-name="Trash" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
 				<path fill="currentColor" d="M15 3.999V2H9V3.999H3V5.999H21V3.999H15Z" />
@@ -91,48 +97,4 @@
 			</svg>
 		</div>
 	{/if}
-</main>
-
-<style>
-	.closing {
-		bottom: -100vh;
-	}
-
-	main {
-		width: calc(100vw - 10px);
-		position: fixed;
-		bottom: 5px;
-		left: 5px;
-		padding: 8px;
-		background-color: #18191c;
-		z-index: 3;
-		animation: opening 0.3s ease;
-		transition: bottom ease 0.3s;
-		border-radius: 5px;
-	}
-	main > div {
-		height: 32px;
-		font-size: 14px;
-		font-weight: 600;
-		user-select: none;
-		border-radius: 3px;
-		line-height: 18px;
-		padding: 7px 7px;
-		display: flex;
-		color: rgb(185, 187, 190);
-		justify-content: space-between;
-	}
-	main > div:focus {
-		background-color: #4752c4;
-		color: white !important;
-	}
-
-	@keyframes opening {
-		from {
-			bottom: -100vh;
-		}
-		to {
-			bottom: 5px;
-		}
-	}
-</style>
+</Options>

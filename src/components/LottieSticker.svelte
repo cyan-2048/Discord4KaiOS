@@ -14,7 +14,7 @@
 	});
 </script>
 
-<div bind:this={container} />
+<div data-sticker bind:this={container} />
 
 <style>
 	div {

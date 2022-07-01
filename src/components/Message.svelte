@@ -1,6 +1,13 @@
 <script context="module">
-	import discord_markdown from "../lib/discord-markdown.js";
-	const markdown = discord_markdown.toHTML;
+	import { createEventDispatcher, onMount, tick } from "svelte";
+	import { decimal2rgb, wouldMessagePing, toHTML, decideHeight, delay, customDispatch } from "../lib/helper.js";
+	async function handleSiblingColor(el) {
+		await tick();
+		const prev = el.previousElementSibling;
+		if (prev && prev.matches("[data-separator]")) {
+			customDispatch(prev, "change_color");
+		}
+	}
 </script>
 
 <script>
@@ -9,10 +16,9 @@
 	import ReactionButton from "./ReactionButton.svelte";
 
 	// js imports
+	import { toHTML as markdown } from "../lib/discord-markdown.js";
 	import { evtForward, discord, discordGateway } from "../lib/shared";
-	import { createEventDispatcher, onMount } from "svelte";
 	const dispatch = createEventDispatcher();
-	import { decimal2rgb, wouldMessagePing, toHTML, decideHeight } from "../lib/helper.js";
 	import EmojiDict from "../lib/EmojiDict.js";
 
 	// props
@@ -42,6 +48,8 @@
 	];
 
 	let pinged;
+	let editing = false;
+	let replying = false;
 	$: message && (pinged = wouldMessagePing(message, profile?.roles || [], discord));
 
 	function linkify(inputText, opts = {}) {
@@ -58,9 +66,6 @@
 	let reply;
 
 	onMount(async () => {
-		if (pinged && main && main.previousElementSibling?.matches("[data-separator]")) {
-			main.previousElementSibling.classList.add("mentioned");
-		}
 		let temp;
 		let messages = main.parentNode;
 		if (!messages) return;
@@ -151,25 +156,17 @@
 			typeof el.parentNode.loaded === "function" && el.parentNode.loaded();
 			el.parentNode.loaded = true;
 		};
-		let update = (d) => {
+		let update = async (d) => {
 			if (d.id == message.id) {
 				message = { ...message, ...d };
 				dispatch("update", { message });
 				content = "";
-				content = d.author.bot ? markdown(message.content, { embed: true }) : linkify(message.content);
-				setTimeout(onchange, 50);
+				content = d.author?.bot ? markdown(message.content, { embed: true }) : linkify(message.content);
+				await tick();
 			}
 		};
 		onchange();
 		discordGateway.on("t:message_update", update, "msg" + message.id);
-
-		if (main.previousElementSibling?.matches("[data-separator]")) {
-			main.onfocus = main.onblur = function toggleFocus(e) {
-				let { type, target } = e;
-				let prev = target.previousElementSibling;
-				if (prev) prev.classList[type === "focus" ? "add" : "remove"]("focus");
-			};
-		}
 
 		let updateReactions = ({ message_id, emoji, user_id }, remove = false) => {
 			if (message_id !== message.id) return;
@@ -211,8 +208,24 @@
 		discordGateway.on("t:message_reaction_add", updateReactions, "msg" + message.id);
 		discordGateway.on("t:message_reaction_remove", removeReaction, "msg" + message.id);
 
+		const _editing = () => {
+			editing = false;
+			handleSiblingColor(main);
+		};
+		const _replying = () => {
+			replying = false;
+			handleSiblingColor(main);
+		};
+
+		evtForward.on("stop_editing:" + message.id, _editing, "msg" + message.id);
+		evtForward.on("stop_replying:" + message.id, _replying, "msg" + message.id);
+
 		return () => {
 			// after death remove eventListener for message
+			evtForward.off("stop_editing:" + message.id, _editing, "msg" + message.id);
+			evtForward.off("stop_replying:" + message.id, _replying, "msg" + message.id);
+			discordGateway.off("t:message_update", update, "msg" + message.id);
+			discordGateway.off("t:message_update", update, "msg" + message.id);
 			discordGateway.off("t:message_update", update, "msg" + message.id);
 			discordGateway.off("t:message_reaction_add", updateReactions, "msg" + message.id);
 			discordGateway.off("t:message_reaction_remove", removeReaction, "msg" + message.id);
@@ -221,8 +234,14 @@
 </script>
 
 <main
+	class:editing
+	class:replying
 	on:dblclick={async function handleEdit(e) {
-		if (message.author.id !== discord.user.id) return;
+		handleSiblingColor(this);
+		if (message.author.id !== discord.user.id) {
+			return customDispatch(this, "reply");
+		}
+		if (editing || this.querySelector("[data-sticker]")) return; // you can't edit sticker messages
 		let clone = contentEl.cloneNode(true);
 		let mentioned = [];
 		for (const a of clone.querySelectorAll("span.mentions[data-type='user']")) {
@@ -236,13 +255,20 @@
 			const role = roles.find((e) => e.id === a);
 			role && mentioned.push(role);
 		});
+		editing = true;
 		evtForward.emit("message_edit", message, clone.innerText, mentioned);
 	}}
 	on:options={function () {
 		evtForward.emit("message_options", message, this);
 	}}
 	on:reply={function () {
+		if (replying) return;
+		replying = true;
+		handleSiblingColor(this);
 		evtForward.emit("message_reply", message, this);
+	}}
+	on:delete={() => {
+		discord.deleteMessage(channel.id, message.id);
 	}}
 	data-focusable
 	class:mention={pinged}
@@ -270,7 +296,14 @@
 	{#if message.attachments && message.attachments[0]}
 		{#each message.attachments as attachment (attachment.id)}
 			{#if attachment.content_type?.startsWith("image")}
-				<img class="v-image" data-url={attachment.url} src={attachment.proxy_url} {...decideHeight(attachment)} alt />
+				<img
+					class="v-image"
+					data-filename={attachment.filename}
+					data-url={attachment.url}
+					src={attachment.proxy_url}
+					{...decideHeight(attachment)}
+					alt
+				/>
 			{/if}
 		{/each}
 	{/if}
@@ -338,6 +371,7 @@
 				<LottieSticker src="https://discord.com/stickers/{sticker.id}.json" />
 			{:else}
 				<img
+					data-sticker
 					src="https://media.discordapp.net/stickers/{sticker.id}.png?size=160"
 					width="160"
 					height="160"
@@ -356,6 +390,12 @@
 </main>
 
 <style>
+	.replying {
+		background-color: #373b49;
+	}
+	.editing {
+		background-color: #32353b;
+	}
 	.embed > *:not(:last-child) {
 		margin-bottom: 2px;
 	}
@@ -473,8 +513,8 @@
 		background-size: contain;
 	}
 
-	.after :global(.mentions),
-	.after :global(.mentions::after),
+	:global(.grow-wrap .after .mentions),
+	:global(.grow-wrap .after .mentions::after),
 	.content :global(.mentions),
 	.content :global(.mentions::after) {
 		background-color: var(--color, rgba(88, 101, 242, 0.3));

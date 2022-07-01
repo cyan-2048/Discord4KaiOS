@@ -19,14 +19,6 @@ sn.init();
 	})
 );
 
-["message", "image"].forEach((i) =>
-	sn.add({
-		id: i + "-opts",
-		selector: `[data-${i}-options] > *`,
-		restrict: "self-only",
-	})
-);
-
 export const discord = new DiscordXHR({ cache: true });
 export const discordGateway = new (class extends EventEmitter {
 	constructor() {
@@ -45,3 +37,7 @@ export const discordGateway = new (class extends EventEmitter {
 		this.worker.postMessage({ event: "send", object });
 	}
 })();
+
+import { FilePickerInstance } from "./FileHandlers";
+
+export const picker = new FilePickerInstance();

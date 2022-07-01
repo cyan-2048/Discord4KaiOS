@@ -1,27 +1,26 @@
 <script>
 	// components
 	import MessageOptions from "./MessageOptions.svelte";
+	import ImageViewer from "../ImageViewer.svelte";
+	let viewerSrc = null;
 
 	// js imports
-	import { createEventDispatcher, onMount } from "svelte";
-	import { last, hashCode } from "../lib/helper";
-	import { typingState, discord, evtForward } from "../lib/shared.js";
-	import { FilePickerInstance } from "../lib/FileHandlers.js";
+	import { onMount, tick as _tick } from "svelte";
+	import { delay, last } from "../lib/helper";
+	import { typingState, discord, evtForward, picker, sn } from "../lib/shared.js";
 
-	window.FilePickerInstance = FilePickerInstance;
-	const picker = new FilePickerInstance();
+	window.picker = picker;
 
 	export let selected;
 	export let appState;
 	export let channelPermissions;
 	export let sendMessage;
-	export let _messages;
+	export let messages;
 	// export let roles;
 	export let guildID;
 	export let channel;
-	const dispatch = createEventDispatcher();
 
-	let textarea, after, con, messages, softkeys, typing_indicator;
+	let textarea, after, con, messages_el, softkeys, typing_indicator;
 	let textAreaHeight = 0;
 	let typingIndicatorBottom = 0;
 
@@ -69,11 +68,12 @@
 	$: channelPermissions && console.log("channel permissions:", channelPermissions);
 	$: if (selected === 1) {
 		typingState.off("change", ontyping, "messages");
-	} else if (selected === 0) {
-		setTimeout(height, 50);
-		typingState.on("change", ontyping, "messages");
-		ontyping(typingState.getState(channel.id));
-	}
+	} else if (selected === 0)
+		_tick().then(() => {
+			height();
+			typingState.on("change", ontyping, "messages");
+			ontyping(typingState.getState(channel.id));
+		});
 
 	let messageFocused = true;
 	let enterFunc = null;
@@ -103,19 +103,50 @@
 	let query_channels = [];
 
 	let messageEditing = null;
+	let messageReplying = null;
+
+	$: if (selected !== 0) {
+		if (messageReplying) {
+			evtForward.emit("stop_replying:" + messageReplying.id);
+			messageReplying = null;
+		}
+		if (messageEditing) {
+			evtForward.emit("stop_editing:" + messageEditing.id);
+			messageEditing = null;
+		}
+	}
 
 	onMount(height);
 	onMount(() => {
 		// let queryCache = {};
 		let mentioned = [];
 
-		evtForward.on("message_edit", (message, content, mentions) => {
-			messageEditing = message;
+		async function clearForEdit(content = "") {
 			textarea.value = content;
 			textarea.oninput();
 			height();
-			mentioned = mentions;
+			await _tick();
 			textarea.focus();
+		}
+
+		evtForward.on("message_edit", (message, content, mentions) => {
+			if (messageReplying) {
+				evtForward.emit("stop_replying:" + messageReplying.id);
+				messageReplying = null;
+			}
+			evtForward.emit("stop_editing:" + messageEditing?.id);
+			messageEditing = message;
+			mentioned = mentions;
+			clearForEdit(content);
+		});
+		evtForward.on("message_reply", (message) => {
+			if (messageEditing) {
+				evtForward.emit("stop_editing:" + messageEditing.id);
+				messageEditing = null;
+			}
+			evtForward.emit("stop_replying:" + messageReplying?.id);
+			messageReplying = message;
+			clearForEdit();
 		});
 
 		let replaceMentions = (content) => {
@@ -133,13 +164,20 @@
 
 		textarea.onkeydown = function (e) {
 			let { key } = e;
-			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(messages.children)?.focus(), 50);
+			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(messages_el.children)?.focus(), 50);
 			setTimeout(async () => {
 				if (!messageEditing && ("SoftLeft" === key || "End" === key) && this.value !== "") {
 					if (this.value.startsWith("s/")) sendMessage.sed(this.value);
 					else {
 						if (slowmode !== null && slowmode !== 0) return;
-						const promise = sendMessage(replaceMentions(this.value)); // to do replace mention elements;
+						const promise = sendMessage(
+							replaceMentions(this.value),
+							messageReplying
+								? {
+										message_reference: { message_id: messageReplying.id, fail_if_not_exists: false },
+								  }
+								: {}
+						); // to do replace mention elements;
 						const send = slowmode === null ? null : await promise;
 						if (send) {
 							slowmode = channel.rate_limit_per_user;
@@ -154,12 +192,22 @@
 					this.value = "";
 					this.oninput();
 				}
-				if (messageEditing) {
-					let end = () => (messageEditing = null);
+				if (messageEditing || messageReplying) {
+					let end = () => {
+						if (messageEditing) {
+							evtForward.emit("stop_editing:" + messageEditing.id);
+							messageEditing = null;
+						} else {
+							evtForward.emit("stop_replying:" + messageReplying.id);
+							messageReplying = null;
+						}
+					};
 					if ("SoftLeft" === key || "End" === key) {
-						discord.editMessage(channel.id, messageEditing.id, replaceMentions(this.value)); // to do replace mention elements
-						this.value = "";
-						this.oninput();
+						if (messageEditing) {
+							discord.editMessage(channel.id, messageEditing.id, replaceMentions(this.value)); // to do replace mention elements
+							this.value = "";
+							this.oninput();
+						}
 						end();
 					}
 					if ("SoftRight" === key) {
@@ -259,9 +307,21 @@
 			switch (enterFunc) {
 				case "image":
 					const images = target.querySelectorAll("img.v-image");
-					if (images.length === 1)
-						dispatch("v-image", { src: images[0].src, url: images[0].dataset.url || images[0].src }); // to-do support multiple images
-
+					if (images.length === 1) {
+						const {
+							src,
+							dataset: { url, width, height, filename },
+						} = images[0];
+						viewerSrc = {
+							src,
+							url: url || src,
+							width: Number(width) || width,
+							height: Number(height) || height,
+							filename: filename || null,
+						}; // to-do support multiple images
+					}
+					document.activeElement.blur();
+					appState = "viewer";
 					break;
 				case "unspoiler":
 				case "spoiler":
@@ -286,22 +346,23 @@
 		showOptions = true;
 	});
 
-	let tick;
+	let tick = null;
 
 	function startTick() {
-		clearTimeout(tick);
-		tick = setTimeout(function tick() {
-			if (slowmode < 1) return;
-			slowmode -= 1;
-			setTimeout(tick, 1000);
-		}, 1000);
+		if (tick === null) {
+			tick = setTimeout(function ticker() {
+				if (slowmode < 1) return (tick = null);
+				slowmode -= 1;
+				setTimeout(ticker, 1000);
+			}, 1000);
+		}
 	}
 
 	$: if (channel && selected === 0) {
 		if (channelPermissions.manage_messages !== true) {
 			const rate = channel.rate_limit_per_user;
 			const now = Date.now() / 1000;
-			const find = last(_messages.filter((a) => a.author.id === discord.user.id))?.timestamp;
+			const find = last(messages.filter((a) => a.author.id === discord.user.id))?.timestamp;
 			const lastMessage = find ? new Date(find) / 1000 : now;
 			if (rate > 0) {
 				const diff = Math.round(now - lastMessage);
@@ -327,7 +388,7 @@
 	/>
 {/if}
 <div
-	bind:this={messages}
+	bind:this={messages_el}
 	data-messages
 	class:zero={selected === 0}
 	class:one={selected === 1}
@@ -344,22 +405,24 @@
 	style:display
 	style:height={textAreaHeight - (typing_indicator?.offsetHeight || 0) + "px"}
 >
-	{#if slowmode !== null}
-		<div class="slowmode">
-			<span>
-				{slowmode}
-			</span>
-			<svg width="16" height="16" viewBox="0 0 24 24"
-				><g fill="none" fill-rule="evenodd"
-					><path
-						fill="currentColor"
-						fill-rule="nonzero"
-						d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"
-					/></g
-				></svg
-			>
-		</div>
-	{/if}
+	<div class="pills">
+		{#if slowmode !== null}
+			<div class="slowmode">
+				<span>
+					{slowmode}
+				</span>
+				<svg width="16" height="16" viewBox="0 0 24 24"
+					><g fill="none" fill-rule="evenodd"
+						><path
+							fill="currentColor"
+							fill-rule="nonzero"
+							d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"
+						/></g
+					></svg
+				>
+			</div>
+		{/if}
+	</div>
 </div>
 {#if currentTypingState.length > 0 && appState === "app" && selected === 0}
 	<div bind:this={typing_indicator} style:bottom="{typingIndicatorBottom}px" id="typing">
@@ -393,13 +456,13 @@
 	style:display={readOnly || display ? "none" : null}
 >
 	<div>
-		{#if !messageEditing && !messageFocused && (textarea?.value || "") !== ""}
+		{#if !messageEditing && !messageReplying && !messageFocused && (textarea?.value || "") !== ""}
 			<svg id="send" fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
 				><path d="M0 0h24v24H0V0z" fill="none" /><path
 					d="M3.4 20.4l17.45-7.48c.81-.35.81-1.49 0-1.84L3.4 3.6c-.66-.29-1.39.2-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z"
 				/></svg
 			>
-		{:else if messageEditing && !messageFocused}
+		{:else if (messageEditing || messageReplying) && !messageFocused}
 			<svg id="checkmark" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
 				<path
 					fill="currentColor"
@@ -426,7 +489,7 @@
 		{/if}
 	</div>
 	<div>
-		{#if !messageFocused && messageEditing}
+		{#if !messageFocused && (messageEditing || messageReplying)}
 			<svg id="close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
 				<path
 					fill="currentColor"
@@ -442,21 +505,33 @@
 		{/if}
 	</div>
 </div>
+{#if appState === "viewer"}
+	<ImageViewer bind:appState view={viewerSrc} />
+{/if}
 
 <style>
-	.slowmode {
+	.frame * {
+		pointer-events: all;
+	}
+	.pills {
 		position: absolute;
-		bottom: 1px;
+		bottom: 3px;
+		right: 4px;
 		font-size: 14px;
+		width: 100%;
+		display: flex;
+		padding-right: 4px;
+		flex-direction: row-reverse;
+	}
+	.pills > * {
 		height: 20px;
 		padding: 2px 5px;
 		display: flex;
 		line-height: 15px;
-		right: 4px;
-		bottom: 3px;
 		color: rgb(220, 221, 222);
 		background-color: #2f3136;
 		border-radius: 15px;
+		margin-left: 2px;
 	}
 	.slowmode span {
 		margin-right: 3px;

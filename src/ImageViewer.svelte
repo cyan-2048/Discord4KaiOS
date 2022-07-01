@@ -1,32 +1,48 @@
 <script>
 	import ImageOptions from "./components/ImageOptions.svelte";
-	import { createEventDispatcher, onMount } from "svelte";
-	export let view;
-	const { src, url } = view;
+	import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
+	import { tweened } from "svelte/motion";
+	import { sn } from "./lib/shared";
+
+	export let view = null;
+	export let appState;
+	const { src, url, filename } = view || {};
+	if (!view) {
+		appState = "app";
+	}
 	const dispatch = createEventDispatcher();
 
 	let img,
 		main,
 		state = 0,
-		scale = 1,
-		width = null,
-		height = null,
+		width = tweened(null, { duration: 200 }),
+		height = tweened(null, { duration: 200 }),
 		opacity = 1;
 
 	onMount(() => {
-		let originalHeight = img.offsetHeight;
-		let originalWidth = img.offsetWidth;
+		if (!view) return;
+		let scale = 1;
+		const { width: originalWidth, height: originalHeight } = view;
 
-		function set() {
-			originalHeight = img.offsetHeight;
-			originalWidth = img.offsetWidth;
-			height = originalHeight + "px";
-			width = originalWidth + "px";
+		let offsetWidth, offsetHeight;
+
+		if (originalWidth <= window.innerWidth && originalHeight <= window.innerHeight) {
+			offsetHeight = offsetHeight;
+			offsetWidth = originalWidth;
+		} else {
+			if (originalWidth > originalHeight) {
+				offsetHeight = (window.innerWidth * originalHeight) / originalWidth;
+				offsetWidth = window.innerWidth;
+			} else if (originalHeight > originalWidth) {
+				offsetHeight = window.innerHeight;
+				offsetWidth = (originalWidth * window.offsetHeight) / originalHeight;
+			} else if (originalHeight === originalWidth) {
+				offsetHeight = offsetWidth = window.innerWidth;
+			}
 		}
 
-		if (!img.complete) {
-			img.onload = set;
-		} else set();
+		$width = offsetWidth;
+		$height = offsetHeight;
 
 		let opacityTimeout = null;
 
@@ -37,7 +53,9 @@
 				opacity = 0;
 			}, 4000);
 			if (state === 0) {
-				if (key === "Backspace" || key === "SoftLeft") dispatch("close");
+				if (key === "Backspace" || key === "SoftLeft") {
+					appState = "app";
+				}
 				if (key === "SoftRight") {
 					state = 1;
 				}
@@ -59,11 +77,12 @@
 					if (key === "SoftRight" && scale !== 5) {
 						scale += 0.5;
 					}
-					height = originalHeight * scale + "px";
-					width = originalWidth * scale + "px";
+					$height = offsetHeight * scale;
+					$width = offsetWidth * scale;
 					if (key === "Backspace") {
-						height = originalHeight + "px";
-						width = originalWidth + "px";
+						scale = 1;
+						$height = offsetHeight;
+						$width = offsetWidth;
 						state = 0;
 					}
 				}
@@ -74,84 +93,88 @@
 			window.removeEventListener("keydown", keydown_handler);
 		};
 	});
+	onDestroy(async () => {
+		await tick();
+		sn.focus("messages");
+	});
 </script>
 
-<main bind:this={main}>
-	<img
-		style:max-height={state === 2 ? "unset" : null}
-		style:max-width={state === 2 ? "unset" : null}
-		style:width
-		style:height
-		bind:this={img}
-		{src}
-		alt
-	/>
-	{#if state === 1}
-		<ImageOptions bind:state {url} />
-	{/if}
-	<footer style:opacity>
-		{#if state !== 2}
-			<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512"
-				><title>Arrow Back</title><path
-					fill="none"
-					stroke="currentColor"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="48"
-					d="M244 400L100 256l144-144M120 256h292"
-				/></svg
-			>
-			<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512"
-				><title>Menu</title><path
-					fill="none"
-					stroke="currentColor"
-					stroke-linecap="round"
-					stroke-miterlimit="10"
-					stroke-width="32"
-					d="M80 160h352M80 256h352M80 352h352"
-				/></svg
-			>
-		{:else}
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
-				fill="currentColor"
-				class="bi bi-zoom-out"
-				viewBox="0 0 16 16"
-			>
-				<path
-					fill-rule="evenodd"
-					d="M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z"
-				/>
-				<path
-					d="M10.344 11.742c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1 6.538 6.538 0 0 1-1.398 1.4z"
-				/>
-				<path fill-rule="evenodd" d="M3 6.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z" />
-			</svg>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
-				fill="currentColor"
-				class="bi bi-zoom-in"
-				viewBox="0 0 16 16"
-			>
-				<path
-					fill-rule="evenodd"
-					d="M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z"
-				/>
-				<path
-					d="M10.344 11.742c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1 6.538 6.538 0 0 1-1.398 1.4z"
-				/>
-				<path
-					fill-rule="evenodd"
-					d="M6.5 3a.5.5 0 0 1 .5.5V6h2.5a.5.5 0 0 1 0 1H7v2.5a.5.5 0 0 1-1 0V7H3.5a.5.5 0 0 1 0-1H6V3.5a.5.5 0 0 1 .5-.5z"
-				/>
-			</svg>
+{#if view}
+	<main bind:this={main}>
+		<img
+			style:width={$width !== null ? $width + "px" : null}
+			style:height={$height !== null ? $height + "px" : null}
+			bind:this={img}
+			{src}
+			alt
+		/>
+		{#if state === 1}
+			<ImageOptions bind:state {filename} {url} />
 		{/if}
-	</footer>
-</main>
+		<footer style:opacity>
+			{#if state !== 2}
+				<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512"
+					><title>Arrow Back</title><path
+						fill="none"
+						stroke="currentColor"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="48"
+						d="M244 400L100 256l144-144M120 256h292"
+					/></svg
+				>
+				<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512"
+					><title>Menu</title><path
+						fill="none"
+						stroke="currentColor"
+						stroke-linecap="round"
+						stroke-miterlimit="10"
+						stroke-width="32"
+						d="M80 160h352M80 256h352M80 352h352"
+					/></svg
+				>
+			{:else}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="16"
+					height="16"
+					fill="currentColor"
+					class="bi bi-zoom-out"
+					viewBox="0 0 16 16"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z"
+					/>
+					<path
+						d="M10.344 11.742c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1 6.538 6.538 0 0 1-1.398 1.4z"
+					/>
+					<path fill-rule="evenodd" d="M3 6.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z" />
+				</svg>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="16"
+					height="16"
+					fill="currentColor"
+					class="bi bi-zoom-in"
+					viewBox="0 0 16 16"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z"
+					/>
+					<path
+						d="M10.344 11.742c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1 6.538 6.538 0 0 1-1.398 1.4z"
+					/>
+					<path
+						fill-rule="evenodd"
+						d="M6.5 3a.5.5 0 0 1 .5.5V6h2.5a.5.5 0 0 1 0 1H7v2.5a.5.5 0 0 1-1 0V7H3.5a.5.5 0 0 1 0-1H6V3.5a.5.5 0 0 1 .5-.5z"
+					/>
+				</svg>
+			{/if}
+		</footer>
+	</main>
+{/if}
 
 <style>
 	footer {
@@ -170,8 +193,6 @@
 		display: block;
 		image-rendering: pixelated;
 		image-rendering: optimizeSpeed;
-		max-width: 100vw;
-		max-height: 100vh;
 	}
 	main {
 		position: absolute;

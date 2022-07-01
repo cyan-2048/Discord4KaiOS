@@ -151,6 +151,11 @@ class DiscordXHR {
 			Object.assign({ content: message }, opts)
 		);
 	}
+
+	deleteMessage(channel_id, message_id) {
+		return this.xhrRequestJSON("DELETE", `channels/${channel_id}/messages/${message_id}`);
+	}
+
 	/**
 	 * @param {string|number} serverId the guild_id
 	 * @description get a server the same way the discord gateway caches it

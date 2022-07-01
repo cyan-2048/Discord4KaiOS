@@ -17,6 +17,7 @@
 
 	let color;
 	let nick;
+	let main;
 
 	let image = avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.jpg?size=24` : null;
 
@@ -42,14 +43,32 @@
 				update(d);
 			}
 		}
+		function handleFocus() {
+			const nextEl = main.nextElementSibling;
+			if (nextEl && nextEl.matches("[data-focusable]")) {
+				main.style.backgroundColor = getComputedStyle(nextEl).backgroundColor;
+			}
+		}
+		if (main.nextElementSibling) {
+			const nextEl = main.nextElementSibling;
+			nextEl.addEventListener("blur", handleFocus);
+			nextEl.addEventListener("focus", handleFocus);
+		}
 		discordGateway.on("t:guild_member_update", member_handler);
+		handleFocus();
+		main.addEventListener("change_color", handleFocus);
 		return () => {
+			if (main.nextElementSibling) {
+				const nextEl = main.nextElementSibling;
+				nextEl.removeEventListener("blur", handleFocus);
+				nextEl.removeEventListener("focus", handleFocus);
+			}
 			discordGateway.off("t:guild_member_update", member_handler);
 		};
 	});
 </script>
 
-<main data-separator>
+<main bind:this={main} data-separator>
 	<img src={image || "/css/default.png"} alt /><b style={color ? `color: rgb(${color});` : null}>{nick || name}</b
 	>{#if bot}
 		<div class="bot">{discriminator === "0000" ? "WEBHOOK" : "BOT"}</div>

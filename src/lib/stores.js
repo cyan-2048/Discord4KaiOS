@@ -4,6 +4,15 @@ export const settings = writable(
 	(() => {
 		const defaultSettings = {
 			custom_rpc: true,
+			prompt_delete: false,
+			keybinds: {
+				"*": "edit",
+				0: "jump",
+				"#": "reply",
+				1: "react",
+				2: "pin",
+				3: "delete",
+			},
 		};
 		let fromStorage = localStorage.settings;
 		if (fromStorage) {

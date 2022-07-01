@@ -1,53 +1,28 @@
 <script>
-	import { onMount } from "svelte";
-	import { delay, downloadFile } from "../lib/helper";
-	import { sn } from "../lib/shared";
+	import Options from "./Options.svelte";
+
+	import { downloadFile } from "../lib/helper";
+	import { tick } from "svelte";
 
 	export let url;
 	export let state;
+	export let filename = "";
 
-	let closing = false;
-	let selected = null;
-
-	async function close() {
-		closing = true;
-		await delay(200);
-		if (selected !== null) {
-			if (selected === 0) {
-				state = 2;
-			} else {
-				window.open(url);
-				state = 0;
-			}
-		} else {
-			state = 0;
-		}
-	}
-
-	onMount(() => {
-		sn.focus("image-opts");
-
-		function onkeydown({ target, key }) {
-			if (key === "Enter") {
-				target.click();
-			}
-			if (key === "Backspace") {
-				close();
-			}
-		}
-		window.addEventListener("keydown", onkeydown);
-		return () => {
-			window.removeEventListener("keydown", onkeydown);
-		};
-	});
+	let options;
 </script>
 
-<main class:closing data-image-options>
+<Options
+	on:close={async () => {
+		await tick();
+		state = 0;
+	}}
+	bind:this={options}
+>
 	<div
 		tabindex="0"
-		on:click={() => {
-			selected = 0;
-			close();
+		on:click={async () => {
+			await options.close();
+			state = 2;
 		}}
 	>
 		Zoom
@@ -61,8 +36,9 @@
 	<div
 		tabindex="0"
 		on:click={() => {
-			selected = 1;
-			close();
+			window.open(url, "_blank");
+			options.close();
+			state = 0;
 		}}
 	>
 		Open Original
@@ -79,9 +55,10 @@
 	</div>
 	<div
 		tabindex="0"
-		on:click={() => {
-			downloadFile(url);
-			close();
+		on:click={async () => {
+			downloadFile(url, filename);
+			await options.close();
+			state = 0;
 		}}
 	>
 		Download
@@ -94,48 +71,4 @@
 			/>
 		</svg>
 	</div>
-</main>
-
-<style>
-	.closing {
-		bottom: -100vh;
-	}
-
-	main {
-		width: calc(100vw - 10px);
-		position: fixed;
-		bottom: 5px;
-		left: 5px;
-		padding: 8px;
-		background-color: #18191c;
-		z-index: 3;
-		animation: opening 0.2s ease;
-		transition: bottom ease 0.2s;
-		border-radius: 5px;
-	}
-	main > div {
-		height: 32px;
-		font-size: 14px;
-		font-weight: 600;
-		user-select: none;
-		border-radius: 3px;
-		line-height: 18px;
-		padding: 7px 7px;
-		display: flex;
-		color: rgb(185, 187, 190);
-		justify-content: space-between;
-	}
-	main > div:focus {
-		background-color: #4752c4;
-		color: white !important;
-	}
-
-	@keyframes opening {
-		from {
-			bottom: -100vh;
-		}
-		to {
-			bottom: 5px;
-		}
-	}
-</style>
+</Options>

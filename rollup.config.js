@@ -17,6 +17,7 @@ export default {
 		format: "iife",
 		name: "app",
 		file: `dist/build/bundle.js`,
+		intro: "const PRODUCTION = true;",
 	},
 	plugins: [
 		copy({

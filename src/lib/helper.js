@@ -309,6 +309,7 @@ export function asyncRateLimitGenerator(func, limit = 5) {
 
 export const decideHeight = (e, size, minus) => {
 	if (!e || typeof e !== "object") return {};
+	const dataset = { "data-height": e.height, "data-width": e.width };
 	let { height, width } = e;
 	if (!height || !width) return {};
 	if (minus && height - minus > 0 && width - minus > 0) {
@@ -319,8 +320,9 @@ export const decideHeight = (e, size, minus) => {
 		return {
 			width: size || 203,
 			height: (height / width) * (size || 203),
+			...dataset,
 		};
-	} else return { height, width };
+	} else return { height, width, ...dataset };
 };
 
 export function syncCachedGenerator(func) {
@@ -330,14 +332,67 @@ export function syncCachedGenerator(func) {
 		return cache[hashCode(args.join(""))] || (cache[hashCode(args.join(""))] = func(...args));
 	};
 }
+
+import { extension as mimeExtension } from "./mime-types";
+
 /**
  * @param {Blob|File|string} blob
+ * @param {string} filename
  */
-export function downloadFile(blob, filename = "") {
-	const url = (typeof blob === "string" && blob) || URL.createObjectURL(blob);
+export async function downloadFile(blob, filename = null) {
+	let url;
+	if (typeof blob === "string") {
+		const xhr = new XMLHttpRequest({ mozAnon: true, mozSystem: true });
+		xhr.open("GET", blob, true);
+		xhr.responseType = "blob";
+		xhr.send();
+		const res = await new Promise((res, err) => {
+			xhr.onload = () => res(xhr.response);
+			xhr.onerror = err;
+		});
+		if (filename === null) {
+			const disposition = xhr.getResponseHeader("Content-Disposition");
+			if (disposition && disposition.includes("attachment")) {
+				const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+				const matches = filenameRegex.exec(disposition);
+				if (matches != null && matches[1]) {
+					filename = matches[1].replace(/['"]/g, "");
+				}
+			}
+		}
+		blob = res;
+		if (filename === null) {
+			const { pathname } = new URL(xhr.responseURL);
+			const lastPath = last(pathname.split("/"));
+			const ext = "." + (mimeExtension(xhr.getResponseHeader("content-type")) || mimeExtension(res.type) || "bin");
+			if (!lastPath.includes(".")) filename = lastPath + ext;
+			else {
+				filename = lastPath.endsWith(ext) ? lastPath : lastPath + ext;
+			}
+		}
+		url = URL.createObjectURL(res);
+	} else if (blob instanceof Blob) {
+		url = URL.createObjectURL(blob);
+	} else throw TypeError("argument 1 is not a file or a string");
 	const el = document.createElement("a");
 	el.href = url;
-	el.download = blob.name || filename;
+	el.download = blob.name || filename || "unknown." + (mimeExtension(blob.type) || "bin");
 	el.click();
 	URL.revokeObjectURL(url);
+}
+
+export function toDataset(obj) {
+	const final = {};
+	Object.entries(obj).forEach(([a, b]) => {
+		final["data" + a] = b;
+	});
+	return final;
+}
+
+export function customDispatch(el, event) {
+	el.dispatchEvent(new CustomEvent(event));
+}
+
+export function scrollToBottom(el) {
+	return (el.scrollTop = el.scrollHeight);
 }

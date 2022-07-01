@@ -1,3 +1,8 @@
+<script context="module">
+	let isRepeating = false;
+	let repeatTimeout = null;
+</script>
+
 <script>
 	// components
 	import Channel from "./components/Channel.svelte";
@@ -11,12 +16,11 @@
 	import MessageSeparator from "./components/MessageSeparator.svelte";
 	import Login from "./Login.svelte";
 	import DateSeparator from "./components/DateSeparator.svelte";
-	import ImageViewer from "./ImageViewer.svelte";
 	import Loading from "./components/Loading.svelte";
 
 	// js
 	import localforage from "localforage";
-	import { onMount } from "svelte";
+	import { onMount, tick } from "svelte";
 	import {
 		wouldMessagePing,
 		getScrollBottom,
@@ -31,6 +35,7 @@
 		asyncRateLimitGenerator,
 		syncCachedGenerator,
 		asyncCachedGenerator,
+		scrollToBottom,
 	} from "./lib/helper";
 	import { discordGateway, sn, discord, typingState, serverAck } from "./lib/shared";
 	import { settings } from "./lib/stores";
@@ -39,12 +44,7 @@
 
 	let selected = 1;
 	let appState = "app";
-	let viewerSrc = null;
-
 	let ready = false;
-
-	let isRepeating = false;
-	let repeatTimeout = null;
 
 	window.addEventListener("keyup", (e) => {
 		isRepeating = false;
@@ -55,7 +55,7 @@
 		let { key, target } = e;
 		repeatTimeout = setTimeout(() => {
 			isRepeating = true;
-		}, 600);
+		}, 900);
 		if (appState !== "app" || e.shiftKey) return;
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
@@ -125,19 +125,18 @@
 	});
 
 	$: selected !== null &&
-		(() => {
+		(async () => {
 			document.activeElement.blur();
-			setTimeout(() => {
-				let query = document.querySelector(".two.selected .selected");
-				if (selected === 2 && query) {
-					query.parentElement.matches("[data-folder][data-focusable]") ? query.parentElement.focus() : query.focus();
-					return;
-				}
-				sn.focus();
-				if (selected === 0) {
-					setTimeout(() => document.querySelector(".grow-wrap textarea").focus(), 50); // if element is not focusable, it will not blur first focused element...
-				}
-			}, 50);
+			await tick();
+			let query = document.querySelector(".two.selected .selected");
+			if (selected === 2 && query) {
+				query.parentElement.matches("[data-folder][data-focusable]") ? query.parentElement.focus() : query.focus();
+				return;
+			}
+			sn.focus();
+			if (selected === 0) {
+				setTimeout(() => document.querySelector(".grow-wrap textarea").focus(), 50); // if element is not focusable, it will not blur first focused element...
+			}
 		})();
 
 	let guild = false;
@@ -191,7 +190,7 @@
 		channels = sift;
 		console.log("dms:", channels);
 		if (selected !== 1) selected = 1;
-		setTimeout(() => sn.focus(), 50);
+		tick().then(() => sn.focus());
 		return sift;
 	};
 
@@ -229,7 +228,7 @@
 		console.log("channels:", channels);
 		if (!noSwitch) {
 			if (selected !== 1) selected = 1;
-			setTimeout(() => sn.focus(), 50);
+			tick().then(() => sn.focus());
 		}
 		return channels;
 	};
@@ -246,20 +245,25 @@
 					roles
 			  );
 		messages = [];
-		let msgs = await discord.getMessages(channel.id, 30);
-		messages = [...msgs].reverse();
-		console.log("messages:", messages);
-		if (!noSwitch) {
-			selected = 0;
-			setTimeout(() => {
-				let zel = document.querySelector(".zero.selected");
-				if (zel) zel.scrollTop = zel.scrollHeight;
-				let _last = last(zel.children);
-				if (_last) {
-					_last.focus();
-					ack(_last.id.slice(3));
-				}
-			}, 100);
+		try {
+			const msgs = await discord.getMessages(channel.id, 30);
+			messages = [...msgs].reverse();
+			console.log("messages:", messages);
+			if (!noSwitch) {
+				selected = 0;
+			}
+			await tick();
+		} finally {
+			if (messages.length !== 0) {
+				const zel = document.querySelector(".zero.selected");
+				scrollToBottom(zel);
+				last(zel.children)?.focus();
+
+				const lastMessage = last(messages);
+				if (channel.last_message_id > lastMessage.id) {
+					ack(channel.last_message_id);
+				} else ack(lastMessage.id);
+			}
 		}
 	};
 
@@ -448,12 +452,11 @@
 			messages = [...messages, d];
 			const _messages = document.querySelector("[data-messages]");
 			const shouldScroll = getScrollBottom(_messages) < 100;
-			setTimeout(() => {
-				if (shouldScroll) {
-					centerScroll(last(_messages.children));
-					ack(d.id);
-				}
-			}, 50);
+			await tick();
+			if (shouldScroll) {
+				centerScroll(last(_messages.children));
+				ack(d.id);
+			}
 		}
 		if (!discord.cache) return;
 		let e;
@@ -485,11 +488,6 @@
 			if (channel && channel.id === d.id) channel = updated;
 		}
 	});
-
-	const spreadAuthor = (e) => {
-		let { bot, discriminator, id, username, avatar } = e;
-		return { bot, discriminator, id, name: username, avatar };
-	};
 
 	const cachedMentions = (() => {
 		function delay(d = 1) {
@@ -555,6 +553,7 @@
 		window.cachedMentions = final;
 		return final;
 	})();
+
 	async function sendMessage(e, opts = {}) {
 		return discord.sendMessage(channel.id, e, opts);
 	}
@@ -649,17 +648,12 @@
 		{/each}
 	</Channels>
 	<Messages
-		on:v-image={({ detail: { src, url } }) => {
-			document.activeElement.blur();
-			viewerSrc = { src, url };
-			appState = "viewer";
-		}}
-		_messages={messages}
+		{messages}
 		{sendMessage}
 		{roles}
 		{channel}
 		{channelPermissions}
-		{appState}
+		bind:appState
 		bind:selected
 		guildID={guild ? guild.id : null}
 	>
@@ -682,7 +676,10 @@
 					{cachedMentions}
 					userID={discord.user.id}
 					{roles}
-					{...spreadAuthor(message.author)}
+					{...((e) => {
+						const { bot, discriminator, id, username, avatar } = e;
+						return { bot, discriminator, id, name: username, avatar };
+					})(message.author)}
 					guildID={guild ? guild.id : null}
 					{channel}
 					profile={serverProfile}
@@ -704,15 +701,4 @@
 {/if}
 {#if appState === "login"}
 	<Login on:login={(e) => login(e.detail.token)} />
-{:else if appState === "viewer"}
-	<ImageViewer
-		on:close={() => {
-			appState = "app";
-			setTimeout(() => {
-				document.activeElement.blur();
-				sn.focus();
-			}, 50);
-		}}
-		view={viewerSrc}
-	/>
 {/if}
