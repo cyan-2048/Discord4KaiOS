@@ -35,7 +35,7 @@
 				offsetWidth = window.innerWidth;
 			} else if (originalHeight > originalWidth) {
 				offsetHeight = window.innerHeight;
-				offsetWidth = (originalWidth * window.offsetHeight) / originalHeight;
+				offsetWidth = (originalWidth * window.innerHeight) / originalHeight;
 			} else if (originalHeight === originalWidth) {
 				offsetHeight = offsetWidth = window.innerWidth;
 			}
@@ -191,8 +191,7 @@
 	}
 	img {
 		display: block;
-		image-rendering: pixelated;
-		image-rendering: optimizeSpeed;
+		margin: auto;
 	}
 	main {
 		position: absolute;
@@ -201,7 +200,6 @@
 		top: 0;
 		left: 0;
 		display: grid;
-		place-items: center;
 		overflow: hidden;
 	}
 </style>

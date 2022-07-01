@@ -375,10 +375,12 @@ export async function downloadFile(blob, filename = null) {
 		url = URL.createObjectURL(blob);
 	} else throw TypeError("argument 1 is not a file or a string");
 	const el = document.createElement("a");
+	document.body.appendChild(el);
 	el.href = url;
 	el.download = blob.name || filename || "unknown." + (mimeExtension(blob.type) || "bin");
 	el.click();
-	URL.revokeObjectURL(url);
+	el.remove();
+	delay(5000).then(() => URL.revokeObjectURL(url));
 }
 
 export function toDataset(obj) {
@@ -395,4 +397,23 @@ export function customDispatch(el, event) {
 
 export function scrollToBottom(el) {
 	return (el.scrollTop = el.scrollHeight);
+}
+
+export async function xhr(url, options = {}, returnXhr = false) {
+	if (typeof options !== "object") options = {};
+	const xhr = new XMLHttpRequest({ mozAnon: true, mozSystem: true });
+
+	xhr.open(options.method || "GET", url, true);
+	xhr.responseType = options.responseType || "text";
+
+	Object.entries(options.headers || {}).forEach(([a, b]) => {
+		if (a && b) xhr.setRequestHeader(a, b.replace(/\r?\n|\r/g, "")); // nodejs http bug
+	});
+
+	xhr.send(options.body || null);
+
+	return new Promise((res, err) => {
+		xhr.onload = () => res(returnXhr ? xhr : xhr.response);
+		xhr.onerror = err;
+	});
 }

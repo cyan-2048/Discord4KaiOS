@@ -36,6 +36,7 @@
 		syncCachedGenerator,
 		asyncCachedGenerator,
 		scrollToBottom,
+		delay,
 	} from "./lib/helper";
 	import { discordGateway, sn, discord, typingState, serverAck } from "./lib/shared";
 	import { settings } from "./lib/stores";
@@ -51,8 +52,8 @@
 		clearTimeout(repeatTimeout);
 	});
 
-	window.addEventListener("keydown", (e) => {
-		let { key, target } = e;
+	window.addEventListener("keydown", async (e) => {
+		const { key, target } = e;
 		repeatTimeout = setTimeout(() => {
 			isRepeating = true;
 		}, 900);
@@ -63,12 +64,12 @@
 		}
 
 		if (selected === 1 && /-|Left|Back/.test(key)) {
-			setTimeout(() => (selected = 2), 50);
+			delay(50).then(() => (selected = 2));
 		}
 		if (selected === 2 && /=|Right/.test(key)) {
-			document.activeElement.blur();
-			sn.focus();
 			selected = 1;
+			await tick();
+			sn.focus("channels");
 		}
 		if (key === "Backspace" && (selected === 2 || !ready) && confirm("Are you sure you want to exit the app?"))
 			window.close();
@@ -77,7 +78,7 @@
 		if (appState !== "app") return;
 		let { direction } = e.detail;
 		if (selected !== 0) return;
-		if (direction === "left") setTimeout(() => (selected = 1), 50);
+		if (direction === "left") delay(50).then(() => (selected = 1));
 		if (!/up|down/.test(direction)) return;
 		let actEl = document.activeElement;
 		if (!actEl.id.startsWith("msg")) return;
@@ -94,11 +95,19 @@
 	});
 	window.addEventListener("sn:willunfocus", (e) => {
 		if (appState !== "app") return;
-		let { nextElement: next, direction } = e.detail;
+		const { nextElement: next, direction } = e.detail;
 		if (!/up|down/.test(direction) || selected !== 0) return;
-		let actEl = document.activeElement;
+
+		const actEl = document.activeElement;
 		if (!actEl.id.startsWith("msg")) return;
-		const messages = actEl.closest("[data-messages]");
+
+		const messages = document.querySelector("[data-messages]");
+
+		async function center(el) {
+			await delay(50);
+			centerScroll(el, isRepeating);
+		}
+
 		if (actEl.offsetHeight > messages.offsetHeight) {
 			// console.warn("current message is bigger than screen, we scroll...");
 			e.preventDefault();
@@ -114,14 +123,15 @@
 			} else if (inViewport(next)) {
 				// console.warn("next element is not bigger than viewport and is in viewport right now");
 				next.focus();
-				setTimeout(() => centerScroll(next, isRepeating), 50);
+				center(next);
 			}
-		} else if (next && next.offsetHeight < messages.offsetHeight) setTimeout(() => centerScroll(next, isRepeating), 50);
+		} else if (next && next.offsetHeight < messages.offsetHeight) center(next);
 	});
 
-	window.addEventListener("sn:focused", ({ target, detail, native }) => {
-		if (appState !== "app" || selected !== 2) return;
-		setTimeout(() => centerScroll(target, isRepeating), 50);
+	window.addEventListener("sn:focused", async ({ target, detail, native }) => {
+		if (appState !== "app" || selected === 0) return;
+		await delay(50);
+		centerScroll(target, isRepeating);
 	});
 
 	$: selected !== null &&
@@ -135,7 +145,9 @@
 			}
 			sn.focus();
 			if (selected === 0) {
-				setTimeout(() => document.querySelector(".grow-wrap textarea").focus(), 50); // if element is not focusable, it will not blur first focused element...
+				await delay(50);
+				document.querySelector(".grow-wrap textarea")?.focus();
+				// if element is not focusable, it will not blur first focused element...
 			}
 		})();
 
@@ -490,9 +502,9 @@
 	});
 
 	const cachedMentions = (() => {
-		function delay(d = 1) {
+		function _delay(d = 1) {
 			console.warn("delaying");
-			return new Promise((r) => setTimeout(r, d * 1000));
+			return delay(d * 1000);
 		}
 
 		const final = asyncRateLimitGenerator(async function () {
@@ -500,7 +512,7 @@
 			let type = args.shift();
 			let res = await discord[type](...args);
 			while (res.httpStatus === 429) {
-				await delay();
+				await _delay();
 				res = await discord[type](...args);
 			}
 			return res;
@@ -609,13 +621,15 @@
 		if (appState === "app") {
 			statusBar = selected === 0 ? "#36393f" : "#2f3136";
 		}
+		if (appState === "viewer") statusBar = "#000000";
 	}
-	function selectChannel(e) {
+	async function selectChannel(e) {
 		let { id } = e.detail;
 		let sift = channels.find((d) => d.id == id);
 		if (sift && channel?.id != sift.id) {
 			channel = sift;
 		} else {
+			delay(50);
 			selected = 0;
 		}
 	}

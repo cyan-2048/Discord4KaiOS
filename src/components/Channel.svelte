@@ -2,7 +2,7 @@
 	// js imports
 	import { serverAck, discord } from "../lib/shared";
 	import { createEventDispatcher, onMount } from "svelte";
-	import { centerScroll, isChannelMuted, shuffle } from "../lib/helper";
+	import { isChannelMuted, shuffle } from "../lib/helper";
 
 	export let avatar = null;
 	export let ch_type = "text";
@@ -97,15 +97,10 @@
 			if (dm) serverAck.off("status", onStatus, "ch" + id);
 		};
 	});
-
-	function onFocus() {
-		setTimeout(() => centerScroll(this), 50);
-	}
 </script>
 
 <main
 	data-focusable
-	on:focus={onFocus}
 	on:click={() => dispatch("select", { id })}
 	tabindex="0"
 	class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {(unread && !muted) || mentions > 0

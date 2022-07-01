@@ -55,10 +55,9 @@
 	</div>
 	<div
 		tabindex="0"
-		on:click={async () => {
-			downloadFile(url, filename);
-			await options.close();
-			state = 0;
+		on:click={() => {
+			downloadFile(url, filename).catch((e) => console.error(e));
+			options.close().then(() => (state = 0));
 		}}
 	>
 		Download
