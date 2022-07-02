@@ -5,6 +5,7 @@ export const settings = writable(
 		const defaultSettings = {
 			custom_rpc: true,
 			prompt_delete: false,
+			smooth_scroll: true,
 			keybinds: {
 				"*": "edit",
 				0: "jump",

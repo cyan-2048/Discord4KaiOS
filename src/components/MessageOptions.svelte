@@ -30,7 +30,7 @@
 		if (selected !== null) {
 			switch (selected) {
 				case 0:
-					dblclick(el);
+					customDispatch(el, "edit");
 					break;
 				case 1:
 					alert("not implemented!");
@@ -51,7 +51,7 @@
 
 <Options on:close>
 	{#if userMessage && !el.querySelector("[data-sticker]")}
-		<div on:click={() => (selected = 0)} tabindex="0">
+		<div on:click={() => (selected = 0)}>
 			Edit Message
 			<svg data-name="Pencil" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
 				<path
@@ -64,7 +64,7 @@
 		</div>
 	{/if}
 	{#if manageMessage || channel.dm}
-		<div on:click={() => (selected = 1)} tabindex="0">
+		<div on:click={() => (selected = 1)}>
 			Pin Message
 			<svg data-name="Pin" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
 				<path
@@ -75,7 +75,7 @@
 		</div>
 	{/if}
 	{#if channelPermissions.write !== false}
-		<div on:click={() => (selected = 2)} tabindex="0">
+		<div on:click={() => (selected = 2)}>
 			Reply
 			<svg data-name="Reply" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
 				<path
@@ -86,7 +86,7 @@
 		</div>
 	{/if}
 	{#if userMessage || manageMessage}
-		<div on:click={() => (selected = 3)} style:color="rgb(237, 66, 69)" tabindex="0">
+		<div on:click={() => (selected = 3)} style:color="rgb(237, 66, 69)">
 			Delete Message
 			<svg data-name="Trash" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
 				<path fill="currentColor" d="M15 3.999V2H9V3.999H3V5.999H21V3.999H15Z" />

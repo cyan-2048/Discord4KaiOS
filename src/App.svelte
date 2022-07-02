@@ -1,8 +1,3 @@
-<script context="module">
-	let isRepeating = false;
-	let repeatTimeout = null;
-</script>
-
 <script>
 	// components
 	import Channel from "./components/Channel.svelte";
@@ -43,36 +38,44 @@
 
 	window.changeSettings = (e) => ($settings = { ...$settings, ...e });
 
+	let textbox, chatbox;
 	let selected = 1;
 	let appState = "app";
 	let ready = false;
 
+	let isRepeating = false;
+	let repeatTimeout = null;
+
 	window.addEventListener("keyup", (e) => {
+		if (!$settings.smooth_scroll) return (isRepeating = true);
 		isRepeating = false;
 		clearTimeout(repeatTimeout);
 	});
 
-	window.addEventListener("keydown", async (e) => {
-		const { key, target } = e;
+	window.addEventListener("keydown", () => {
+		if (!$settings.smooth_scroll) return (isRepeating = true);
 		repeatTimeout = setTimeout(() => {
 			isRepeating = true;
-		}, 900);
+		}, 600);
+	});
+
+	window.addEventListener("keydown", async (e) => {
+		const { key, target } = e;
 		if (appState !== "app" || e.shiftKey) return;
 		if (selected > 0) {
 			if (/Arrow(Up|Down)/.test(key)) e.preventDefault(); //don't scroll
 			if (/Enter/.test(key)) target.click();
 		}
-
+		if (key === "Backspace" && (selected === 2 || !ready) && confirm("Are you sure you want to exit the app?"))
+			window.close();
 		if (selected === 1 && /-|Left|Back/.test(key)) {
-			delay(50).then(() => (selected = 2));
-		}
-		if (selected === 2 && /=|Right/.test(key)) {
+			await delay(50);
+			selected = 2;
+		} else if (selected === 2 && /=|Right/.test(key)) {
 			selected = 1;
 			await tick();
 			sn.focus("channels");
 		}
-		if (key === "Backspace" && (selected === 2 || !ready) && confirm("Are you sure you want to exit the app?"))
-			window.close();
 	});
 	window.addEventListener("sn:navigatefailed", (e) => {
 		if (appState !== "app") return;
@@ -80,17 +83,21 @@
 		if (selected !== 0) return;
 		if (direction === "left") delay(50).then(() => (selected = 1));
 		if (!/up|down/.test(direction)) return;
+
 		let actEl = document.activeElement;
 		if (!actEl.id.startsWith("msg")) return;
-		const messages = actEl.closest("[data-messages]");
-		if (actEl.offsetHeight > messages.offsetHeight) {
-			messages.scrollBy({
+
+		// const messages = actEl.closest("[data-messages]");
+		if (!chatbox) return;
+
+		if (actEl.offsetHeight > chatbox.offsetHeight) {
+			chatbox.scrollBy({
 				top: direction === "up" ? -66 : 66,
 				behavior: isRepeating ? "auto" : "smooth",
 			});
 		}
-		if (direction === "down" && getScrollBottom(messages) === 0) {
-			document.querySelector(".grow-wrap textarea").focus();
+		if (direction === "down" && getScrollBottom(chatbox) === 0) {
+			textbox?.focus();
 		}
 	});
 	window.addEventListener("sn:willunfocus", (e) => {
@@ -101,31 +108,32 @@
 		const actEl = document.activeElement;
 		if (!actEl.id.startsWith("msg")) return;
 
-		const messages = document.querySelector("[data-messages]");
+		if (!chatbox) return;
 
 		async function center(el) {
 			await delay(50);
 			centerScroll(el, isRepeating);
 		}
 
-		if (actEl.offsetHeight > messages.offsetHeight) {
+		if (actEl.offsetHeight > chatbox.offsetHeight) {
 			// console.warn("current message is bigger than screen, we scroll...");
 			e.preventDefault();
-			messages.scrollBy({
-				top: direction === "up" ? -66 : 66,
-				behavior: isRepeating ? "auto" : "smooth",
-			});
+			if (!inViewport(next))
+				chatbox.scrollBy({
+					top: direction === "up" ? -66 : 66,
+					behavior: isRepeating ? "auto" : "smooth",
+				});
 			// if (!next) // console.warn("next element to focus not found!");
 			if (!next) return;
-			if (next.offsetHeight > messages.offsetHeight) {
+			if (next.offsetHeight > chatbox.offsetHeight) {
 				// console.warn("next element is bigger than viewport");
 				if (inViewport(next, true)) next.focus();
 			} else if (inViewport(next)) {
 				// console.warn("next element is not bigger than viewport and is in viewport right now");
-				next.focus();
 				center(next);
+				next.focus();
 			}
-		} else if (next && next.offsetHeight < messages.offsetHeight) center(next);
+		} else if (next && next.offsetHeight < chatbox.offsetHeight) center(next);
 	});
 
 	window.addEventListener("sn:focused", async ({ target, detail, native }) => {
@@ -134,22 +142,23 @@
 		centerScroll(target, isRepeating);
 	});
 
-	$: selected !== null &&
+	$: if (selected !== null) {
 		(async () => {
 			document.activeElement.blur();
 			await tick();
-			let query = document.querySelector(".two.selected .selected");
+			sn.focus(["messages", "channels", "servers"][selected]);
+			const query = document.querySelector(".two.selected .selected");
 			if (selected === 2 && query) {
 				query.parentElement.matches("[data-folder][data-focusable]") ? query.parentElement.focus() : query.focus();
 				return;
 			}
-			sn.focus();
+			await delay(50);
 			if (selected === 0) {
-				await delay(50);
-				document.querySelector(".grow-wrap textarea")?.focus();
+				textbox?.focus();
 				// if element is not focusable, it will not blur first focused element...
 			}
 		})();
+	}
 
 	let guild = false;
 	let serverProfile = null;
@@ -211,7 +220,7 @@
 			discordGateway.send({
 				op: 14,
 				d: {
-					activities: false,
+					activities: true,
 					guild_id: guild.id,
 					threads: true,
 					typing: true,
@@ -240,13 +249,86 @@
 		console.log("channels:", channels);
 		if (!noSwitch) {
 			if (selected !== 1) selected = 1;
-			tick().then(() => sn.focus());
 		}
 		return channels;
 	};
 
 	$: guild === null && loadDMS();
 	$: guild && loadChannels();
+
+	const cachedMentions = (() => {
+		function _delay(d = 1) {
+			console.warn("delaying");
+			return delay(d * 1000);
+		}
+
+		const final = asyncRateLimitGenerator(async function () {
+			let args = [...arguments];
+			let type = args.shift();
+			let res = await discord[type](...args);
+			while (res.httpStatus === 429) {
+				await _delay();
+				res = await discord[type](...args);
+			}
+			return res;
+		}, 4);
+
+		final.getGuildMembers = asyncQueueGenerator(function (query = "", limit = 5) {
+			if (query === "") return Promise.resolve([]);
+			return new Promise((res) => {
+				if (!channel.dm) {
+					discordGateway.send({
+						op: 8,
+						d: { guild_id: guild.id, query, limit },
+					});
+					discordGateway.once("t:guild_members_chunk", (d) =>
+						res(d.members.map((a) => ({ ...a, guild_id: guild.id })))
+					);
+				} else
+					res(
+						channel.recipients
+							.filter((a) => a.username.includes(query))
+							.slice(0, limit)
+							.map((a) => ({ user: { ...a } }))
+					);
+			});
+		});
+		final.findUserByTag = syncCachedGenerator(findUserByTag(final.cache, final.getGuildMembers.cache));
+		final.findUserById = asyncCachedGenerator(async function (id) {
+			let cached = [final.cache, final.getGuildMembers.cache].map((a) => Object.values(a)).flat(2);
+			let len = cached.length;
+			let done = null;
+			for (let index = 0; index < len; index++) {
+				const obj = cached[index];
+				const user = obj.user || (obj.username ? obj : null);
+				if (!user || user.id !== id) continue;
+				done = user;
+				break;
+			}
+			return done || (await final("getProfile", id)).user;
+		});
+
+		discordGateway.on("t:guild_member_update", (d) => {
+			Object.values(final.cache).forEach((a) => {
+				if (!a) return;
+				if (d.guild_id === a.guild_id && a.user?.id === d.user.id) {
+					Object.assign(a, d);
+				}
+			});
+		});
+
+		window.cachedMentions = final;
+		return final;
+	})();
+
+	discordGateway.on("t:guild_members_chunk", ({ guild_id, members }) => {
+		if (guild_id && members instanceof Array)
+			members.forEach((member) => {
+				if (!member || !member.user?.id) return;
+				const hash = hashCode("getServerProfile" + guild_id + member.user.id);
+				cachedMentions.cache[hash] = member;
+			});
+	});
 
 	const loadMessages = async (noSwitch = false) => {
 		channelPermissions = channel.dm
@@ -265,17 +347,36 @@
 				selected = 0;
 			}
 			await tick();
+			await delay(20);
 		} finally {
 			if (messages.length !== 0) {
-				const zel = document.querySelector(".zero.selected");
-				scrollToBottom(zel);
-				last(zel.children)?.focus();
+				if (chatbox) {
+					scrollToBottom(chatbox);
+					last(chatbox.children)?.focus();
+				}
 
 				const lastMessage = last(messages);
 				if (channel.last_message_id > lastMessage.id) {
 					ack(channel.last_message_id);
 				} else ack(lastMessage.id);
 			}
+		}
+		if (!channel.dm) {
+			const user_ids = [...new Set(messages.map((a) => a?.author?.id))].filter((a) => {
+				const hash = hashCode("getServerProfile" + guild.id + a);
+				if (hash in cachedMentions.cache === false) return true;
+			});
+			if (user_ids.length !== 0)
+				discordGateway.send({
+					op: 8,
+					d: {
+						guild_id: [guild.id],
+						query: undefined,
+						limit: undefined,
+						presences: false,
+						user_ids,
+					},
+				});
 		}
 	};
 
@@ -462,12 +563,14 @@
 	discordGateway.on("t:message_create", async (d) => {
 		if (channel?.id == d.channel_id) {
 			messages = [...messages, d];
-			const _messages = document.querySelector("[data-messages]");
-			const shouldScroll = getScrollBottom(_messages) < 100;
-			await tick();
-			if (shouldScroll) {
-				centerScroll(last(_messages.children));
-				ack(d.id);
+
+			if (chatbox) {
+				const shouldScroll = getScrollBottom(chatbox) < 100;
+				await tick();
+				if (shouldScroll) {
+					centerScroll(last(chatbox.children));
+					ack(d.id);
+				}
 			}
 		}
 		if (!discord.cache) return;
@@ -500,71 +603,6 @@
 			if (channel && channel.id === d.id) channel = updated;
 		}
 	});
-
-	const cachedMentions = (() => {
-		function _delay(d = 1) {
-			console.warn("delaying");
-			return delay(d * 1000);
-		}
-
-		const final = asyncRateLimitGenerator(async function () {
-			let args = [...arguments];
-			let type = args.shift();
-			let res = await discord[type](...args);
-			while (res.httpStatus === 429) {
-				await _delay();
-				res = await discord[type](...args);
-			}
-			return res;
-		}, 4);
-
-		final.getGuildMembers = asyncQueueGenerator(function (query = "", limit = 5) {
-			if (query === "") return Promise.resolve([]);
-			return new Promise((res) => {
-				if (!channel.dm) {
-					discordGateway.send({
-						op: 8,
-						d: { guild_id: guild.id, query, limit },
-					});
-					discordGateway.once("t:guild_members_chunk", (d) =>
-						res(d.members.map((a) => ({ ...a, guild_id: guild.id })))
-					);
-				} else
-					res(
-						channel.recipients
-							.filter((a) => a.username.includes(query))
-							.slice(0, limit)
-							.map((a) => ({ user: { ...a } }))
-					);
-			});
-		});
-		final.findUserByTag = syncCachedGenerator(findUserByTag(final.cache, final.getGuildMembers.cache));
-		final.findUserById = asyncCachedGenerator(async function (id) {
-			let cached = [final.cache, final.getGuildMembers.cache].map((a) => Object.values(a)).flat(2);
-			let len = cached.length;
-			let done = null;
-			for (let index = 0; index < len; index++) {
-				const obj = cached[index];
-				const user = obj.user || (obj.username ? obj : null);
-				if (!user || user.id !== id) continue;
-				done = user;
-				break;
-			}
-			return done || (await final("getProfile", id)).user;
-		});
-
-		discordGateway.on("t:guild_member_update", (d) => {
-			Object.values(final.cache).forEach((a) => {
-				if (!a) return;
-				if (d.guild_id === a.guild_id && a.user?.id === d.user.id) {
-					Object.assign(a, d);
-				}
-			});
-		});
-
-		window.cachedMentions = final;
-		return final;
-	})();
 
 	async function sendMessage(e, opts = {}) {
 		return discord.sendMessage(channel.id, e, opts);
@@ -669,6 +707,8 @@
 		{channelPermissions}
 		bind:appState
 		bind:selected
+		bind:textbox
+		bind:chatbox
 		guildID={guild ? guild.id : null}
 	>
 		{#each messages as message, i (message.id)}

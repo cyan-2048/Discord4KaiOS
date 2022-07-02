@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from "svelte";
-	import { decimal2rgb } from "../lib/helper";
+	import { decimal2rgb, delay, hashCode } from "../lib/helper";
 	import { discordGateway } from "../lib/shared";
 
 	export let id = null;
@@ -24,7 +24,9 @@
 	async function update(_profile = profile) {
 		if (channel.dm) return;
 		if (id && discriminator !== "0000" /*i think this is how we can differ webhooks*/) {
-			let s_profile = userID === id ? _profile : await cachedMentions("getServerProfile", guildID, id);
+			const args = ["getServerProfile", guildID, id];
+			if (hashCode(args.join("")) in cachedMentions.cache === false) await delay(600);
+			let s_profile = userID === id ? _profile : await cachedMentions(...args);
 			if (!s_profile || !s_profile.roles) return;
 			nick = s_profile.nick;
 			if (roles) {

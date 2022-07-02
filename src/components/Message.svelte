@@ -1,6 +1,15 @@
 <script context="module">
 	import { createEventDispatcher, onMount, tick } from "svelte";
-	import { decimal2rgb, wouldMessagePing, toHTML, decideHeight, delay, customDispatch } from "../lib/helper.js";
+	import {
+		decimal2rgb,
+		wouldMessagePing,
+		toHTML,
+		decideHeight,
+		delay,
+		customDispatch,
+		hashCode,
+		dblclick,
+	} from "../lib/helper.js";
 	async function handleSiblingColor(el) {
 		await tick();
 		const prev = el.previousElementSibling;
@@ -20,6 +29,7 @@
 	import { evtForward, discord, discordGateway } from "../lib/shared";
 	const dispatch = createEventDispatcher();
 	import EmojiDict from "../lib/EmojiDict.js";
+	import { settings } from "../lib/stores";
 
 	// props
 	export let roles;
@@ -86,7 +96,10 @@
 				temp = `<b>${"@" + ref.author.username} </b>` + toHTML(temp);
 			else {
 				let id = ref.author.id;
-				let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
+				await delay(600);
+				const args = ["getServerProfile", guildID, id];
+				if (hashCode(args.join("")) in cachedMentions.cache === false) await delay(600);
+				let s_profile = id === discord.user.id ? profile : await cachedMentions(...args);
 				temp =
 					`<b>${"@" + (s_profile.nick || s_profile.user?.username || ref.author.username || "unknown-user")} </b>` +
 					toHTML(temp);
@@ -131,7 +144,9 @@
 				});
 				for (const a of getMentions("user")) {
 					let id = a.dataset.id;
-					let s_profile = id === discord.user.id ? profile : await cachedMentions("getServerProfile", guildID, id);
+					const args = ["getServerProfile", guildID, id];
+					if (hashCode(args.join("")) in cachedMentions.cache === false) await delay(600);
+					let s_profile = id === discord.user.id ? profile : await cachedMentions(...args);
 					if (!s_profile || s_profile.httpStatus === 404)
 						s_profile = message.author.id === id ? message.author : await cachedMentions("getProfile", id);
 					a.innerText =
@@ -236,12 +251,10 @@
 <main
 	class:editing
 	class:replying
-	on:dblclick={async function handleEdit(e) {
+	class:userMessage={message.author.id === discord.user.id}
+	on:edit={async function handleEdit(e) {
+		if (editing || this.querySelector("[data-sticker]") || message.author.id !== discord.user.id) return; // you can't edit sticker messages
 		handleSiblingColor(this);
-		if (message.author.id !== discord.user.id) {
-			return customDispatch(this, "reply");
-		}
-		if (editing || this.querySelector("[data-sticker]")) return; // you can't edit sticker messages
 		let clone = contentEl.cloneNode(true);
 		let mentioned = [];
 		for (const a of clone.querySelectorAll("span.mentions[data-type='user']")) {
@@ -257,6 +270,9 @@
 		});
 		editing = true;
 		evtForward.emit("message_edit", message, clone.innerText, mentioned);
+	}}
+	on:dblclick={function (e) {
+		customDispatch(this, message.author.id !== discord.user.id ? "reply" : "edit");
 	}}
 	on:options={function () {
 		evtForward.emit("message_options", message, this);
@@ -513,8 +529,8 @@
 		background-size: contain;
 	}
 
-	:global(.grow-wrap .after .mentions),
-	:global(.grow-wrap .after .mentions::after),
+	:global(.textbox .after .mentions),
+	:global(.textbox .after .mentions::after),
 	.content :global(.mentions),
 	.content :global(.mentions::after) {
 		background-color: var(--color, rgba(88, 101, 242, 0.3));

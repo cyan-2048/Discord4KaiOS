@@ -19,7 +19,6 @@
 	bind:this={options}
 >
 	<div
-		tabindex="0"
 		on:click={async () => {
 			await options.close();
 			state = 2;
@@ -34,7 +33,6 @@
 		</svg>
 	</div>
 	<div
-		tabindex="0"
 		on:click={() => {
 			window.open(url, "_blank");
 			options.close();
@@ -54,7 +52,6 @@
 		</svg>
 	</div>
 	<div
-		tabindex="0"
 		on:click={() => {
 			downloadFile(url, filename).catch((e) => console.error(e));
 			options.close().then(() => (state = 0));

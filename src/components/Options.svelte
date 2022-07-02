@@ -5,9 +5,11 @@
 
 	const id = hashCode(String(Math.random()));
 	const dispatch = createEventDispatcher();
-	let closing = false;
+	let closing = false,
+		main;
 
 	export async function close(d = 300) {
+		document.activeElement.blur();
 		closing = true;
 		await delay(d);
 		await tick();
@@ -15,32 +17,36 @@
 	}
 
 	onMount(() => {
+		const sectionId = id + "-opts";
 		sn.add({
-			id: id + "-opts",
+			id: sectionId,
 			selector: `#${id}-opts > *`,
 			restrict: "self-only",
 		});
 
-		sn.focus(id + "-opts");
+		sn.makeFocusable(sectionId);
 
-		function onkeydown({ target, key }) {
+		sn.focus(sectionId);
+
+		main.onkeydown = function onkeydown(e) {
+			const { target, key } = e;
 			if (key === "Enter") {
 				target.click();
 			}
 			if (key === "Backspace") {
+				e.stopImmediatePropagation();
+				e.stopPropagation();
+				e.preventDefault();
 				close();
 			}
-		}
-		window.addEventListener("keydown", onkeydown);
+		};
 		return () => {
-			sn.remove(id + "-opts");
-			document.activeElement.blur();
-			window.removeEventListener("keydown", onkeydown);
+			sn.remove(sectionId);
 		};
 	});
 </script>
 
-<main id="{id}-opts" class:closing>
+<main bind:this={main} id="{id}-opts" class:closing>
 	<slot />
 </main>
 

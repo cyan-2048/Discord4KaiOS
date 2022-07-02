@@ -6,8 +6,10 @@
 
 	// js imports
 	import { onMount, tick as _tick } from "svelte";
-	import { delay, last } from "../lib/helper";
+	import { centerScroll, customDispatch, delay, last } from "../lib/helper";
 	import { typingState, discord, evtForward, picker, sn } from "../lib/shared.js";
+	import Options from "./Options.svelte";
+	import { settings } from "../lib/stores";
 
 	window.picker = picker;
 
@@ -19,17 +21,19 @@
 	// export let roles;
 	export let guildID;
 	export let channel;
+	export let chatbox;
+	export let textbox;
 
-	let textarea, after, con, messages_el, softkeys, typing_indicator;
-	let textAreaHeight = 0;
-	let typingIndicatorBottom = 0;
+	let after, after_height;
 
 	let slowmode = null;
 
 	function height() {
-		after.scrollTop = textarea.scrollTop;
-		typingIndicatorBottom = con.offsetHeight + softkeys.offsetHeight;
-		textAreaHeight = window.innerHeight - typingIndicatorBottom;
+		const top = textbox.scrollTop,
+			height = after.offsetHeight;
+
+		if (top !== after.scrollTop) after.scrollTop = top;
+		if (height !== after_height) after_height = height;
 	}
 
 	window.onresize = height;
@@ -65,7 +69,7 @@
 		height();
 	}
 
-	$: channelPermissions && console.log("channel permissions:", channelPermissions);
+	$: channelPermissions && !PRODUCTION && console.log("channel permissions:", channelPermissions);
 	$: if (selected === 1) {
 		typingState.off("change", ontyping, "messages");
 	} else if (selected === 0)
@@ -78,18 +82,49 @@
 	let messageFocused = true;
 	let enterFunc = null;
 
-	window.addEventListener("sn:focused", (e) => {
-		if (!messageFocused || selected !== 0 || appState !== "app") return;
-		let { target } = e;
-		const f = (e) => !!target.querySelector(e);
-		if (f(".v-image")) {
-			enterFunc = "image";
-		} else if (f("span.spoiler")) {
-			enterFunc = f("span.spoiler.active") ? "unspoiler" : "spoiler";
-		} else {
-			enterFunc = null;
-		}
-	});
+	onMount(() =>
+		chatbox.addEventListener("focusin", (e) => {
+			let { target } = e;
+			if (target.id.startsWith("msg")) messageFocused = true;
+			if (!messageFocused || selected !== 0 || appState !== "app") return;
+			const f = (e) => !!target.querySelector(e);
+			if (f(".v-image")) {
+				enterFunc = "image";
+			} else if (f("span.spoiler")) {
+				enterFunc = f("span.spoiler.active") ? "unspoiler" : "spoiler";
+			} else {
+				enterFunc = null;
+			}
+		})
+	);
+
+	onMount(() =>
+		chatbox.addEventListener("keydown", async ({ target, key }) => {
+			if (!target.id.startsWith("msg")) return;
+			const userMessage = target.classList.contains("userMessage");
+			const manageMessage = channelPermissions.manage_messages === true;
+			const binds = $settings.keybinds;
+			switch (binds[key]) {
+				case "edit":
+					if (userMessage && !target.querySelector("[data-sticker]")) customDispatch(target, "edit");
+					break;
+				case "reply":
+					if (channelPermissions.write !== false) customDispatch(target, "reply");
+					break;
+				case "jump":
+					centerScroll(last(chatbox.children), !$settings.smooth_scroll);
+					await delay(20);
+					textbox.focus();
+					break;
+				case "delete":
+					if (userMessage || manageMessage) customDispatch(target, "delete");
+					break;
+				case "pin":
+					if (manageMessage || channel.dm) customDispatch(target, "pin");
+					break;
+			}
+		})
+	);
 
 	window.addEventListener("sn:navigatefailed", (e) => {
 		if (selected !== 0 || appState !== "app") return;
@@ -122,11 +157,11 @@
 		let mentioned = [];
 
 		async function clearForEdit(content = "") {
-			textarea.value = content;
-			textarea.oninput();
+			textbox.value = content;
+			textbox.oninput();
 			height();
 			await _tick();
-			textarea.focus();
+			textbox.focus();
 		}
 
 		evtForward.on("message_edit", (message, content, mentions) => {
@@ -149,7 +184,7 @@
 			clearForEdit();
 		});
 
-		let replaceMentions = (content) => {
+		const replaceMentions = (content) => {
 			mentioned.forEach((a) => {
 				if (typeof a !== "object") return;
 				if (a.username) {
@@ -162,9 +197,12 @@
 			return content;
 		};
 
-		textarea.onkeydown = function (e) {
-			let { key } = e;
-			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(messages_el.children)?.focus(), 50);
+		textbox.onkeydown = function ({ key }) {
+			if (key === "SoftRight" && !messageEditing && !messageReplying) {
+				showOptions1 = true;
+				return;
+			}
+			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(chatbox.children)?.focus(), 50);
 			setTimeout(async () => {
 				if (!messageEditing && ("SoftLeft" === key || "End" === key) && this.value !== "") {
 					if (this.value.startsWith("s/")) sendMessage.sed(this.value);
@@ -267,9 +305,9 @@
 
 		let isTyping = false;
 
-		textarea.onblur = () => (messageFocused = true);
-		textarea.onfocus = () => (messageFocused = false);
-		textarea.oninput = function () {
+		textbox.onblur = () => (messageFocused = true);
+		textbox.onfocus = () => (messageFocused = false);
+		textbox.oninput = function () {
 			handleQuery.call(this);
 			if (!isTyping) {
 				isTyping = true;
@@ -285,11 +323,15 @@
 		};
 	});
 
-	$: display = appState !== "app" ? "none" : null;
+	$: visibility = appState !== "app" ? "hidden" : null; // for some reason the scroll disappears when you use display none?
 	$: readOnly = channelPermissions.write === false;
+	$: s_readOnly = channelPermissions.write === false ? "none" : null;
 
 	let showOptions = false;
-	$: selected !== 0 && (showOptions = false);
+	let showOptions1 = false;
+	$: if (selected !== 0) {
+		showOptions = showOptions1 = false;
+	}
 	let selectedMessage = null;
 	let selectedElement = null;
 
@@ -376,6 +418,8 @@
 			}
 		} else slowmode = null;
 	}
+
+	let options1;
 </script>
 
 {#if showOptions}
@@ -387,132 +431,97 @@
 		{channelPermissions}
 	/>
 {/if}
-<div
-	bind:this={messages_el}
-	data-messages
-	class:zero={selected === 0}
-	class:one={selected === 1}
-	style:display
-	style:height={textAreaHeight - (typing_indicator?.offsetHeight || 0) + "px"}
-	class:selected={selected === 0}
->
-	<slot />
-</div>
-<div
-	class="frame"
-	class:zero={selected === 0}
-	class:one={selected === 1}
-	style:display
-	style:height={textAreaHeight - (typing_indicator?.offsetHeight || 0) + "px"}
->
-	<div class="pills">
-		{#if slowmode !== null}
-			<div class="slowmode">
-				<span>
-					{slowmode}
-				</span>
-				<svg width="16" height="16" viewBox="0 0 24 24"
-					><g fill="none" fill-rule="evenodd"
-						><path
-							fill="currentColor"
-							fill-rule="nonzero"
-							d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"
-						/></g
-					></svg
-				>
-			</div>
-		{/if}
-	</div>
-</div>
-{#if currentTypingState.length > 0 && appState === "app" && selected === 0}
-	<div bind:this={typing_indicator} style:bottom="{typingIndicatorBottom}px" id="typing">
-		{#if currentTypingState.length < 4}
-			{oxford(currentTypingState, "and", "an error occured so no one")}
-			{currentTypingState.length > 1 ? "are" : "is"} typing...
-		{:else}
-			Several people are typing...
-		{/if}
-	</div>
-{/if}
-<div
-	bind:this={con}
-	style:bottom={readOnly ? 0 : null}
-	style:display
-	class="grow-wrap {['zero', 'one'][selected] || ''}"
->
-	<textarea rows="1" style:display={readOnly ? "none" : null} bind:this={textarea} />
-	<div style={readOnly ? "display:none;" : null} bind:this={after} class="after" />
-	{#if readOnly}
-		<div style="font-size: 10px; white-space: pre-wrap; word-wrap: break-word; height: 30px;">
-			You do not have permission to send messages in this channel.
-		</div>
-	{/if}
-</div>
-<div
-	bind:this={softkeys}
-	class:zero={selected === 0}
-	class:one={selected === 1}
-	class="softkeys"
-	style:display={readOnly || display ? "none" : null}
->
-	<div>
-		{#if !messageEditing && !messageReplying && !messageFocused && (textarea?.value || "") !== ""}
-			<svg id="send" fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
-				><path d="M0 0h24v24H0V0z" fill="none" /><path
-					d="M3.4 20.4l17.45-7.48c.81-.35.81-1.49 0-1.84L3.4 3.6c-.66-.29-1.39.2-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z"
-				/></svg
-			>
-		{:else if (messageEditing || messageReplying) && !messageFocused}
-			<svg id="checkmark" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-				<path
-					fill="currentColor"
-					fillrule="evenodd"
-					cliprule="evenodd"
-					d="M8.99991 16.17L4.82991 12L3.40991 13.41L8.99991 19L20.9999 7.00003L19.5899 5.59003L8.99991 16.17Z"
-				/>
-			</svg>
-		{:else}
-			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
-				><g fill="none"><path d="M0 0h24v24H0V0z" /><path d="M0 0h24v24H0V0z" opacity=".87" /></g><path
-					d="M4 13c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0 4c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0-8c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm4 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zm0 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zM7 8c0 .55.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1zm-3 5c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0 4c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0-8c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm4 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zm0 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zM7 8c0 .55.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1z"
-				/></svg
-			>
-		{/if}
-	</div>
-	<div>
-		{#if !messageFocused}
-			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
-				><path
-					d="M19 8v3H5.83l2.88-2.88c.39-.39.39-1.02 0-1.41-.39-.39-1.02-.39-1.41 0L2.71 11.3c-.39.39-.39 1.02 0 1.41L7.3 17.3c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L5.83 13H20c.55 0 1-.45 1-1V8c0-.55-.45-1-1-1s-1 .45-1 1z"
-				/></svg
-			>
-		{/if}
-	</div>
-	<div>
-		{#if !messageFocused && (messageEditing || messageReplying)}
-			<svg id="close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-				<path
-					fill="currentColor"
-					d="M18.4 4L12 10.4L5.6 4L4 5.6L10.4 12L4 18.4L5.6 20L12 13.6L18.4 20L20 18.4L13.6 12L20 5.6L18.4 4Z"
-				/>
-			</svg>
-		{:else}
-			<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"
-				><path d="M0 0h24v24H0V0z" fill="none" /><path
-					d="M4 18h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zm0-5h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zM3 7c0 .55.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1z"
-				/></svg
-			>
-		{/if}
-	</div>
-</div>
 {#if appState === "viewer"}
 	<ImageViewer bind:appState view={viewerSrc} />
 {/if}
+{#if showOptions1}
+	<Options
+		bind:this={options1}
+		on:close={async () => {
+			showOptions1 = false;
+			await delay(20);
+			textbox.focus();
+		}}
+	>
+		<div>
+			Add Attachments
+			<!-- prettier-ignore -->
+			<svg xmlns=http://www.w3.org/2000/svg width=18 height=18 viewBox="0 0 24 24"><path fill=currentColor d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"></path></svg>
+		</div>
+		<div>
+			Settings
+			<!-- prettier-ignore -->
+			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" fillrule="evenodd" cliprule="evenodd" d="M19.738 10H22V14H19.739C19.498 14.931 19.1 15.798 18.565 16.564L20 18L18 20L16.565 18.564C15.797 19.099 14.932 19.498 14 19.738V22H10V19.738C9.069 19.498 8.203 19.099 7.436 18.564L6 20L4 18L5.436 16.564C4.901 15.799 4.502 14.932 4.262 14H2V10H4.262C4.502 9.068 4.9 8.202 5.436 7.436L4 6L6 4L7.436 5.436C8.202 4.9 9.068 4.502 10 4.262V2H14V4.261C14.932 4.502 15.797 4.9 16.565 5.435L18 3.999L20 5.999L18.564 7.436C19.099 8.202 19.498 9.069 19.738 10ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z"></path></svg>
+		</div>
+	</Options>
+{/if}
+
+<main class:zero={selected === 0} class:one={selected === 1} style:visibility>
+	<div class="body">
+		<div bind:this={chatbox} class:selected={selected === 0} data-messages><slot /></div>
+		<div class="frame">
+			<div class="pills">
+				{#if slowmode !== null && !readOnly}
+					<div class="slowmode">
+						<span>{slowmode}</span>
+						<!-- prettier-ignore -->
+						<svg width="16" height="16" viewBox="0 0 24 24"><g fill="none" fill-rule="evenodd"><path fill="currentColor" fill-rule="nonzero"d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></g></svg>
+					</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+	<div class="footer">
+		{#if currentTypingState.length > 0}
+			<div class="typing">
+				{#if currentTypingState.length < 4}
+					{oxford(currentTypingState, "and", "an error occured so no one")}
+					{currentTypingState.length > 1 ? "are" : "is"} typing...
+				{:else}
+					Several people are typing...
+				{/if}
+			</div>
+		{/if}
+		{#if readOnly}
+			<div class="readonly">You do not have permission to send messages in this channel.</div>
+		{/if}
+		<div style:display={s_readOnly} class="textbox">
+			<textarea style:height={after_height + "px"} bind:this={textbox} rows="1" />
+			<div bind:this={after} class="after" />
+		</div>
+		<div style:display={s_readOnly} class="softkeys">
+			<div>
+				{#if !messageEditing && !messageReplying && !messageFocused && (textbox?.value || "") !== ""}
+					<!-- prettier-ignore -->
+					<svg id="send" fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" ><path d="M0 0h24v24H0V0z" fill="none" /><path d="M3.4 20.4l17.45-7.48c.81-.35.81-1.49 0-1.84L3.4 3.6c-.66-.29-1.39.2-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z" /></svg >
+				{:else if (messageEditing || messageReplying) && !messageFocused}
+					<!-- prettier-ignore -->
+					<svg id="checkmark" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" fillrule="evenodd" cliprule="evenodd" d="M8.99991 16.17L4.82991 12L3.40991 13.41L8.99991 19L20.9999 7.00003L19.5899 5.59003L8.99991 16.17Z" /></svg>
+				{:else}
+					<!-- prettier-ignore -->
+					<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" ><g fill="none"><path d="M0 0h24v24H0V0z" /><path d="M0 0h24v24H0V0z" opacity=".87" /></g><path d="M4 13c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0 4c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0-8c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm4 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zm0 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zM7 8c0 .55.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1zm-3 5c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0 4c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0-8c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm4 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zm0 4h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1s.45 1 1 1zM7 8c0 .55.45 1 1 1h12c.55 0 1-.45 1-1s-.45-1-1-1H8c-.55 0-1 .45-1 1z" /></svg >
+				{/if}
+			</div>
+			<div>
+				{#if !messageFocused}
+					<!-- prettier-ignore -->
+					<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" ><path d="M19 8v3H5.83l2.88-2.88c.39-.39.39-1.02 0-1.41-.39-.39-1.02-.39-1.41 0L2.71 11.3c-.39.39-.39 1.02 0 1.41L7.3 17.3c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L5.83 13H20c.55 0 1-.45 1-1V8c0-.55-.45-1-1-1s-1 .45-1 1z" /></svg >
+				{/if}
+			</div>
+			<div>
+				{#if !messageFocused && (messageEditing || messageReplying)}
+					<!-- prettier-ignore -->
+					<svg id="close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M18.4 4L12 10.4L5.6 4L4 5.6L10.4 12L4 18.4L5.6 20L12 13.6L18.4 20L20 18.4L13.6 12L20 5.6L18.4 4Z" /></svg>
+				{:else}
+					<!-- prettier-ignore -->
+					<svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" ><path d="M0 0h24v24H0V0z" fill="none" /><path d="M4 18h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zm0-5h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1s.45 1 1 1zM3 7c0 .55.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H4c-.55 0-1 .45-1 1z" /></svg >
+				{/if}
+			</div>
+		</div>
+	</div>
+</main>
 
 <style>
-	.frame * {
-		pointer-events: all;
-	}
 	.pills {
 		position: absolute;
 		bottom: 3px;
@@ -536,16 +545,114 @@
 	.slowmode span {
 		margin-right: 3px;
 	}
-	#typing {
+
+	main {
+		display: flex;
+		flex-direction: column;
 		width: 100vw;
-		position: absolute;
+		height: 100vh;
+		position: fixed;
+		top: 0;
 		left: 0;
+		transform: translateX(100vw);
+		transition: transform 0.4s ease;
+		background-color: #36393f;
+	}
+
+	.one {
+		transform: translateX(50vw);
+	}
+	.zero {
+		transform: none;
+	}
+
+	.body {
+		position: relative;
+		flex: 3;
+	}
+
+	[data-messages] {
+		overflow: auto;
+	}
+
+	.frame {
+		overflow: hidden;
+		pointer-events: none;
+	}
+	.frame * {
+		pointer-events: all;
+	}
+
+	.typing {
 		background-color: #2c2f32;
 		font-size: 11px;
 		line-height: 1.8;
 		white-space: pre-wrap;
 		word-break: break-word;
 		padding: 0 8px;
+	}
+
+	.body > * {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+	}
+	.footer {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.readonly {
+		font-size: 12px;
+		padding: 3px 14px;
+	}
+
+	.readonly,
+	.textbox {
+		border-top: solid 1px #2c2f32;
+	}
+
+	.textbox {
+		position: relative;
+		/* easy way to plop the elements on top of each other and have them both sized based on the tallest one's height */
+		padding: 5px 10px;
+	}
+	.textbox .after {
+		position: absolute;
+		width: calc(100% - 20px) !important;
+		top: 5px;
+		/* Hidden from view, clicks, and screen readers */
+		color: transparent !important;
+		background-color: transparent !important;
+		overflow: auto;
+		pointer-events: none;
+	}
+	.textbox .after::after {
+		content: " ";
+	}
+	.textbox > textarea {
+		/* You could leave this, but after a user resizes, then it ruins the auto sizing */
+		resize: none;
+
+		/* Firefox shows scrollbar on growth, you can hide like this. */
+		overflow: hidden;
+	}
+	.textbox > textarea,
+	.textbox .after {
+		/* Identical styling required!! */
+		word-break: break-all; /* kaios behavior weird*/
+		margin: 0;
+		border: 1px solid rgb(118, 118, 118);
+		border-radius: 5px;
+		background-color: #40444b;
+		color: #dcddde;
+		padding: 4px 9px;
+		font: inherit;
+		max-height: 5em;
+		font-size: 13px;
+		line-height: 1.2;
+		white-space: pre-wrap;
+		width: 100%;
 	}
 
 	svg#send {
@@ -559,77 +666,11 @@
 		padding: 0 5px;
 		background-color: #2f3136;
 	}
-	[data-messages],
-	.frame {
-		position: absolute;
-		top: 0;
-		left: 0;
-		overflow: auto;
-	}
-	[data-messages],
-	.frame,
-	.grow-wrap,
-	.softkeys,
-	.softkeys-icon {
-		width: 100vw;
-		transform: translateX(100vw);
-		transition: transform 0.4s ease;
-		background-color: #36393f;
-	}
-	.frame {
-		z-index: 0;
-		background-color: unset;
-		pointer-events: none;
-	}
-	.one {
-		transform: translateX(50vw);
-	}
-	.zero {
-		transform: none;
-	}
-	.grow-wrap {
-		/* easy way to plop the elements on top of each other and have them both sized based on the tallest one's height */
-		display: grid;
-		position: absolute;
-		bottom: 25px;
-		border-top: solid 1px #2c2f32;
-		padding: 5px 10px;
-	}
-	.grow-wrap .after {
-		/* Hidden from view, clicks, and screen readers */
-		color: transparent !important;
-		background-color: transparent !important;
-		overflow: auto;
-		pointer-events: none;
-	}
-	.grow-wrap > textarea {
-		/* You could leave this, but after a user resizes, then it ruins the auto sizing */
-		resize: none;
-
-		/* Firefox shows scrollbar on growth, you can hide like this. */
-		overflow: hidden;
-	}
-	.grow-wrap > textarea,
-	.grow-wrap .after {
-		/* Identical styling required!! */
-		word-break: break-all; /* kaios behavior weird*/
-		margin: 0;
-		border: 1px solid rgb(118, 118, 118);
-		border-radius: 5px;
-		background-color: #40444b;
-		color: #dcddde;
-		padding: 4px 9px;
-		font: inherit;
-		max-height: 5em;
-		font-size: 13px;
-		line-height: 1.2;
-		grid-area: 1 / 1 / 2 / 2;
-		white-space: pre-wrap;
-	}
 
 	/* Software Keys */
 
 	.softkeys {
+		width: 100vw;
 		box-sizing: border-box;
 		padding: 2px 5px;
 		column-gap: 0;
@@ -637,8 +678,6 @@
 		height: 25px;
 		color: white;
 		grid-template-columns: repeat(3, 1fr);
-		position: absolute;
-		bottom: 0;
 	}
 
 	.softkeys > * {

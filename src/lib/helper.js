@@ -127,7 +127,7 @@ export function findScrollParent(node) {
 import scrollIntoView from "scroll-into-view";
 
 export function centerScroll(el, sync) {
-	scrollIntoView(el, { time: sync ? 0 : 300, align: { left: 0 } });
+	scrollIntoView(el, { time: sync ? 0 : 300, align: { left: 0 }, ease: (e) => e });
 }
 
 export function isChannelMuted(discordInstance, channel, guildID) {
@@ -174,6 +174,7 @@ export function shuffle(array) {
 }
 
 export function inViewport(element, partial) {
+	if (!(element && element instanceof Element)) return null;
 	let bounding = element.getBoundingClientRect();
 	let height = element.offsetHeight;
 	let width = element.offsetWidth;
