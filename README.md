@@ -1,3 +1,5 @@
+[![Discord server](https://invidget.switchblade.xyz/W9DF2q3Vv2)](https://discord.gg/W9DF2q3Vv2)
+
 ## join the [discord server](https://discord.gg/W9DF2q3Vv2) to get more up to date information...
 
 ```
@@ -26,7 +28,7 @@ frontend ->
 - stickers✅**
 - reactions✅**
 - embed links✅(\)
-- attachments✅(*images, \?**)
+- attachments✅(\?)
 - discord mentions✅(@ / #, \*(no spaces username))
 - image viewer✅(\*(messages with one image))
 - more options✅(\)

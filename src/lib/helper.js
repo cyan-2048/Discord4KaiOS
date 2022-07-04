@@ -257,12 +257,15 @@ export function asyncQueueGenerator(func) {
 }
 
 // returns a function which has a caching ability
-export function asyncCachedGenerator(func) {
+export function asyncCachedGenerator(func, shouldCache = true) {
 	const cache = {};
 	const final = async function () {
 		let args = [...arguments];
-		const hash = hashCode(args.join(""));
-		return cache[hash] || (cache[hash] = await func(...args));
+		if (shouldCache) {
+			const hash = hashCode(args.join(""));
+			return cache[hash] || (cache[hash] = await func(...args));
+		}
+		return func(...args);
 	};
 	final.cache = cache;
 	return final;

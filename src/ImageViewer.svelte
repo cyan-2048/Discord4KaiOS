@@ -15,8 +15,8 @@
 	let img,
 		main,
 		state = 0,
-		width = tweened(null, { duration: 200 }),
-		height = tweened(null, { duration: 200 }),
+		width = tweened(null, { duration: 200, easing: (e) => e }),
+		height = tweened(null, { duration: 200, easing: (e) => e }),
 		opacity = 1;
 
 	onMount(() => {

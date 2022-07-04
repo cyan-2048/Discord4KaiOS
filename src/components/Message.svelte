@@ -1,5 +1,5 @@
 <script context="module">
-	import { createEventDispatcher, onMount, tick } from "svelte";
+	import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
 	import {
 		decimal2rgb,
 		wouldMessagePing,
@@ -8,7 +8,6 @@
 		delay,
 		customDispatch,
 		hashCode,
-		dblclick,
 	} from "../lib/helper.js";
 	async function handleSiblingColor(el) {
 		await tick();
@@ -96,9 +95,8 @@
 				temp = `<b>${"@" + ref.author.username} </b>` + toHTML(temp);
 			else {
 				let id = ref.author.id;
-				await delay(600);
 				const args = ["getServerProfile", guildID, id];
-				if (hashCode(args.join("")) in cachedMentions.cache === false) await delay(600);
+				if (id !== discord.user.id && hashCode(args.join("")) in cachedMentions.cache === false) await delay(600);
 				let s_profile = id === discord.user.id ? profile : await cachedMentions(...args);
 				temp =
 					`<b>${"@" + (s_profile.nick || s_profile.user?.username || ref.author.username || "unknown-user")} </b>` +
@@ -145,7 +143,7 @@
 				for (const a of getMentions("user")) {
 					let id = a.dataset.id;
 					const args = ["getServerProfile", guildID, id];
-					if (hashCode(args.join("")) in cachedMentions.cache === false) await delay(600);
+					if (id !== discord.user.id && hashCode(args.join("")) in cachedMentions.cache === false) await delay(600);
 					let s_profile = id === discord.user.id ? profile : await cachedMentions(...args);
 					if (!s_profile || s_profile.httpStatus === 404)
 						s_profile = message.author.id === id ? message.author : await cachedMentions("getProfile", id);
@@ -245,6 +243,23 @@
 			discordGateway.off("t:message_reaction_add", updateReactions, "msg" + message.id);
 			discordGateway.off("t:message_reaction_remove", removeReaction, "msg" + message.id);
 		};
+	});
+
+	onDestroy(() => {
+		if (main !== document.activeElement) return;
+		let next = main.nextElementSibling;
+		if (next) {
+			while (next) {
+				if (next.matches("[data-focusable]")) return next.focus();
+				next = next.nextElementSibling;
+			}
+		} else {
+			next = main.previousElementSibling;
+			if (next) {
+				if (next.matches("[data-focusable]")) return next.focus();
+				next = next.previousElementSibling;
+			}
+		}
 	});
 </script>
 
@@ -406,6 +421,10 @@
 </main>
 
 <style>
+	.reactions {
+		display: flex;
+		flex-wrap: wrap;
+	}
 	.replying {
 		background-color: #373b49;
 	}

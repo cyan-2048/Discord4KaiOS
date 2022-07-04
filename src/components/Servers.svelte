@@ -3,17 +3,17 @@
 	export let appState;
 </script>
 
-<div
+<main
 	data-servers
 	style:display={appState !== "app" ? "none" : null}
 	class:two={selected === 2}
 	class:selected={selected === 2}
 >
 	<slot />
-</div>
+</main>
 
 <style>
-	div {
+	main {
 		transition: transform 0.4s ease;
 		width: 72px;
 		height: 100vh;

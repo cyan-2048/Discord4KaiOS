@@ -10,7 +10,7 @@ export default function polyfill() {
 
 	// globals
 	var Element = w.HTMLElement || w.Element;
-	var SCROLL_TIME = 300;
+	var SCROLL_TIME = 150;
 
 	// object gathering original scroll methods
 	var original = {
@@ -41,7 +41,7 @@ export default function polyfill() {
 	 * @returns {Number}
 	 */
 	function ease(k) {
-		return 0.5 * (1 - Math.cos(Math.PI * k));
+		return k;
 	}
 
 	/**

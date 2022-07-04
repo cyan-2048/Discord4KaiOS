@@ -10,8 +10,15 @@
 	import { typingState, discord, evtForward, picker, sn } from "../lib/shared.js";
 	import Options from "./Options.svelte";
 	import { settings } from "../lib/stores";
+	import Attachments from "../Attachments.svelte";
+	import UploadProgress from "./UploadProgress.svelte";
 
 	window.picker = picker;
+
+	let files = [];
+	picker.on("change", () => {
+		({ files } = picker);
+	});
 
 	export let selected;
 	export let appState;
@@ -21,8 +28,8 @@
 	// export let roles;
 	export let guildID;
 	export let channel;
-	export let chatbox;
-	export let textbox;
+	export let chatbox = null;
+	export let textbox = null;
 
 	let after, after_height;
 
@@ -92,6 +99,8 @@
 				enterFunc = "image";
 			} else if (f("span.spoiler")) {
 				enterFunc = f("span.spoiler.active") ? "unspoiler" : "spoiler";
+			} else if (target.matches("[data-uploading]")) {
+				enterFunc = "abortion";
 			} else {
 				enterFunc = null;
 			}
@@ -151,6 +160,9 @@
 		}
 	}
 
+	let upload_progress = null;
+	let upload_xhr = null;
+
 	onMount(height);
 	onMount(() => {
 		// let queryCache = {};
@@ -204,19 +216,56 @@
 			}
 			if (key === "ArrowUp" && this.selectionStart === 0) setTimeout(() => last(chatbox.children)?.focus(), 50);
 			setTimeout(async () => {
-				if (!messageEditing && ("SoftLeft" === key || "End" === key) && this.value !== "") {
+				if (!messageEditing && ("SoftLeft" === key || "End" === key) && (this.value !== "" || files.length > 0)) {
 					if (this.value.startsWith("s/")) sendMessage.sed(this.value);
 					else {
-						if (slowmode !== null && slowmode !== 0) return;
+						if ((slowmode !== null && slowmode !== 0) || upload_progress !== null) return;
+						// prettier-ignore
+						const opts = messageReplying ? {message_reference:{ message_id: messageReplying.id, fail_if_not_exists: false }} : {}
 						const promise = sendMessage(
-							replaceMentions(this.value),
-							messageReplying
-								? {
-										message_reference: { message_id: messageReplying.id, fail_if_not_exists: false },
-								  }
-								: {}
-						); // to do replace mention elements;
-						const send = slowmode === null ? null : await promise;
+							replaceMentions(this.value), // to do replace mention elements;
+							opts,
+							files.length > 0 ? files : null
+						);
+
+						if (files.length > 0) {
+							upload_xhr = promise;
+							promise.upload.onprogress = function (evt) {
+								if (!evt.lengthComputable) return;
+								upload_progress = (evt.loaded / evt.total) * 100;
+							};
+							const done = () => {
+								upload_progress = null;
+								upload_xhr = null;
+							};
+							promise.addEventListener("load", done);
+							promise.addEventListener("error", done);
+							promise.addEventListener("abort", done);
+							picker.removeFile(-1);
+						}
+
+						let send = null;
+						if (slowmode !== null) {
+							if (files.length === 0) send = await promise;
+							else {
+								send = await new Promise((res) => {
+									const xhr = promise;
+									function done(text) {
+										try {
+											return JSON.parse(text);
+										} catch (e) {
+											return null;
+										}
+									}
+									xhr.addEventListener("load", () => res(done(xhr.responseText)));
+									xhr.addEventListener("error", () => res(null));
+									xhr.addEventListener("abort", () => res(0));
+								});
+							}
+						}
+
+						if (send === 0) return;
+
 						if (send) {
 							slowmode = channel.rate_limit_per_user;
 							if (slowmode) startTick();
@@ -340,6 +389,7 @@
 		if (
 			!showOptions &&
 			(key == "Backspace" || key == "ArrowLeft" || key == "SoftLeft") &&
+			files.length === 0 &&
 			(target.tagName !== "TEXTAREA" || target.value === "")
 		) {
 			setTimeout(() => (selected = 1), 50);
@@ -369,9 +419,12 @@
 				case "spoiler":
 					target.querySelectorAll(".spoiler").forEach((el) => el.classList.toggle("active"));
 					break;
+				case "abortion":
+					target.click();
+					break;
 			}
 		if (key === "SoftRight") {
-			target.dispatchEvent(new CustomEvent("options"));
+			customDispatch(target, "options");
 		}
 	});
 
@@ -422,6 +475,9 @@
 	let options1;
 </script>
 
+{#if appState === "attachments"}
+	<Attachments bind:appState {files} {picker} {textbox} />
+{/if}
 {#if showOptions}
 	<MessageOptions
 		on:close={resetSelected}
@@ -443,7 +499,12 @@
 			textbox.focus();
 		}}
 	>
-		<div>
+		<div
+			on:click={async () => {
+				await options1.close();
+				appState = "attachments";
+			}}
+		>
 			Add Attachments
 			<!-- prettier-ignore -->
 			<svg xmlns=http://www.w3.org/2000/svg width=18 height=18 viewBox="0 0 24 24"><path fill=currentColor d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"></path></svg>
@@ -458,14 +519,26 @@
 
 <main class:zero={selected === 0} class:one={selected === 1} style:visibility>
 	<div class="body">
-		<div bind:this={chatbox} class:selected={selected === 0} data-messages><slot /></div>
+		<div bind:this={chatbox} class:selected={selected === 0} data-messages>
+			<slot />
+			{#if upload_progress !== null}
+				<UploadProgress {upload_progress} {textbox} xhr={upload_xhr} />
+			{/if}
+		</div>
 		<div class="frame">
 			<div class="pills">
 				{#if slowmode !== null && !readOnly}
-					<div class="slowmode">
+					<div class="count">
 						<span>{slowmode}</span>
 						<!-- prettier-ignore -->
 						<svg width="16" height="16" viewBox="0 0 24 24"><g fill="none" fill-rule="evenodd"><path fill="currentColor" fill-rule="nonzero"d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></g></svg>
+					</div>
+				{/if}
+				{#if files.length > 0}
+					<div class="count">
+						<span>{files.length}</span>
+						<!-- prettier-ignore -->
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"></path></svg>
 					</div>
 				{/if}
 			</div>
@@ -491,7 +564,7 @@
 		</div>
 		<div style:display={s_readOnly} class="softkeys">
 			<div>
-				{#if !messageEditing && !messageReplying && !messageFocused && (textbox?.value || "") !== ""}
+				{#if !messageEditing && !messageReplying && !messageFocused && (files.length > 0 || textbox.value !== "")}
 					<!-- prettier-ignore -->
 					<svg id="send" fill="currentColor" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" ><path d="M0 0h24v24H0V0z" fill="none" /><path d="M3.4 20.4l17.45-7.48c.81-.35.81-1.49 0-1.84L3.4 3.6c-.66-.29-1.39.2-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z" /></svg >
 				{:else if (messageEditing || messageReplying) && !messageFocused}
@@ -523,13 +596,11 @@
 
 <style>
 	.pills {
-		position: absolute;
-		bottom: 3px;
-		right: 4px;
 		font-size: 14px;
 		width: 100%;
 		display: flex;
-		padding-right: 4px;
+		padding-right: 5px;
+		padding-bottom: 4px;
 		flex-direction: row-reverse;
 	}
 	.pills > * {
@@ -542,8 +613,8 @@
 		border-radius: 15px;
 		margin-left: 2px;
 	}
-	.slowmode span {
-		margin-right: 3px;
+	.pills > *.count {
+		column-gap: 2px;
 	}
 
 	main {
@@ -578,9 +649,11 @@
 	.frame {
 		overflow: hidden;
 		pointer-events: none;
+		display: flex;
+		flex-direction: column;
 	}
-	.frame * {
-		pointer-events: all;
+	.frame > .pills {
+		margin-top: auto;
 	}
 
 	.typing {

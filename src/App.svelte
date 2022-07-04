@@ -253,7 +253,7 @@
 		return channels;
 	};
 
-	$: guild === null && loadDMS();
+	$: guild === null && ready && loadDMS();
 	$: guild && loadChannels();
 
 	const cachedMentions = (() => {
@@ -445,12 +445,21 @@
 		discordGateway.init(e);
 	};
 
-	onMount(() => {
+	async function testToken(authorization) {
+		const settings = await discord.xhrRequestJSON("GET", "users/@me/settings", { authorization });
+		if (settings.code === 0) throw settings;
+		return settings;
+	}
+
+	onMount(async () => {
 		const token = localStorage.token;
-		if (token) {
+		try {
+			if (!token) throw token;
+			await testToken(token);
 			discord.login(token);
 			discordGateway.init(token);
-		} else {
+		} catch (e) {
+			delete localStorage.token;
 			appState = "login";
 			window.login = login;
 		}
@@ -568,7 +577,7 @@
 				const shouldScroll = getScrollBottom(chatbox) < 100;
 				await tick();
 				if (shouldScroll) {
-					centerScroll(last(chatbox.children));
+					centerScroll(last(chatbox.querySelectorAll("[id^='msg']")));
 					ack(d.id);
 				}
 			}
@@ -604,8 +613,8 @@
 		}
 	});
 
-	async function sendMessage(e, opts = {}) {
-		return discord.sendMessage(channel.id, e, opts);
+	function sendMessage(...args) {
+		return discord.sendMessage(channel.id, ...args);
 	}
 
 	sendMessage.sed = function (sedString) {
@@ -631,6 +640,19 @@
 		let modified = findMessage.content.replace(regex, string);
 		if (modified !== original) discord.editMessage(channel.id, findMessage.id, modified);
 	};
+
+	const addReaction = asyncQueueGenerator(async function () {
+		delay(1000);
+	}, false);
+
+	if (!PRODUCTION) {
+		window.require = async function (path, es6 = false) {
+			if (path.startsWith("./") || path.startsWith("/")) {
+				const _import = await import(path);
+				return es6 ? _import : _import.default || _import;
+			}
+		};
+	}
 
 	onMount(async () => {
 		function append(blob) {

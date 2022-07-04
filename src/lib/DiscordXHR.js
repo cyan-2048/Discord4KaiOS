@@ -66,7 +66,7 @@ class DiscordXHR {
 		} catch (e) {
 			console.warn(e.status, e);
 		}
-		if (xhr === null) return { args: [...arguments], message: "unknown error occured" };
+		if (xhr === null) return { code: 0, args: [...arguments], message: "unknown error occured" };
 		let parsed = xhr.responseText;
 		try {
 			parsed = (parsed && JSON.parse(parsed)) || {};
@@ -115,13 +115,13 @@ class DiscordXHR {
 	 * @param {File[]|Blob[]} attachments
 	 * @returns {Promise<object|XMLHttpRequest>} returns an xhr if you have attachments
 	 */
-	async sendMessage(channel, message = "", opts = {}, attachments = null) {
-		if (!message) return;
+	sendMessage(channel, message = "", opts = {}, attachments = null) {
+		if (!message && !attachments) return;
 
 		const obj = { content: message, nonce: this.generateNonce(), ...opts };
 		const url = `channels/${channel}/messages`;
 
-		if (!attachments) return await this.xhrRequestJSON("POST", url, {}, obj);
+		if (!attachments) return this.xhrRequestJSON("POST", url, {}, obj);
 
 		const form = new FormData();
 
@@ -150,6 +150,29 @@ class DiscordXHR {
 			{},
 			Object.assign({ content: message }, opts)
 		);
+	}
+
+	_emojiURI(emoji) {
+		const en = encodeURIComponent;
+		if (typeof emoji === "object") {
+			return emoji.id ? en(emoji.name + ":" + emoji.id) : en(emoji.name);
+		}
+		return en(String(emoji));
+	}
+
+	reaction(method, channelID, messageID, emoji, user = "@me") {
+		return this.xhrRequestJSON(
+			method,
+			`channels/${channelID}/messages/${messageID}/reactions/${this._emojiURI(emoji)}/${user}`
+		);
+	}
+
+	addReaction(channelID, messageID, emoji, user = "@me") {
+		return this.reaction("PUT", ...arguments);
+	}
+
+	removeReaction(channelID, messageID, emoji, user = "@me") {
+		return this.reaction("DELETE", ...arguments);
 	}
 
 	deleteMessage(channel_id, message_id) {

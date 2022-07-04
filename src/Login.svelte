@@ -8,10 +8,9 @@
 	const discord = new DiscordXHR();
 
 	async function testToken(authorization) {
-		return discord.xhrRequestJSON("get", "users/@me/settings", { authorization }).then((a) => {
-			if (a.code === 0) throw a;
-			else return a;
-		});
+		const settings = await discord.xhrRequestJSON("GET", "users/@me/settings", { authorization });
+		if (settings.code === 0) throw settings;
+		return settings;
 	}
 
 	let email = "",
@@ -113,8 +112,8 @@
 		let token = a.token;
 		try {
 			if (a.mfa) token = await mfa(a.mfa);
-			let test = await testToken(token);
-			if (test) dispatch("login", { token });
+			await testToken(token);
+			dispatch("login", { token });
 		} catch (e) {
 			alert("Error :" + JSON.stringify(e));
 		}
@@ -128,8 +127,8 @@
 		try {
 			let token = await qrcode.readAsText();
 			if (!token) return sn.resume();
-			let test = await testToken(token);
-			if (test) dispatch("login", { token });
+			await testToken(token);
+			dispatch("login", { token });
 		} catch (e) {
 			alert("Error :" + JSON.stringify(e));
 		}
