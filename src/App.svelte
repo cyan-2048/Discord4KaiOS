@@ -32,11 +32,61 @@
 		asyncCachedGenerator,
 		scrollToBottom,
 		delay,
+		testInternet,
 	} from "./lib/helper";
 	import { discordGateway, sn, discord, typingState, serverAck } from "./lib/shared";
 	import { settings } from "./lib/stores";
+	import Modals, { alert } from "./modals/";
 
-	window.changeSettings = (e) => ($settings = { ...$settings, ...e });
+	if (!PRODUCTION) {
+		window.require = async function (path, es6 = false) {
+			if (path.startsWith("./") || path.startsWith("/")) {
+				const _import = await import(/* @vite-ignore */ path);
+				return es6 ? _import : _import.default || _import;
+			}
+		};
+
+		const proxyURL = (url) => {
+			var cors_api_host = "localhost:6969";
+			var cors_api_url = "http://" + cors_api_host + "/";
+			var origin = window.location.protocol + "//" + window.location.host;
+			var targetOrigin = /^https?:\/\/([^\/]+)/i.exec(url);
+			if (targetOrigin && targetOrigin[0].toLowerCase() !== origin && targetOrigin[1] !== cors_api_host) {
+				return cors_api_url + url;
+			}
+			return null;
+		};
+
+		(function () {
+			const open = XMLHttpRequest.prototype.open;
+			XMLHttpRequest.prototype.open = function () {
+				const args = [...arguments];
+				const proxy = proxyURL(args[1]);
+				if (proxy !== null) args[1] = proxy;
+				return open.apply(this, args);
+			};
+		})();
+
+		(function (ns, fetch) {
+			if (typeof fetch !== "function") return;
+
+			ns.fetch = function (url, ...args) {
+				const proxy = proxyURL(url);
+				if (proxy !== null) url = proxy;
+
+				var out = fetch.call(this, url, ...args);
+				// side-effect
+				out.then(({ ok }) => console.log("loaded", ok));
+
+				return out;
+			};
+		})(window, window.fetch);
+
+		window.discord = discord;
+		window.discordGateway = discordGateway;
+		window._alert = alert;
+		window.changeSettings = (e) => ($settings = { ...$settings, ...e });
+	}
 
 	let textbox, chatbox;
 	let selected = 1;
@@ -100,7 +150,7 @@
 			textbox?.focus();
 		}
 	});
-	window.addEventListener("sn:willunfocus", (e) => {
+	window.addEventListener("sn:willunfocus", async (e) => {
 		if (appState !== "app") return;
 		const { nextElement: next, direction } = e.detail;
 		if (!/up|down/.test(direction) || selected !== 0) return;
@@ -111,8 +161,7 @@
 		if (!chatbox) return;
 
 		async function center(el) {
-			await delay(50);
-			centerScroll(el, isRepeating);
+			await centerScroll(el, isRepeating);
 		}
 
 		if (actEl.offsetHeight > chatbox.offsetHeight) {
@@ -130,7 +179,7 @@
 				if (inViewport(next, true)) next.focus();
 			} else if (inViewport(next)) {
 				// console.warn("next element is not bigger than viewport and is in viewport right now");
-				center(next);
+				await center(next);
 				next.focus();
 			}
 		} else if (next && next.offsetHeight < chatbox.offsetHeight) center(next);
@@ -164,13 +213,6 @@
 	let serverProfile = null;
 	let roles = null;
 	let channel = null;
-
-	discordGateway.on("t:guild_member_update", (d) => {
-		if (!serverProfile) return;
-		if (serverProfile.guild_id === d.guild_id && serverProfile.user.id === d.user.id) {
-			serverProfile = { ...serverProfile, ...d };
-		}
-	});
 
 	const ack = (e) => discord.xhrRequestJSON("post", `channels/${channel.id}/messages/${e}/ack`, {}, { token: "null" });
 
@@ -308,18 +350,48 @@
 			return done || (await final("getProfile", id)).user;
 		});
 
-		discordGateway.on("t:guild_member_update", (d) => {
-			Object.values(final.cache).forEach((a) => {
-				if (!a) return;
-				if (d.guild_id === a.guild_id && a.user?.id === d.user.id) {
-					Object.assign(a, d);
-				}
-			});
-		});
-
-		window.cachedMentions = final;
+		if (!PRODUCTION) window.cachedMentions = final;
 		return final;
 	})();
+
+	discordGateway.on("t:guild_member_update", (d) => {
+		Object.values(cachedMentions.cache).forEach((a) => {
+			if (!a) return;
+			if (d.guild_id === a.guild_id && a.user?.id === d.user.id) {
+				Object.assign(a, d);
+			}
+		});
+		Object.assign(
+			discord.cache.guilds.find((a) => a.id == d.guild_id)?.members.find((a) => a.user.id == d.user.id) || {},
+			d
+		);
+		if (!serverProfile) return;
+		if (serverProfile.guild_id === d.guild_id && serverProfile.user.id === d.user.id) {
+			serverProfile = { ...serverProfile, ...d };
+		}
+	});
+
+	discordGateway.on("t:guild_role_create", ({ role, guild_id }) => {
+		const _roles = discord.cache.guilds.find((a) => a.id == guild_id)?.roles;
+		_roles?.push(role);
+		if (guild?.id === guild_id) roles = [...roles, role];
+	});
+
+	discordGateway.on("t:guild_role_update", ({ role, guild_id }) => {
+		const _roles = discord.cache.guilds.find((a) => a.id == guild_id)?.roles;
+		const index = _roles?.findIndex(({ id }) => role.id === id);
+		if (index === undefined || index === -1) return;
+		Object.assign(_roles[index], role);
+		if (guild.id === guild_id) roles = _roles;
+	});
+
+	discordGateway.on("t:guild_role_delete", ({ role_id, guild_id }) => {
+		const _roles = discord.cache.guilds.find((a) => a.id == guild_id)?.roles;
+		const index = _roles?.findIndex(({ id }) => role_id === id);
+		if (index === undefined || index === -1) return;
+		_roles.splice(index, 1);
+		if (guild.id === guild_id) roles = _roles;
+	});
 
 	discordGateway.on("t:guild_members_chunk", ({ guild_id, members }) => {
 		if (guild_id && members instanceof Array)
@@ -410,15 +482,8 @@
 	onMount(() => {
 		let attempts = 0;
 		discordGateway.on("close", async function () {
-			let internet = false;
-			try {
-				if (navigator.onLine) {
-					await fetch("https://discord.com/api/v9/");
-					internet = true;
-				} else internet = false;
-			} catch (e) {
-				internet = false;
-			}
+			const internet = await testInternet();
+
 			if (!internet && !confirm("There seems to be no internet connection, do you want to retry connecting?"))
 				return window.close();
 			else attempts = -1;
@@ -453,22 +518,35 @@
 
 	onMount(async () => {
 		const token = localStorage.token;
+		let attempts = 0;
+		let internet = false;
+
+		async function internetTest() {
+			attempts = 0;
+			internet = false;
+			while (!internet && attempts !== 10) {
+				internet = await testInternet();
+				attempts++;
+			}
+			return internet;
+		}
+
+		let try_again = true;
+		while (!(await internetTest()) && try_again) {
+			try_again = confirm("There seems to be no internet connection, do you want to try reconnecting?");
+		}
+		if (!try_again) return window.close();
+
 		try {
 			if (!token) throw token;
 			await testToken(token);
 			discord.login(token);
 			discordGateway.init(token);
 		} catch (e) {
-			delete localStorage.token;
 			appState = "login";
 			window.login = login;
 		}
 	});
-
-	window.discord = discord;
-	window.discordGateway = discordGateway;
-	window.changeAppState = (e) => (appState = e);
-	window.changeReadyState = (e) => (ready = e);
 
 	const selectServer = async (e) => {
 		let { id } = e.detail;
@@ -498,7 +576,7 @@
 
 		let { status } = discord.cache.user_settings;
 		function sendCustomPresence() {
-			if (status !== "invisible" && settings.custom_rpc) {
+			if (status !== "invisible" && $settings.custom_rpc) {
 				const activities = [
 					{
 						name: "Discord4KaiOS",
@@ -523,7 +601,7 @@
 		}
 		sendCustomPresence();
 		discordGateway.on("t:user_settings_update", (d) => {
-			if (discord.cache) Object.assign(discord.cache.user_settings, d);
+			Object.assign(discord.cache.user_settings, d);
 			const newStat = discord.cache.user_settings.status;
 			if (status !== newStat) {
 				status = newStat;
@@ -534,7 +612,7 @@
 		await loadServers();
 	});
 	discordGateway.on("t:message_delete", (d) => {
-		if (!channel) return;
+		if (!channel || $settings.preserve_deleted) return;
 		if (d.channel_id == channel.id && messages.find((e) => e.id == d.id)) {
 			messages = messages.filter((m) => m.id != d.id);
 		}
@@ -644,15 +722,6 @@
 	const addReaction = asyncQueueGenerator(async function () {
 		delay(1000);
 	}, false);
-
-	if (!PRODUCTION) {
-		window.require = async function (path, es6 = false) {
-			if (path.startsWith("./") || path.startsWith("/")) {
-				const _import = await import(path);
-				return es6 ? _import : _import.default || _import;
-			}
-		};
-	}
 
 	onMount(async () => {
 		function append(blob) {
@@ -778,3 +847,4 @@
 {#if appState === "login"}
 	<Login on:login={(e) => login(e.detail.token)} />
 {/if}
+<Modals />

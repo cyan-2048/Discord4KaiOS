@@ -4,8 +4,10 @@
 	"private": true,
 	"scripts": {
 		"build": "rollup -c",
+		"build:kaios3": "kaios=3 rollup -c",
 		"dev": "vite",
-		"quick": "quick=true rollup -c"
+		"quick": "quick=true rollup -c",
+		"quick:kaios3": "kaios=3 quick=true rollup -c"
 	},
 	"devDependencies": {
 		"@babel/core": "7.17.10",
@@ -28,7 +30,8 @@
 		"rollup-plugin-terser": "^7.0.0",
 		"svelte": "^3.44.0",
 		"vite": "^2.9.9",
-		"vite-plugin-full-reload": "^1.0.0"
+		"vite-plugin-full-reload": "^1.0.0",
+		"cors-anywhere": "^0.4.4"
 	},
 	"dependencies": {
 		"emojibase": "*",

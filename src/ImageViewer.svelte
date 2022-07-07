@@ -54,6 +54,7 @@
 			}, 4000);
 			if (state === 0) {
 				if (key === "Backspace" || key === "SoftLeft") {
+					view = null;
 					appState = "app";
 				}
 				if (key === "SoftRight") {

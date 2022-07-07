@@ -9,13 +9,13 @@ import copy from "rollup-plugin-copy";
 import json from "@rollup/plugin-json";
 
 const quick = process.env.quick === "true";
+const kaios3 = process.env.kaios === "3";
 
 export default {
 	input: "src/main.js",
 	output: {
 		sourcemap: false,
 		format: "iife",
-		name: "app",
 		file: `dist/build/bundle.js`,
 		intro: "const PRODUCTION = true;",
 	},
@@ -40,10 +40,10 @@ export default {
 			extensions: [".js", ".mjs", ".html", ".svelte"],
 			babelHelpers: "runtime",
 			exclude: ["node_modules/@babel/**", /\/core-js\//],
-			presets: [["@babel/preset-env", { targets: { firefox: "48" }, useBuiltIns: "usage", corejs: 3 }]],
+			presets: [["@babel/preset-env", { targets: { firefox: kaios3 ? "84" : "48" }, useBuiltIns: "usage", corejs: 3 }]],
 			plugins: [
 				"@babel/plugin-syntax-dynamic-import",
-				"babel-plugin-transform-async-to-promises",
+				...(kaios3 ? [] : ["babel-plugin-transform-async-to-promises"]),
 				["@babel/plugin-transform-runtime", { useESModules: true }],
 			],
 		}),

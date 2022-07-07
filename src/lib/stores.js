@@ -6,6 +6,7 @@ export const settings = writable(
 			custom_rpc: true,
 			prompt_delete: false,
 			smooth_scroll: true,
+			preserve_deleted: false,
 			keybinds: {
 				"*": "edit",
 				0: "jump",

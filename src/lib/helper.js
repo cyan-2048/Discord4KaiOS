@@ -126,8 +126,12 @@ export function findScrollParent(node) {
 
 import scrollIntoView from "scroll-into-view";
 
-export function centerScroll(el, sync) {
-	scrollIntoView(el, { time: sync ? 0 : 300, align: { left: 0 }, ease: (e) => e });
+export async function centerScroll(el, sync) {
+	return new Promise((res) => {
+		scrollIntoView(el, { time: sync ? 0 : 300, align: { left: 0 }, ease: (e) => e }, (type) =>
+			res(type === "complete")
+		);
+	});
 }
 
 export function isChannelMuted(discordInstance, channel, guildID) {
@@ -237,22 +241,26 @@ export const dblclick = (el, bubbles = false) =>
 
 // returns a function that waits for another function to finish before running
 // also has caching abilities
-export function asyncQueueGenerator(func) {
+export function asyncQueueGenerator(func, noCache = false) {
 	const cache = {};
 	let pending = Promise.resolve();
-	const run = async function () {
-		const args = [...arguments];
+	const run = async function (...args) {
 		try {
 			await pending;
 		} finally {
-			return (cache[hashCode(args.join(""))] = await func(...arguments));
+			if (noCache) {
+				return await func(...args);
+			}
+			return (cache[hashCode(args.join(""))] = await func(...args));
 		}
 	};
-	const final = function () {
-		let args = [...arguments];
+	const final = function (...args) {
+		if (noCache) {
+			return (pending = run(...args));
+		}
 		return cache[hashCode(args.join(""))] || (pending = run(...args));
 	};
-	final.cache = cache;
+	if (!noCache) final.cache = cache;
 	return final;
 }
 
@@ -420,4 +428,21 @@ export async function xhr(url, options = {}, returnXhr = false) {
 		xhr.onload = () => res(returnXhr ? xhr : xhr.response);
 		xhr.onerror = err;
 	});
+}
+
+export async function testInternet() {
+	if (!navigator.onLine) return false;
+	try {
+		const res = await fetch("https://discordstatus.com/api/v2/status.json");
+		const { status } = await res.json();
+		!PRODUCTION && console.info("Discord API Status:", status);
+		const index = ["none", "minor", "major", "critical"].indexOf(status.indicator);
+		if (index === 3) {
+			alert("A Discord API outage occured, the app will now close.\nMore Info: " + JSON.stringify(status));
+			window.close();
+		}
+		return true;
+	} catch (e) {
+		return false;
+	}
 }

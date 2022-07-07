@@ -355,7 +355,10 @@
 		let isTyping = false;
 
 		textbox.onblur = () => (messageFocused = true);
-		textbox.onfocus = () => (messageFocused = false);
+		textbox.onfocus = () => {
+			enterFunc = null;
+			messageFocused = false;
+		};
 		textbox.oninput = function () {
 			handleQuery.call(this);
 			if (!isTyping) {
@@ -394,7 +397,8 @@
 		) {
 			setTimeout(() => (selected = 1), 50);
 		}
-		if (showOptions || !messageFocused) return;
+		if (showOptions) return;
+		if (!messageFocused) return;
 		if (key === "Enter")
 			switch (enterFunc) {
 				case "image":
@@ -488,7 +492,7 @@
 	/>
 {/if}
 {#if appState === "viewer"}
-	<ImageViewer bind:appState view={viewerSrc} />
+	<ImageViewer bind:appState bind:view={viewerSrc} />
 {/if}
 {#if showOptions1}
 	<Options

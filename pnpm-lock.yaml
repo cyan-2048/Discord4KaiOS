@@ -13,6 +13,7 @@ specifiers:
   '@sveltejs/vite-plugin-svelte': ^1.0.0-next.30
   babel-plugin-transform-async-to-promises: ^0.8.18
   core-js: ^3.22.5
+  cors-anywhere: ^0.4.4
   emojibase: '*'
   emojibase-data: ^7.0.1
   jsqr: ^1.4.0
@@ -32,6 +33,7 @@ specifiers:
   vite-plugin-full-reload: ^1.0.0
 
 dependencies:
+  cors-anywhere: 0.4.4
   emojibase: 6.1.0
   emojibase-data: 7.0.1_emojibase@6.1.0
   jsqr: 1.4.0
@@ -1606,6 +1608,14 @@ packages:
     requiresBuild: true
     dev: true
 
+  /cors-anywhere/0.4.4:
+    resolution: {integrity: sha512-8OBFwnzMgR4mNrAeAyOLB2EruS2z7u02of2bOu7i9kKYlZG+niS7CTHLPgEXKWW2NAOJWRry9RRCaL9lJRjNqg==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      http-proxy: 1.11.1
+      proxy-from-env: 0.0.1
+    dev: false
+
   /csstype/3.1.0:
     resolution: {integrity: sha512-uX1KG+x9h5hIJsaKR9xHUeUraxf8IODOwq9JLNPq6BwB04a/xgpq3rcx47l5BZu5zBPlgD342tdke3Hom/nJRA==}
     dev: false
@@ -1893,6 +1903,10 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
+  /eventemitter3/1.2.0:
+    resolution: {integrity: sha512-DOFqA1MF46fmZl2xtzXR3MPCRsXqgoFqdXcrCVYM3JNnfUeHTm/fh/v/iU7gBFpwkuBmoJPAm5GuhdDfSEJMJA==}
+    dev: false
+
   /fast-glob/3.2.11:
     resolution: {integrity: sha512-xrO3+1bxSo3ZVHAnqzyuewYT6aMFHRAd4Kcs92MAonjwQZLsK9d0SF1IyQ3k5PoirxTW0Oe/RqFgMQ6TcNE5Ew==}
     engines: {node: '>=8.6.0'}
@@ -2023,6 +2037,14 @@ packages:
     dependencies:
       function-bind: 1.1.1
     dev: true
+
+  /http-proxy/1.11.1:
+    resolution: {integrity: sha512-qz7jZarkVG3G6GMq+4VRJPSN4NkIjL4VMTNhKGd8jc25BumeJjWWvnY3A7OkCGa8W1TTxbaK3dcE0ijFalITVA==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      eventemitter3: 1.2.0
+      requires-port: 0.0.1
+    dev: false
 
   /ignore/5.2.0:
     resolution: {integrity: sha512-CmxgYGiEPCLhfLnpPp1MoRmifwEIOgjcHXxOBjv7mY96c+eWScsOP9c112ZyLdWHi0FxHjI+4uVhKYp/gcdRmQ==}
@@ -2293,6 +2315,10 @@ packages:
       source-map-js: 1.0.2
     dev: true
 
+  /proxy-from-env/0.0.1:
+    resolution: {integrity: sha512-B9Hnta3CATuMS0q6kt5hEezOPM+V3dgaRewkFtFoaRQYTVNsHqUvFXmndH06z3QO1ZdDnRELv5vfY6zAj/gG7A==}
+    dev: false
+
   /punycode/2.1.1:
     resolution: {integrity: sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==}
     engines: {node: '>=6'}
@@ -2362,6 +2388,10 @@ packages:
   /require-relative/0.8.7:
     resolution: {integrity: sha1-eZlTn8ngR6N5KPoZb44VY9q9Nt4=}
     dev: true
+
+  /requires-port/0.0.1:
+    resolution: {integrity: sha512-AzPDCliPoWDSvEVYRQmpzuPhGGEnPrQz9YiOEvn+UdB9ixBpw+4IOZWtwctmpzySLZTy7ynpn47V14H4yaowtA==}
+    dev: false
 
   /resolve/1.22.0:
     resolution: {integrity: sha512-Hhtrw0nLeSrFQ7phPp4OOcVjLPIeMnRlr5mcnVuMe7M/7eBn98A3hmFRLoFo3DLZkivSYwhRUJTyPyWAk56WLw==}

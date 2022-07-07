@@ -59,6 +59,7 @@
 	let pinged;
 	let editing = false;
 	let replying = false;
+	let deleted = false;
 	$: message && (pinged = wouldMessagePing(message, profile?.roles || [], discord));
 
 	function linkify(inputText, opts = {}) {
@@ -106,6 +107,8 @@
 		}
 	});
 	onMount(() => {
+		const eventID = "msg" + message.id;
+
 		let onchange = async (el = contentEl) => {
 			if (!el) return console.error("message element not found");
 			if (el.childNodes.length === 1) {
@@ -179,7 +182,7 @@
 			}
 		};
 		onchange();
-		discordGateway.on("t:message_update", update, "msg" + message.id);
+		discordGateway.on("t:message_update", update, eventID);
 
 		let updateReactions = ({ message_id, emoji, user_id }, remove = false) => {
 			if (message_id !== message.id) return;
@@ -218,8 +221,8 @@
 		};
 		let removeReaction = (d) => updateReactions(d, true);
 
-		discordGateway.on("t:message_reaction_add", updateReactions, "msg" + message.id);
-		discordGateway.on("t:message_reaction_remove", removeReaction, "msg" + message.id);
+		discordGateway.on("t:message_reaction_add", updateReactions, eventID);
+		discordGateway.on("t:message_reaction_remove", removeReaction, eventID);
 
 		const _editing = () => {
 			editing = false;
@@ -230,18 +233,29 @@
 			handleSiblingColor(main);
 		};
 
-		evtForward.on("stop_editing:" + message.id, _editing, "msg" + message.id);
-		evtForward.on("stop_replying:" + message.id, _replying, "msg" + message.id);
+		evtForward.on("stop_editing:" + message.id, _editing, eventID);
+		evtForward.on("stop_replying:" + message.id, _replying, eventID);
+
+		const _deleted = (d) => {
+			if (d.id === message.id) {
+				deleted = true;
+				handleSiblingColor(main);
+			}
+		};
+
+		if ($settings.preserve_deleted) discordGateway.on("t:message_delete", _deleted, eventID);
+		// color: #4a3a40
 
 		return () => {
 			// after death remove eventListener for message
-			evtForward.off("stop_editing:" + message.id, _editing, "msg" + message.id);
-			evtForward.off("stop_replying:" + message.id, _replying, "msg" + message.id);
-			discordGateway.off("t:message_update", update, "msg" + message.id);
-			discordGateway.off("t:message_update", update, "msg" + message.id);
-			discordGateway.off("t:message_update", update, "msg" + message.id);
-			discordGateway.off("t:message_reaction_add", updateReactions, "msg" + message.id);
-			discordGateway.off("t:message_reaction_remove", removeReaction, "msg" + message.id);
+			discordGateway.off("t:message_delete", _deleted, eventID);
+			evtForward.off("stop_editing:" + message.id, _editing, eventID);
+			evtForward.off("stop_replying:" + message.id, _replying, eventID);
+			discordGateway.off("t:message_update", update, eventID);
+			discordGateway.off("t:message_update", update, eventID);
+			discordGateway.off("t:message_update", update, eventID);
+			discordGateway.off("t:message_reaction_add", updateReactions, eventID);
+			discordGateway.off("t:message_reaction_remove", removeReaction, eventID);
 		};
 	});
 
@@ -264,6 +278,7 @@
 </script>
 
 <main
+	class:deleted
 	class:editing
 	class:replying
 	class:userMessage={message.author.id === discord.user.id}
@@ -421,6 +436,12 @@
 </main>
 
 <style>
+	.deleted {
+		background-color: #4a3a40;
+	}
+	.deleted:focus {
+		background-color: #44373c !important;
+	}
 	.reactions {
 		display: flex;
 		flex-wrap: wrap;
