@@ -3,13 +3,14 @@
 	let text = "";
 	onMount(() => {
 		const array = [
-			"svelte is awesome",
-			"Svelte Is Love, Svelte Is Life",
-			"atm the app is connecting to the gateway",
-			"Frank128 is God",
-      "the app is made with blood",
-      "never gonna give you up",
-      "never gonna let you down"
+			"Quickly edit your last sent message! Type 's/[what to replace]/[what to replace with]'.",
+			"Press 0 at any point in message history to scroll to the latest.",
+			"This application is open-sourced at https://github.com/cyan-2048/Discord4KaiOS",
+			"We have a dedicated Discord server for support on this application! Check it out in Settings.",
+      			"Don't ask for ETAs. No 'When will A arrive?'. We're all humans.",
+      			"never gonna give you up",
+      			"We're connecting to Discord's gateways to retrieve account info, server list and message history. Be patient!",
+			"This application is built on Frank128's prototype of Discord for Windows XP, coded in several nights."
 		]; // wanna add something? just tell cyan in discord
 		text = array[new Date() % array.length];
 	});
