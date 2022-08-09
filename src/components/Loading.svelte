@@ -5,12 +5,23 @@
 		const array = [
 			"Quickly edit your last sent message! Type 's/[what to replace]/[what to replace with]'.",
 			"Press 0 at any point in message history to scroll to the latest.",
-			"This application is open-sourced at https://github.com/cyan-2048/Discord4KaiOS",
-			"We have a dedicated Discord server for support on this application! Check it out in Settings.",
-      			"Don't ask for ETAs. No 'When will A arrive?'. We're all humans.",
+			"This third-party application is open-sourced on GitHub and NotABug. Links in Settings.",
+			"We have a dedicated server for support on this application! Check it out in Settings.",
+      			"Don't ask for ETAs. We're all humans.",
       			"never gonna give you up",
-      			"We're connecting to Discord's gateways to retrieve account info, server list and message history. Be patient!",
-			"This application is built on Frank128's prototype of Discord for Windows XP, coded in several nights."
+      			"Connecting to Discord's gateways to retrieve account info, server list and message history...",
+			"This application is built on Frank128's prototype of Discord for Windows XP, coded in several nights.",
+			"Have something to hide in your message? ||Mark it as spoiler.||",
+			"To strike-through a part of message, ~~put it in these~~.",
+			"To italicize a part of message, *put it in these* or _these_.",
+			"To mark a part of message as code, `put it in these`.",
+			"Add a hyperlink to your message! Here's an [example](https://www.example.com).",
+			"Emphasize a part of your message by **making them bold**.",
+			"Group DMs can have up to ten members.",
+			"The top-most role for a user defines that user's color.",
+			"When rocking this app, you'll have a RPC status to tell the world. Disable in Settings.",
+			"No I didn't.",
+			"idk search Google for tips"
 		]; // wanna add something? just tell cyan in discord
 		text = array[new Date() % array.length];
 	});
