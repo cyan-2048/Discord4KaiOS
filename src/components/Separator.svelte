@@ -1,6 +1,6 @@
 <div><slot /></div>
 
-<style>
+<style lang="scss">
 	div {
 		line-height: 30px;
 		height: 30px;

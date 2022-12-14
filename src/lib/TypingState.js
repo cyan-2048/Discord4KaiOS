@@ -1,12 +1,14 @@
-import { EventEmitter } from "./EventEmitter.js";
+import EventEmitter from "./EventEmitter.js";
 
 class TypingObject {
+	state = [];
+	timeouts = {};
+
 	constructor(id, emitter) {
 		this.id = id;
 		this.emitter = emitter;
 	}
-	state = [];
-	timeouts = {};
+
 	add(userID) {
 		clearTimeout(this.timeouts[userID]);
 		if (!this.state.includes(userID)) {
@@ -22,9 +24,6 @@ class TypingObject {
 
 // class which handles typing indicators
 export default class TypingState extends EventEmitter {
-	constructor() {
-		super();
-	}
 	active = [];
 	createState(id) {
 		return new TypingObject(id, (state) => {

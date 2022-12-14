@@ -1,22 +1,27 @@
-import { defineConfig } from 'vite'
-import { svelte } from '@sveltejs/vite-plugin-svelte'
-import FullReload from "vite-plugin-full-reload";
-import cors_proxy from "cors-anywhere";
+// vite will only be used on development builds
+// i can't figure out how to setup the production builds
+// it seems like esbuild isn't too good at transpiling
 
-// proxy when using dev build
-// on kaios we can just use xmlhttpreq with mozSystem
-cors_proxy
-	.createServer({
-		originWhitelist: [], // Allow all origins
-		requireHeader: [],
-		removeHeaders: [],
-	})
-	.listen(6969, "0.0.0.0");
+import { defineConfig } from "vite";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
+import sveltePreprocess from "svelte-preprocess";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-	define: {
-		PRODUCTION: JSON.stringify(false),
+	server: {
+		port: 3000,
 	},
-	plugins: [FullReload(["src/**/*"]), svelte()],
+	define: {
+		PRODUCTION: "false",
+	},
+	plugins: [
+		svelte({
+			compilerOptions: {
+				cssHash({ hash, css, name, filename }) {
+					return `${name}-${hash(filename)}`;
+				},
+			},
+			preprocess: sveltePreprocess(),
+		}),
+	],
 });

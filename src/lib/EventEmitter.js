@@ -1,51 +1,66 @@
-class EventEmitter {
-	constructor() {
-		this._events = [];
-	}
-	on(name, callback, id = null, once = false) {
-		if (id !== null) {
-			let ix = this._events.findIndex((a) => a.name === name && a.id === id);
-			if (ix > -1) {
-				this._events[ix] = { name, callback, id, once };
-			} else {
-				this._events.push({ name, callback, id, once });
-			}
-		} else {
-			this._events.push({ name, callback, once });
-		}
-	}
+import EventTarget from "@ungap/event-target";
 
-	once(name, callback, id = null) {
-		return this.on(name, callback, id, true);
+export default class EventEmitter extends EventTarget {
+	on(type, callback) {
+		this.addEventListener(type, callback);
 	}
-
-	off(name, callback, id = null) {
-		if (id !== null) {
-			let ix = this._events.findIndex((a) => a.name === name && a.id === id);
-			if (ix > -1) {
-				this._events.splice(ix, 1);
-			}
-		} else {
-			let ix = this._events.findIndex((a) => a.name === name && a.callback === callback);
-			if (ix > -1) {
-				this._events.splice(ix, 1);
-			}
-		}
+	off(type, callback) {
+		this.removeEventListener(type, callback);
 	}
-
-	emit() {
-		let args = [...arguments];
-		let name = args.shift();
-		if (name)
-			this._events.forEach((a) => {
-				if (a.once) {
-					this.off(a.name, a.callback, a.id || null);
-				}
-				if (a.name === name || a.name === "*") {
-					a.callback.apply(this, args);
-				}
-			});
+	once(type, callback) {
+		const self = this;
+		self.addEventListener(type, function once() {
+			self.removeEventListener(type, once);
+			callback.call(self, arguments);
+		});
+	}
+	emit(type, detail) {
+		this.dispatchEvent(new CustomEvent(type, { detail }));
 	}
 }
 
-export { EventEmitter };
+/**
+ * a thing to make binding events easier
+ * @param {EventTarget} target
+ * @param {String} type
+ * @param {Function} callback
+ * @param {null | import("svelte/store").Writable} writable
+ * @returns {void | import("svelte/store").Unsubscriber}
+ */
+export function eventHandler(target, type, callback, writable = null) {
+	function toggle(value) {
+		return target[value ? "addEventListener" : "removeEventListener"](type, callback);
+	}
+
+	if (writable === null) {
+		toggle(true);
+		return () => toggle(false);
+	}
+
+	const unsub = writable.subscribe(toggle);
+
+	return function unsubscribe() {
+		toggle(false);
+		unsub();
+	};
+}
+
+export function multipleEventHandler(target, keyval, writable = null) {
+	function toggle(value) {
+		Object.entries(keyval).forEach(([type, callback]) => {
+			if (callback) target[value ? "addEventListener" : "removeEventListener"](type, callback);
+		});
+	}
+
+	if (writable === null) {
+		toggle(true);
+		return () => toggle(false);
+	}
+
+	const unsub = writable.subscribe(toggle);
+
+	return function unsubscribe() {
+		toggle(false);
+		unsub();
+	};
+}

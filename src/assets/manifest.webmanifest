@@ -1,0 +1,36 @@
+{
+	"name": "Sveltecord",
+	"description": "Sveltecord is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Discord™, or any of its subsidiaries or its affiliates.",
+	"lang": "en",
+	"start_url": "/index.html",
+	"icons": [
+		{
+			"src": "/css/56px.png",
+			"type": "image/png",
+			"sizes": "56x56"
+		},
+		{
+			"src": "/css/112px.png",
+			"type": "image/png",
+			"sizes": "112x112"
+		}
+	],
+	"b2g_features": {
+		"version": "2.0.8",
+		"developer": {
+			"name": "Cyan",
+			"url": "https://github.com/cyan-2048/Discord4KaiOS"
+		},
+		"origin": "app://sveltecord.cyankindasus.com",
+		"type": "privileged",
+		"permissions": {
+			"systemXHR": {
+				"description": "Required to access Discord's Server"
+			},
+			"video-capture": {
+				"description": "Reading Codes using the Camera"
+			}
+		},
+		"installs_allowed_from": ["*"]
+	}
+}

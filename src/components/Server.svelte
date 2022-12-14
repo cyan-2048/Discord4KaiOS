@@ -1,54 +1,58 @@
 <script>
 	// js imports
-	import { serverAck, discord } from "../lib/shared";
+	import { discord, serverAck } from "../lib/database";
 
-	import { createEventDispatcher, onMount } from "svelte";
-	import { isChannelMuted, siftChannels } from "../lib/helper.js";
+	import { createEventDispatcher, onDestroy, onMount } from "svelte";
+	import { isChannelMuted, isGuildMuted, navigate, siftChannels } from "../lib/helper.js";
 	import ServerMentions from "./ServerMentions.svelte";
+	import { serverProfiles } from "../lib/shared";
+	import { eventHandler } from "../lib/EventEmitter";
 	export let dm = false;
 	export let server = null;
 	export let selected;
 	export let focusable = true;
 	const dispatch = createEventDispatcher();
 
-	let { id, roles, name, icon } = server || { id: null };
+	let { id, roles, name, icon } = server || { id: "@me" };
 
 	let unread = false;
 	let mentions = 0;
 
-	let profile;
-	let channels;
+	let channel_ids = [];
 	let update = async () => {
 		if (dm) {
 		} else {
-			if (!profile) profile = await discord.getServerProfile(id, discord.user.id);
-			let raw = await discord.getChannels(id);
-			channels = raw;
-			let chs = siftChannels(raw, roles, profile, true).filter((l) => !isChannelMuted(discord, { id: l.id }, id));
-			let state = chs.map((h) => discord.cache.read_state.find((j) => j.id == h.id));
-			let state_ur = state.map((g) => (g || {}).last_message_id);
-			let current = chs
-				.map((g) => (g || {}).last_message_id)
-				.map((f, i) => {
-					if (!state_ur[i]) return;
-					if (!f) state_ur[i] = f;
-					return f;
-				});
+			const raw = await discord.getChannels(id);
 
-			let muted = discord.cache.user_guild_settings.find((a) => a.guild_id == id);
-			if (muted && muted.muted == true) unread = false;
-			else unread = JSON.stringify(state_ur) != JSON.stringify(current);
-			mentions = state.reduce((a, b) => a + (b || {}).mention_count || 0, 0);
+			const serverProfile =
+				$serverProfiles.get(id + "/" + discord.user.id) || (await discord.getServerProfile(id, discord.user.id));
+
+			const sifted = siftChannels(raw, roles, serverProfile, true);
+			channel_ids = sifted.map((channel) => channel.id);
+
+			mentions = 0;
+			unread = false;
+
+			const guildMuted = isGuildMuted(discord, id);
+
+			for (const state of discord.cache.read_state) {
+				if (!channel_ids.includes(state.id)) continue;
+				if (state.mention_count > 0) {
+					mentions += Number(state.mention_count);
+				}
+				if (!unread && !guildMuted) {
+					const channelWithID = sifted.find((channel) => channel.id === state.id)?.last_message_id;
+					if (channelWithID && state.last_message_id !== channelWithID) {
+						unread = true;
+					}
+				}
+			}
 		}
 	};
 
 	onMount(update);
-	serverAck.on("update", (d) => {
-		if (channels?.find((e) => e.id == d.channel_id)) update();
-		if (d.channel_overrides?.find((g) => channels?.find((e) => e.id == g.channel_id))) update();
-	});
 
-	let shorten = (e) =>
+	const shorten = (e) =>
 		e
 			?.split(" ")
 			.map((a) => a[0])
@@ -56,13 +60,26 @@
 			.slice(0, 3) || "";
 
 	let main;
+
+	onDestroy(
+		eventHandler(serverAck, "update", (event) => {
+			var { detail: d } = event || {};
+			if (channel_ids.includes(d.channel_id)) update();
+			if (d.channel_overrides?.find((g) => channel_ids.includes(g.channel_id))) update();
+		})
+	);
 </script>
 
 <main
+	class="Server-svelte"
 	data-mentions={mentions}
-	on:click={() => dispatch("select", { id })}
+	on:click={() => {
+		navigate("/channels/" + id);
+	}}
 	data-focusable={focusable ? "" : null}
-	class="{unread ? 'unread' : ''} {dm ? 'dm' : ''} {selected ? 'selected' : ''}"
+	class:unread
+	class:dm
+	class:selected
 	tabindex="0"
 	bind:this={main}
 >
@@ -70,80 +87,129 @@
 		<div class="hover" />
 	{/if}
 	{#if icon}
-		<img class="image" src="https://cdn.discordapp.com/icons/{id}/{icon}.png?size=48" alt={shorten(name)} />
+		<div class="image" style:--image="url(https://cdn.discordapp.com/icons/{id}/{icon}.png?size=48)" />
 	{:else}
-		<div class="image">{shorten(name)}</div>
+		<div class="image" data-name={shorten(name)} />
 	{/if}
 	{#if mentions > 0 && focusable}
 		<ServerMentions color={main?.parentNode.matches("[data-folder]") && "#2f3136"}>{mentions}</ServerMentions>
 	{/if}
 </main>
 
-<style>
-	:focus div.image,
-	:hover div.image,
-	.selected div.image {
-		background-color: rgb(88, 101, 242);
-	}
+<style lang="scss">
+	@use "../assets/shared" as *;
 
-	.dm .image {
-		background-image: url(/css/dms.png);
-		background-size: 100%;
-	}
-	main:not(:last-child) {
-		margin-bottom: 8px;
-	}
-	.hover {
-		position: absolute;
-		height: 100%;
-		width: 10px;
-		left: -17px;
-		display: grid;
-		align-items: center;
-	}
-	.hover::after {
-		content: "";
-		background-color: white;
-		width: 10px;
-		border-radius: 80px;
-		display: block;
-		height: 10px;
-		opacity: 0;
-		transition: height 0.3s ease, opacity 0.3s ease;
-	}
-	.selected *::after,
-	.unread *::after,
-	:focus *::after,
-	:hover *::after {
-		opacity: 1;
-	}
-	:hover .hover::after,
-	:focus .hover::after {
-		height: 25px;
-	}
-	.selected .hover::after {
-		height: 100% !important;
-	}
-	main,
-	.image {
-		width: 48px;
-		height: 48px;
-		position: relative;
-	}
-	.image {
-		font-size: 13px;
-		text-align: center;
-		line-height: 45px;
-		overflow: hidden;
-		border-radius: 50% !important;
-		transition: border-radius 0.3s linear, background-color linear 0.2s;
-	}
-	.selected .image,
-	:hover .image,
-	:focus .image {
-		border-radius: 30% !important;
-	}
-	div.image {
-		background-color: rgb(54, 57, 63);
+	.Server-svelte {
+		&:not(:last-child) {
+			margin-bottom: 8px;
+		}
+		.hover {
+			position: absolute;
+			height: 100%;
+			width: 10px;
+			left: -17px;
+			display: grid;
+			align-items: center;
+		}
+		.hover::after {
+			content: "";
+			@include linearGradient(10%, rgba(234, 234, 234));
+			background-color: rgba(155, 155, 155);
+			border: 1px solid black;
+			box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.3), inset 0 0 0 1px white;
+			width: 10px;
+			border-radius: 80px;
+			display: block;
+			height: 10px;
+			opacity: 0;
+			/*transition: height 0.3s ease, opacity 0.3s ease;*/
+		}
+		&.selected *::after,
+		&.unread *::after,
+		&:focus *::after,
+		&:hover *::after {
+			opacity: 1;
+		}
+
+		&:focus .hover::after {
+			height: 25px;
+		}
+
+		&.selected .hover::after {
+			height: 100% !important;
+		}
+
+		&,
+		.image {
+			width: 48px;
+			height: 48px;
+			position: relative;
+		}
+
+		.image {
+			overflow: hidden;
+			box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.6);
+
+			&,
+			&::before,
+			&::after {
+				border-radius: 50%;
+				transition: border-radius 0.2s linear, background-color linear 0.2s;
+			}
+
+			&::before,
+			&::after {
+				width: 100%;
+				height: 100%;
+				top: 0;
+				left: 0;
+				position: absolute;
+			}
+
+			font-size: 13px;
+			text-align: center;
+			line-height: 45px;
+
+			&::before {
+				content: "";
+			}
+
+			&::after {
+				content: attr(data-name);
+				background-image: var(--image);
+				box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.8), inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
+			}
+		}
+
+		&:focus,
+		&:hover,
+		&.selected {
+			.image {
+				--bg-color: #5865f2;
+				--gradient-color: rgba(32, 42, 65);
+			}
+		}
+
+		.image::before {
+			content: "";
+			@include linearGradient(5%, var(--gradient-color, rgb(36, 36, 38)));
+		}
+
+		&.dm .image::after {
+			--image: url(/css/dms.png) !important;
+			background-size: 100%;
+		}
+
+		&:focus,
+		&.selected {
+			.image {
+				background-color: var(--bg-color, rgba(67, 69, 74));
+			}
+			.image,
+			.image::after,
+			.image::before {
+				border-radius: 7px !important;
+			}
+		}
 	}
 </style>

@@ -9,6 +9,8 @@ export default class QRCode {
 	interval = null;
 	status = "idle";
 	handler;
+	stream = null;
+
 	constructor() {
 		this.element = this.createRootElement();
 	}
@@ -60,31 +62,30 @@ export default class QRCode {
 		clearInterval(this.interval);
 		this.element?.remove();
 	}
-	startVideo() {
-		return new Promise((resolve, reject) => {
-			navigator.mozGetUserMedia(
-				{
-					audio: false,
-					video: {
-						width: 240,
-						height: 240,
-					},
-				},
-				(stream) => {
-					const video = document.querySelector("#kosl__scanner > video");
-					if (!video) return reject("Unable to find video element");
-					video.srcObject = stream;
-					video.onloadedmetadata = () => {
-						video.play();
-						resolve();
-					};
-				},
-				reject
-			);
+	async startVideo() {
+		const stream = await navigator.mediaDevices.getUserMedia({
+			audio: false,
+			video: {
+				width: 240,
+				height: 240,
+			},
+		});
+
+		this.stream = stream;
+
+		const video = document.querySelector("#kosl__scanner > video");
+		if (!video) throw Error("Unable to find video element");
+		video.srcObject = stream;
+
+		return new Promise((res) => {
+			video.onloadedmetadata = () => {
+				video.play();
+				res();
+			};
 		});
 	}
-	checkForQRCode() {
-		return new Promise((resolve, reject) => {
+	async checkForQRCode() {
+		const final = await new Promise((resolve, reject) => {
 			const video = document.querySelector("#kosl__scanner > video");
 			if (!video) return reject("Unable to find video element");
 			const canvas = document.createElement("canvas");
@@ -103,5 +104,9 @@ export default class QRCode {
 				}
 			}, 1e3);
 		});
+
+		this.stream.getTracks().forEach((a) => a.stop());
+
+		return final;
 	}
 }

@@ -1,9 +1,7 @@
 /node_modules/
 /public/build/
-/icons.html
 dev/
 dist/
 private/
 
 .DS_Store
-*.log

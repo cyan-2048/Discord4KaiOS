@@ -1,12 +1,13 @@
 <script>
 	import { onDestroy, onMount } from "svelte";
 	import { centerScroll, delay } from "../lib/helper";
+	import { longpress, settings } from "../lib/shared";
 
 	export let upload_progress, textbox, xhr;
 
 	let main;
 	onMount(() => {
-		centerScroll(main);
+		centerScroll(main, !$settings.smooth_scroll || $longpress);
 	});
 	onDestroy(async () => {
 		if (main === document.activeElement) {
@@ -41,7 +42,7 @@
 	</div>
 </main>
 
-<style>
+<style lang="scss">
 	.abort_upload {
 		margin-left: 4px;
 	}

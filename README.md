@@ -1,63 +1,6 @@
 [![Discord server](https://invidget.switchblade.xyz/W9DF2q3Vv2)](https://discord.gg/W9DF2q3Vv2)
 
-## join the [discord server](https://discord.gg/W9DF2q3Vv2) to get more up to date information...
-
-```
-legend:
-- ** -> does not support sending
-- * -> only supports_
-- \ -> partially
-- ! -> does not support_
-- ✅ -> supported, api is implemented
-- ? ->  no ui
-example: \?** -> partially no ui, does not support sending
-
-frontend ->
-- markdown✅
-- sed or s/e/x✅
-- folders✅
-- qrcode scanner✅
-- hide channels with no read perms✅
-- highlight message if mentioned✅
-- typing indicators✅
-- a custom rpc that shows you are using Discord4KaiOS✅
-- edit messages✅
-- delete messages✅
-- replies✅
-- discord emojis✅**
-- stickers✅**
-- reactions✅**
-- embed links✅(\)
-- attachments✅(\?)
-- discord mentions✅(@ / #, \*(no spaces username))
-- image viewer✅(\*(messages with one image))
-- more options✅(\)
-- settings(?)
-- load more button
-
-maybe ->
-- threads
-- plugins
-
-backend ->
-- unread/read/mentions indicators✅(\!dms)
-- discord presence in dms✅(\*custom_status!emojis)
-- update cached data when needed
-
-events ->
-(updates):
-- message✅
-- channel✅
-- read state✅
-- presence✅(\)
-
-no plans on supporting ->
-- video player
-- voice calls/chats, streaming, video calls...
-- moderating servers
-```
-
-the end goal here is to have a usable discord client for KaiOS, I have no plans on fully replicating a discord client(replicating it way too much could actually be dangerous... discord might think the api is being used maliciously and ban the user)
+the end goal here is to have a usable discord client for KaiOS, I have no plans on fully replicating a discord client.
 
 ### Development and testing
 
@@ -76,5 +19,16 @@ the end goal here is to have a usable discord client for KaiOS, I have no plans 
 - The app will be fully published to the KaiStore once fully ready.
 - Please avoid sharing the app packages, I do not want my app to be seen as a "half assed discord app", if you choose to build the app from source please do me a favor and use it only for personal use. Once the app is considered ready, it would be fine to share.
 
+### Credit
+
+(stuff mentioned here are libraries where the code was modified)
+
+- [luke-chang/js-spatial-navigation](https://github.com/luke-chang/js-spatial-navigation) MPLv2
+- [garredow/kaios-lib](https://github.com/garredow/kaios-lib/blob/main/src/modules/qrCode.ts) MIT
+- [smoothscroll-polyfill](https://www.npmjs.com/package/smoothscroll-polyfill) MIT
+- [ustccjw/unhandled-rejection-polyfill](https://github.com/ustccjw/unhandled-rejection-polyfill) MIT
+- [SkeuoCord](https://github.com/Marda33/SkeuoCord) (I asked for permission)
+
 ### Special Thanks!
+
 - [Zero Tsus](https://github.com/LolloDev5123)

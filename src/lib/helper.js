@@ -1,12 +1,30 @@
-export function hashCode(r) {
-	var n,
-		t = String(r),
-		o = 0;
-	if (0 === t.length) return o;
-	for (n = 0; n < t.length; n++) (o = (o << 5) - o + t.charCodeAt(n)), (o |= 0);
-	return Array.from(o.toString())
-		.map((r) => "ledoshcyan"[r])
-		.join("");
+import { tick } from "svelte";
+
+export const last = (e) => e[e.length - 1];
+
+export async function delay(ms = 1000) {
+	return new Promise((res) => setTimeout(res, ms));
+}
+
+export { navigate } from "svelte-routing";
+
+export async function back() {
+	window.history.back();
+	await tick();
+}
+
+export function hashCode(string, seed = 0) {
+	const str = String(string);
+	let h1 = 0xdeadbeef ^ seed,
+		h2 = 0x41c6ce57 ^ seed;
+	for (let i = 0, ch; i < str.length; i++) {
+		ch = str.charCodeAt(i);
+		h1 = Math.imul(h1 ^ ch, 2654435761);
+		h2 = Math.imul(h2 ^ ch, 1597334677);
+	}
+	h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+	h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+	return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
 export const bitwise2text = {
@@ -36,57 +54,72 @@ export function groupBy(arr, property) {
 	}, {});
 }
 
-// make getting roles more readble, i am not a robot
-export function parseRoleAccess(overwrites = [], roles = [] /*this is the roles the user has*/, serverRoles = []) {
+/** make getting roles more readble, i am not a robot
+ * @param profileRoles {Array} this is the roles the user has, must include server's @everyone id and user's id
+ * */
+export function parseRoleAccess(channelOverwrites = [], profileRoles = [], serverRoles = []) {
 	let obj = {};
-	if (serverRoles.length > 0)
+
+	let everyone_id = null;
+
+	if (serverRoles?.length > 0)
 		[...serverRoles]
 			.sort((a, b) => a.position - b.position)
-			.filter((o) => roles.includes(o.id) || roles.position === 0)
+			.filter((o) => {
+				const isEveryone = o.position === 0;
+				if (isEveryone) everyone_id = o.id;
+
+				return profileRoles.includes(o.id) || isEveryone;
+			})
 			.map((o) => o.permissions)
 			.forEach((perms) => {
 				Object.entries(bitwise2text).forEach(([num, perm]) => {
 					if ((num & perms) == num) obj[perm] = true;
 				});
 			});
+
 	if (obj.admin === true) {
 		Object.values(bitwise2text).forEach((a) => (obj[a] = true));
-		console.error("person is admin, gib all perms true", obj);
+		// console.error("person is admin, gib all perms true", obj);
 		return obj;
 	}
-	let grouped = groupBy(overwrites, "type");
+
+	let grouped = groupBy(channelOverwrites, "type");
 	Object.keys(grouped)
-		.sort()
+		.sort((a, b) => a - b)
 		.forEach((a) => {
-			grouped[a].forEach((o) => {
-				if (roles.includes(o.id)) {
-					Object.entries(bitwise2text).forEach(([num, perm]) => {
-						if ((o.allow & num) == num) obj[perm] = true;
-						if ((o.deny & num) == num) obj[perm] = false;
-					});
-				}
-			});
+			grouped[a]
+				.sort((x, y) => (x.id == everyone_id ? -1 : y.id == everyone_id ? 1 : 0))
+				.forEach((o) => {
+					if (profileRoles.includes(o.id)) {
+						Object.entries(bitwise2text).forEach(([num, perm]) => {
+							if ((o.deny & num) == num) obj[perm] = false;
+							if ((o.allow & num) == num) obj[perm] = true;
+						});
+					}
+				});
 		});
 	return obj;
 }
 
-export function wouldMessagePing(message, roles, discordInstance) {
-	let check = (e) => e instanceof Array && !!e[0];
-	let { mention_everyone, mentions, mention_roles, guild_id } = message;
+export function wouldMessagePing(message, roles, userID) {
+	let check = (e) => Array.isArray(e) && !!e[0];
+	let { mention_everyone, mentions, mention_roles, guild_id } = message || {};
 	if (mention_everyone) return true;
-	if (check(mentions) && mentions.find((a) => a.id == discordInstance.user.id)) {
+	if (check(mentions) && mentions.find((a) => a.id == userID)) {
 		return true;
 	}
-	if (check(mention_roles) && mention_roles.some((r) => roles.includes(r))) {
+	if (check(mention_roles) && mention_roles.some((r) => roles?.includes(r))) {
 		return true;
 	}
 	return false;
 }
+
 export function wouldMessagePingDM(message) {}
 
-export function siftChannels(raw, roles, profile, skipSeparators, serverRoles = []) {
+export function siftChannels(rawChannels, serverRoles, serverProfile, skipSeparators = false) {
 	let position = (a, b) => a.position - b.position;
-	let sorted = [...raw].sort(position);
+	let sorted = [...rawChannels].sort(position);
 	let channels = { 0: [] };
 
 	sorted.forEach((a) => {
@@ -95,21 +128,20 @@ export function siftChannels(raw, roles, profile, skipSeparators, serverRoles = 
 		}
 	});
 
-	sorted.forEach((a) => {
-		if (a.type == 0 || a.type == 5) {
-			let perms = parseRoleAccess(
-				a.permission_overwrites,
-				profile.roles.concat([roles.find((p) => p.position == 0).id, profile.user.id]),
-				serverRoles
-			);
-			let id = a.parent_id;
-			if (perms.read !== false) (channels[id] || channels[0] || []).push(a);
+	const profileRoles = [...serverProfile.roles, serverRoles.find((p) => p.position == 0)?.id, serverProfile.user.id];
+
+	sorted.forEach((channel) => {
+		if (channel.type == 0 || channel.type == 5) {
+			const perms = parseRoleAccess(channel.permission_overwrites, profileRoles, serverRoles);
+
+			if (perms.read !== false) (channels[channel.parent_id] || channels[0]).push(channel);
 		}
 	});
 
 	let final = [];
 	Object.values(channels).forEach((arr) => {
 		if (!arr[0] || arr[0].type !== "separator" || arr.length === 1) return;
+		if (skipSeparators) arr.shift();
 		final.push(arr);
 	});
 	final.sort(([a], [b]) => position(a, b));
@@ -128,22 +160,25 @@ import scrollIntoView from "scroll-into-view";
 
 export async function centerScroll(el, sync) {
 	return new Promise((res) => {
-		scrollIntoView(el, { time: sync ? 0 : 300, align: { left: 0 }, ease: (e) => e }, (type) =>
+		scrollIntoView(el, { time: sync ? 0 : 200, align: { left: 0 }, ease: (e) => e }, (type) =>
 			res(type === "complete")
 		);
 	});
 }
 
-export function isChannelMuted(discordInstance, channel, guildID) {
+export function isChannelMuted(discordInstance, channelID, guildID) {
 	let settings = discordInstance.cache.user_guild_settings;
 	let guild = settings.find((e) => e.guild_id === guildID);
 	if (!guild) return false;
-	let find = guild.channel_overrides.find((a) => a.channel_id === channel.id);
+	let find = guild.channel_overrides.find((a) => a.channel_id === channelID);
 	if (find) return find.muted;
 	return false;
 }
 
-export const last = (e) => e[e.length - 1];
+export function isGuildMuted(discordInstance, guildID) {
+	const foundGuild = discordInstance.cache.user_guild_settings.find((a) => a.guild_id == guildID);
+	return !!(foundGuild && foundGuild.muted);
+}
 
 export function decimal2rgb(ns, arr) {
 	let r = Math.floor(ns / (256 * 256)),
@@ -175,6 +210,18 @@ export function shuffle(array) {
 	}
 
 	return array;
+}
+
+export function niceBytes(bytes, decimals = 2) {
+	if (bytes === 0) return "0 Bytes";
+
+	const k = 1024;
+	const dm = decimals < 0 ? 0 : decimals;
+	const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+	return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 
 export function inViewport(element, partial) {
@@ -209,76 +256,7 @@ export function getScrollBottom(el) {
 	return el.scrollHeight - el.offsetHeight - el.scrollTop;
 }
 
-export function findUserByTag() {
-	const args = arguments;
-	return function (tag) {
-		const mentionCache = [...args].map((a) => Object.values(a)).flat(2);
-		const copy = (tag.startsWith("@") ? tag.slice(1) : tag).split("#");
-		let done = null;
-		let len = mentionCache.length;
-		for (let index = 0; index < len; index++) {
-			const test = mentionCache[index];
-			let user = test?.user;
-			if (!user || !(user.username && user.discriminator)) continue;
-			let { discriminator: tag, username: name, id } = user;
-			if (name === copy[0] && tag === copy[1]) {
-				done = id;
-				break;
-			}
-		}
-		return done;
-	};
-}
-
-export const dblclick = (el, bubbles = false) =>
-	el.dispatchEvent(
-		new MouseEvent("dblclick", {
-			view: window,
-			bubbles,
-			cancelable: true,
-		})
-	);
-
-// returns a function that waits for another function to finish before running
-// also has caching abilities
-export function asyncQueueGenerator(func, noCache = false) {
-	const cache = {};
-	let pending = Promise.resolve();
-	const run = async function (...args) {
-		try {
-			await pending;
-		} finally {
-			if (noCache) {
-				return await func(...args);
-			}
-			return (cache[hashCode(args.join(""))] = await func(...args));
-		}
-	};
-	const final = function (...args) {
-		if (noCache) {
-			return (pending = run(...args));
-		}
-		return cache[hashCode(args.join(""))] || (pending = run(...args));
-	};
-	if (!noCache) final.cache = cache;
-	return final;
-}
-
-// returns a function which has a caching ability
-export function asyncCachedGenerator(func, shouldCache = true) {
-	const cache = {};
-	const final = async function () {
-		let args = [...arguments];
-		if (shouldCache) {
-			const hash = hashCode(args.join(""));
-			return cache[hash] || (cache[hash] = await func(...args));
-		}
-		return func(...args);
-	};
-	final.cache = cache;
-	return final;
-}
-
+/*
 // calculate the outputed color if a color has opacity
 // returns a color in hex
 export function rgbaToHex(d = [0, 0, 0], b = [0, 0, 0], a = 1) {
@@ -287,37 +265,7 @@ export function rgbaToHex(d = [0, 0, 0], b = [0, 0, 0], a = 1) {
 	var b = Math.floor(d[2] * a + b[2] * (1 - a));
 	return "#" + ((r << 16) | (g << 8) | b).toString(16);
 }
-
-export function delay(timeout) {
-	return new Promise((res) => setTimeout(res, timeout));
-}
-
-// returns async function in which there's a limit to how many executions can be done
-// if number of unfinished request exceeds limit,
-// we wait for a request to finish before executing another
-// also caches
-export function asyncRateLimitGenerator(func, limit = 5) {
-	const cache = {};
-	let current = 0;
-
-	const final = async function () {
-		const args = [...arguments];
-		const hash = hashCode(args.join(""));
-		if (cache[hash]) return cache[hash];
-		while (current >= limit && !cache[hash]) {
-			const min = 100,
-				max = 500;
-			await delay(1000 + Math.random() * (max - min) + min);
-		}
-		if (cache[hash]) return cache[hash];
-		current += 1;
-		const wait = await func(...args);
-		current -= 1;
-		return (cache[hash] = wait);
-	};
-	final.cache = cache;
-	return final;
-}
+*/
 
 export const decideHeight = (e, size, minus) => {
 	if (!e || typeof e !== "object") return {};
@@ -336,16 +284,6 @@ export const decideHeight = (e, size, minus) => {
 		};
 	} else return { height, width, ...dataset };
 };
-
-export function syncCachedGenerator(func) {
-	const cache = {};
-	return function () {
-		let args = [...arguments];
-		return cache[hashCode(args.join(""))] || (cache[hashCode(args.join(""))] = func(...args));
-	};
-}
-
-import { extension as mimeExtension } from "./mime-types";
 
 /**
  * @param {Blob|File|string} blob
@@ -372,16 +310,10 @@ export async function downloadFile(blob, filename = null) {
 				}
 			}
 		}
-		blob = res;
 		if (filename === null) {
-			const { pathname } = new URL(xhr.responseURL);
-			const lastPath = last(pathname.split("/"));
-			const ext = "." + (mimeExtension(xhr.getResponseHeader("content-type")) || mimeExtension(res.type) || "bin");
-			if (!lastPath.includes(".")) filename = lastPath + ext;
-			else {
-				filename = lastPath.endsWith(ext) ? lastPath : lastPath + ext;
-			}
+			return window.open(blob, "_blank");
 		}
+		blob = res;
 		url = URL.createObjectURL(res);
 	} else if (blob instanceof Blob) {
 		url = URL.createObjectURL(blob);
@@ -389,7 +321,7 @@ export async function downloadFile(blob, filename = null) {
 	const el = document.createElement("a");
 	document.body.appendChild(el);
 	el.href = url;
-	el.download = blob.name || filename || "unknown." + (mimeExtension(blob.type) || "bin");
+	el.download = blob.name || filename || "unknown.bin";
 	el.click();
 	el.remove();
 	delay(5000).then(() => URL.revokeObjectURL(url));
@@ -398,7 +330,7 @@ export async function downloadFile(blob, filename = null) {
 export function toDataset(obj) {
 	const final = {};
 	Object.entries(obj).forEach(([a, b]) => {
-		final["data" + a] = b;
+		final["data-" + a] = b;
 	});
 	return final;
 }
@@ -408,41 +340,142 @@ export function customDispatch(el, event) {
 }
 
 export function scrollToBottom(el) {
+	if (!el) return;
 	return (el.scrollTop = el.scrollHeight);
 }
 
 export async function xhr(url, options = {}, returnXhr = false) {
 	if (typeof options !== "object") options = {};
-	const xhr = new XMLHttpRequest({ mozAnon: true, mozSystem: true });
+	const _xhr = new XMLHttpRequest({ mozAnon: true, mozSystem: true });
 
-	xhr.open(options.method || "GET", url, true);
-	xhr.responseType = options.responseType || "text";
+	_xhr.open(options.method || "GET", url, true);
+	_xhr.responseType = options.responseType || "text";
 
 	Object.entries(options.headers || {}).forEach(([a, b]) => {
-		if (a && b) xhr.setRequestHeader(a, b.replace(/\r?\n|\r/g, "")); // nodejs http bug
+		if (a && b) _xhr.setRequestHeader(a, b.replace(/\r?\n|\r/g, "")); // nodejs http bug
 	});
 
-	xhr.send(options.body || null);
+	_xhr.send(options.body || null);
 
 	return new Promise((res, err) => {
-		xhr.onload = () => res(returnXhr ? xhr : xhr.response);
-		xhr.onerror = err;
+		_xhr.onload = () => res(returnXhr ? _xhr : _xhr.response);
+		_xhr.onerror = async (...args) => {
+			try {
+				console.warn("using cors proxy!", url);
+				res(await xhr("https://api.allorigins.win/raw?url=" + encodeURIComponent(url), options, returnXhr));
+			} catch (e) {
+				err([e, ...args]);
+			}
+		};
 	});
 }
 
-export async function testInternet() {
-	if (!navigator.onLine) return false;
-	try {
-		const res = await fetch("https://discordstatus.com/api/v2/status.json");
-		const { status } = await res.json();
-		!PRODUCTION && console.info("Discord API Status:", status);
-		const index = ["none", "minor", "major", "critical"].indexOf(status.indicator);
-		if (index === 3) {
-			alert("A Discord API outage occured, the app will now close.\nMore Info: " + JSON.stringify(status));
-			window.close();
-		}
-		return true;
-	} catch (e) {
+export async function testInternet(log = !PRODUCTION) {
+	if (!navigator.onLine) {
+		await delay(500); // we delay to avoid blocking the main thread
 		return false;
 	}
+
+	return new Promise((res) => {
+		const xhr = new XMLHttpRequest();
+		xhr.open("GET", "https://discordstatus.com/api/v2/status.json", true);
+		xhr.timeout = 5000;
+
+		const start = performance.now();
+
+		const rej = async () => {
+			const elapsed = performance.now() - start;
+			if (elapsed < 5000) await delay(5000 - elapsed);
+			res(false);
+		};
+
+		xhr.onload = () => {
+			try {
+				const { status } = JSON.parse(xhr.responseText);
+				log && console.info("Discord API Status:", status);
+
+				const index = ["none", "minor", "major", "critical"].indexOf(status.indicator);
+
+				if (index === 3) {
+					alert("A Discord API outage occured, the app will now close.\nMore Info: " + JSON.stringify(status));
+					window.close();
+				}
+
+				res(true);
+			} catch (e) {
+				rej();
+			}
+		};
+
+		xhr.onerror = rej;
+		xhr.ontimeout = rej;
+		xhr.send();
+	});
+}
+
+export function changeStatusbarColor(color) {
+	document.querySelector('head meta[name="theme-color"]')?.setAttribute("content", color);
+}
+
+/** https://github.com/aceakash/string-similarity/ */
+export function compareTwoStrings(first, second) {
+	first = first.replace(/\s+/g, "");
+	second = second.replace(/\s+/g, "");
+
+	if (first === second) return 1; // identical or empty
+	if (first.length < 2 || second.length < 2) return 0; // if either is a 0-letter or 1-letter string
+
+	let firstBigrams = new Map();
+	for (let i = 0; i < first.length - 1; i++) {
+		const bigram = first.substring(i, i + 2);
+		const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) + 1 : 1;
+
+		firstBigrams.set(bigram, count);
+	}
+
+	let intersectionSize = 0;
+	for (let i = 0; i < second.length - 1; i++) {
+		const bigram = second.substring(i, i + 2);
+		const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) : 0;
+
+		if (count > 0) {
+			firstBigrams.set(bigram, count - 1);
+			intersectionSize++;
+		}
+	}
+
+	return (2.0 * intersectionSize) / (first.length + second.length - 2);
+}
+
+export function stringifyDate(_date) {
+	const date = new Date(_date),
+		date_string = date.toDateString(),
+		date_time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+	const today = new Date();
+
+	if (today.toDateString() === date_string) {
+		return "Today at " + date_time;
+	}
+
+	today.setDate(today.getDate() - 1);
+	if (today.toDateString() === date_string) {
+		return "Yesterday at " + date_time;
+	}
+
+	return date.toLocaleDateString();
+}
+
+export const average = (arr) => arr.reduce((p, c) => p + c, 0) / arr.length;
+
+export function Promise_defer() {
+	const _ = {};
+
+	_.promise = new Promise((res, err) => {
+		// just in case the callback is not immediately called
+		_.resolve = res;
+		_.reject = err;
+	});
+
+	return _;
 }

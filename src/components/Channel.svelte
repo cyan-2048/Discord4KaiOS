@@ -1,8 +1,14 @@
 <script>
 	// js imports
-	import { serverAck, discord } from "../lib/shared";
-	import { createEventDispatcher, onMount } from "svelte";
-	import { isChannelMuted, shuffle } from "../lib/helper";
+	import { serverAck, discord } from "../lib/database";
+	import { onMount } from "svelte";
+	import { centerScroll, isChannelMuted, isGuildMuted, navigate, shuffle } from "../lib/helper";
+
+	import ChannelText from "../icons/ChannelText.svelte";
+	import ChannelTextLimited from "../icons/ChannelTextLimited.svelte";
+	import Announce from "../icons/Announce.svelte";
+	import { multipleEventHandler } from "../lib/EventEmitter";
+	import { snackbar } from "../modals";
 
 	export let avatar = null;
 	export let ch_type = "text";
@@ -12,8 +18,6 @@
 	export let dm = false;
 	export let name = null;
 
-	const dispatch = createEventDispatcher();
-
 	let mentions = 0;
 	let unread = false;
 	let muted = false;
@@ -22,33 +26,34 @@
 	let status;
 	let client;
 
+	let main;
+
 	onMount(() => {
 		let last_message_id = $$props.last_message_id;
 
-		const change = () => {
-			muted = isChannelMuted(discord, { id }, guildID);
-			if (guildID) {
-				if (muted) unread = false;
-				let el = discord.cache.read_state.find((e) => e.id == id);
-				if (el) {
-					if (!muted) unread = last_message_id ? el.last_message_id != last_message_id : false;
-					mentions = el.mention_count;
-				}
+		function change() {
+			muted = isChannelMuted(discord, id, guildID === "@me" ? null : guildID);
+			if (guildID !== "@me") {
+				unread = false;
+				mentions = 0;
+				if (!muted && last_message_id !== null)
+					for (const state of discord.cache.read_state) {
+						if (state.id === id) {
+							if (state.mention_count > 0) {
+								mentions += Number(state.mention_count);
+							}
+							if (!unread && !isGuildMuted(discord, id)) {
+								if (state.last_message_id !== last_message_id) {
+									unread = true;
+								}
+							}
+							break;
+						}
+					}
 			}
-		};
+		}
 
 		change();
-
-		let update = (d) => {
-			if (d.channel_id === id) {
-				last_message_id = d.last_message_id;
-				change();
-			}
-			let override = d.channel_overrides?.find((a) => a.channel_id == id);
-			if (override || muted) {
-				change();
-			}
-		};
 
 		function decideClient(clientsObj) {
 			let clone = { ...clientsObj };
@@ -61,12 +66,13 @@
 			} else return client;
 		}
 
-		let makeSubtext = (d) => {
+		function makeSubtext(d) {
 			let s = d.activities?.find((a) => a.type === 4);
 			if (s) subtext = s.state;
-		};
+		}
 
-		const onStatus = (d) => {
+		const onStatus = (event) => {
+			const { detail: d } = event || {};
 			if (recipients?.length !== 1) return;
 			if (d && d.user?.id !== recipients[0].id) return;
 			let p;
@@ -85,24 +91,35 @@
 			}
 		};
 
-		serverAck.on("update", update, "ch" + id);
 		if (dm) {
-			subtext = recipients.length > 1 ? recipients.length + " Members" : null;
+			subtext = recipients.length > 1 ? recipients.length + 1 + " Members" : null;
 			onStatus();
-			serverAck.on("status", onStatus, "ch" + id);
 		}
 
-		return () => {
-			serverAck.off("update", update, "ch" + id);
-			if (dm) serverAck.off("status", onStatus, "ch" + id);
-		};
+		return multipleEventHandler(serverAck, {
+			update: async function ({ detail: d }) {
+				if (d.channel_id === id) {
+					last_message_id = (await discord.getChannel(id)).last_message_id;
+					change();
+				} else if (d.channel_overrides?.find((a) => a.channel_id == id) || muted) {
+					change();
+				}
+			},
+			status: dm && onStatus,
+		});
 	});
 </script>
 
 <main
+	bind:this={main}
 	data-focusable
-	on:click={() => dispatch("select", { id })}
+	on:click={async () => {
+		const { last_message_id } = await discord.getChannel(id);
+		if (last_message_id) navigate(`/channels/${guildID}/` + id);
+		else snackbar("channel has no messages");
+	}}
 	tabindex="0"
+	id="channel{id}"
 	class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {(unread && !muted) || mentions > 0
 		? 'unread'
 		: ''}"
@@ -119,7 +136,7 @@
 		</div>
 	{:else}
 		<div class="bar" />
-		<img class="ch_type{mentions > 0 || unread ? ' bright' : ''}" src="/css/channels/{ch_type}.svg" alt />
+		<svelte:component this={{ text: ChannelText, limited: ChannelTextLimited, announce: Announce }[ch_type]} />
 	{/if}
 	{#if !isNaN(mentions) && mentions > 0}
 		<div class="mentions">
@@ -137,15 +154,67 @@
 	</div>
 </main>
 
-<style>
+<style lang="scss">
+	@use "../assets/shared" as *;
+
+	main {
+		width: calc(100vw - 20px);
+		margin-left: 10px;
+		border-radius: 5px;
+		position: relative;
+		margin-bottom: 2px;
+		height: 32px;
+
+		&:last-child {
+			margin-bottom: 6.5px;
+		}
+		&:first-child {
+			margin-top: 6.5px;
+		}
+
+		.text {
+			font-weight: 600;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		&:not(.dm) .text {
+			left: 32px;
+			font-size: 14px;
+			top: 0;
+			height: 100%;
+			vertical-align: middle;
+			width: calc(100vw - 4rem);
+			line-height: 32px;
+		}
+
+		> :global(*) {
+			color: #72767d;
+		}
+		&:focus > :global(*),
+		&.unread > :global(*) {
+			color: white !important;
+		}
+
+		&:focus {
+			@extend %focus;
+		}
+
+		&:focus .status {
+			background-color: #393c42;
+		}
+
+		:global(svg) {
+			width: 20px;
+			height: 100%;
+			object-fit: contain;
+			left: 6px;
+		}
+	}
+
 	.muted:not(:focus) .avatar {
 		opacity: 0.5;
-	}
-	main:last-child {
-		margin-bottom: 6.5px;
-	}
-	main:first-child {
-		margin-top: 6.5px;
 	}
 
 	.bar {
@@ -179,13 +248,11 @@
 	.text,
 	.avatar,
 	.status,
-	.ch_type,
+	main :global(svg),
 	.bar {
 		position: absolute;
 	}
-	.bright {
-		filter: brightness(2);
-	}
+
 	.status {
 		background-size: 11px;
 		background-repeat: no-repeat;
@@ -198,24 +265,18 @@
 		background-color: #2f3136;
 	}
 
-	.ch_type {
-		width: 20px;
-		height: 100%;
-		object-fit: contain;
-		left: 6px;
-	}
-
 	.avatar {
 		top: 5px;
 		left: 5px;
+
+		img {
+			width: 32px;
+			height: 32px;
+			border-radius: 100%;
+			object-fit: contain;
+		}
 	}
 
-	.avatar img {
-		width: 32px;
-		height: 32px;
-		border-radius: 100%;
-		object-fit: contain;
-	}
 	.mentions {
 		width: fit-content;
 		min-width: 16px;
@@ -223,11 +284,24 @@
 		right: 10px;
 		display: flex;
 		align-items: center;
+
+		> div {
+			display: block;
+			width: fit-content;
+			min-width: 16px;
+			height: 16px;
+			background-color: #ed4245;
+			border-radius: 8px;
+			font-size: 10px;
+			text-align: center;
+			color: white;
+		}
 	}
 
 	.flow {
 		padding: 0 3px;
 	}
+
 	.subtext {
 		bottom: 6px;
 		left: 50px;
@@ -236,77 +310,34 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		width: 160px;
-	}
-	.subtext + .text {
-		top: 3px !important;
-	}
-	.mentions > div {
-		display: block;
-		width: fit-content;
-		min-width: 16px;
-		height: 16px;
-		background-color: #ed4245;
-		border-radius: 8px;
-		font-size: 10px;
-		text-align: center;
-		color: white;
-	}
 
-	main {
-		width: calc(100vw - 20px);
-		margin-left: 10px;
-		border-radius: 5px;
-		position: relative;
-		margin-bottom: 2px;
-		height: 32px;
-	}
-
-	.text {
-		font-weight: 600;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	main:not(.dm) .text {
-		left: 32px;
-		font-size: 14px;
-		top: 0;
-		height: 100%;
-		vertical-align: middle;
-		width: calc(100vw - 6rem);
-		line-height: 32px;
+		+ .text {
+			top: 3px !important;
+		}
 	}
 
 	.dm {
 		height: 42px !important;
+
+		.text {
+			font-size: 15px;
+			top: 10.5px;
+			left: 50px;
+			width: calc(100vw - 80px);
+			line-height: 20px;
+			height: 20px;
+		}
 	}
-	.dm .text {
-		font-size: 15px;
-		top: 10.5px;
-		left: 50px;
-		width: calc(100vw - 80px);
-		line-height: 20px;
-		height: 20px;
-	}
-	main > * {
-		color: #72767d;
-	}
-	:focus > *,
-	.unread > * {
-		color: white !important;
-	}
+
 	.muted {
 		opacity: 0.7;
-	}
-	.muted > * {
-		color: #4f545c;
-	}
-	.muted:focus {
-		opacity: 1;
-	}
-	main:focus,
-	main:focus .status {
-		background-color: #393c42;
+
+		> :global(*) {
+			color: #4f545c;
+		}
+
+		&:focus {
+			opacity: 1;
+		}
 	}
 </style>

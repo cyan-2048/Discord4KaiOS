@@ -1,0 +1,22 @@
+@mixin linearGradient($transparency, $color, $important: "") {
+	background: linear-gradient(0deg, transparent $transparency, $color 100%) unquote($important);
+}
+
+%focus {
+	@include linearGradient(20%, hsl(220, 5.8%, 30%));
+	background-color: hsl(216, 4.5%, 21.8%);
+	box-shadow: inset 0 0 0 1px rgba(20, 20, 20);
+	border-radius: 5px;
+	color: white;
+}
+
+%layer1 {
+	@include linearGradient(30%, hsl(210, 7.7%, 5.1%), !important);
+	background-color: hsl(216, 5.7%, 17.1%) !important;
+}
+
+%MessageFocus {
+	@include linearGradient(20%, hsla(210, 2.6%, 30.2%, 0.8));
+	border-radius: 5px;
+	box-shadow: inset 0 0 0 1px rgba(28, 29, 30), inset 0 0 0 2px rgba(114, 114, 114, 0.8);
+}

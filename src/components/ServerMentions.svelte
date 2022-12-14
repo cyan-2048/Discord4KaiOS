@@ -7,7 +7,7 @@
 	<slot />
 </div>
 
-<style>
+<style lang="scss">
 	div {
 		display: block !important;
 		position: absolute;

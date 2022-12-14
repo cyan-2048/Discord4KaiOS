@@ -1,83 +1,41 @@
 <script>
 	import { onMount } from "svelte";
-	import { decimal2rgb, delay, hashCode } from "../lib/helper";
-	import { discordGateway } from "../lib/shared";
+	import { decimal2rgb, delay, hashCode, stringifyDate } from "../lib/helper";
+	import { serverProfiles } from "../lib/shared";
+	import Mentions from "./Mentions.svelte";
 
-	export let id = null;
-	export let name = null;
-	export let avatar = null;
-	export let channel;
-	export let profile;
-	export let userID;
-	export let guildID;
-	export let cachedMentions;
+	export let guildID, user, message;
 	export let roles = null;
-	export let bot;
-	export let discriminator;
 
-	let color;
-	let nick;
-	let main;
-
-	let image = avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.jpg?size=24` : null;
-
-	async function update(_profile = profile) {
-		if (channel.dm) return;
-		if (id && discriminator !== "0000" /*i think this is how we can differ webhooks*/) {
-			const args = ["getServerProfile", guildID, id];
-			if (hashCode(args.join("")) in cachedMentions.cache === false) await delay(600);
-			let s_profile = userID === id ? _profile : await cachedMentions(...args);
-			if (!s_profile || !s_profile.roles) return;
-			nick = s_profile.nick;
-			if (roles) {
-				let role = [...roles]
-					.sort((a, b) => b.position - a.position)
-					.find((o) => s_profile.roles.includes(o.id) && o.color > 0);
-				if (role) color = decimal2rgb(role.color, true);
-			}
-		}
-	}
-
-	onMount(() => {
-		update();
-		function member_handler(d) {
-			if (d.user.id === id) {
-				update(d);
-			}
-		}
-		function handleFocus() {
-			const nextEl = main.nextElementSibling;
-			if (nextEl && nextEl.matches("[data-focusable]")) {
-				main.style.backgroundColor = getComputedStyle(nextEl).backgroundColor;
-			}
-		}
-		if (main.nextElementSibling) {
-			const nextEl = main.nextElementSibling;
-			nextEl.addEventListener("blur", handleFocus);
-			nextEl.addEventListener("focus", handleFocus);
-		}
-		discordGateway.on("t:guild_member_update", member_handler);
-		handleFocus();
-		main.addEventListener("change_color", handleFocus);
-		return () => {
-			if (main.nextElementSibling) {
-				const nextEl = main.nextElementSibling;
-				nextEl.removeEventListener("blur", handleFocus);
-				nextEl.removeEventListener("focus", handleFocus);
-			}
-			discordGateway.off("t:guild_member_update", member_handler);
-		};
-	});
+	const image = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.jpg?size=24` : null;
 </script>
 
-<main bind:this={main} data-separator>
-	<img src={image || "/css/default.png"} alt /><b style={color ? `color: rgb(${color});` : null}>{nick || name}</b
-	>{#if bot}
-		<div class="bot">{discriminator === "0000" ? "WEBHOOK" : "BOT"}</div>
-	{/if}
+<main data-separator>
+	<img src={image || "/css/default.png"} alt />
+	<div class="name">
+		<div class="user">
+			<b
+				><Mentions
+					{guildID}
+					mentions={false}
+					type="user"
+					username={user.username}
+					id={user.id}
+					{roles}
+					prefix={false}
+				/></b
+			>
+		</div>
+		{#if user.bot}
+			<div class="bot">{user.discriminator === "0000" ? "WEBHOOK" : "BOT"}</div>
+		{/if}
+		<div class="date">{stringifyDate(message.timestamp)}</div>
+	</div>
 </main>
 
-<style>
+<style lang="scss">
+	@use "../assets/shared" as *;
+
 	.bot {
 		font-size: 8px;
 		display: inline-block;
@@ -87,25 +45,51 @@
 		line-height: 1;
 		margin: 0 2px;
 		align-self: center;
-		background-color: rgb(88, 101, 242);
+		@include linearGradient(10%, hsl(225, 32.7%, 42%));
+		background-color: hsl(226, 47.5%, 27.6%);
+		box-shadow: 0 0 0 1px rgba(230, 230, 230, 0.6), inset 0 0 0 1px rgba(0, 0, 0, 0.6);
 	}
 	main {
 		display: flex;
 		height: 17px;
-		margin-top: 6px;
+		margin-left: -32px;
 	}
 	img {
 		width: 24px;
 		height: 24px;
-		margin-left: 4px;
-		margin-top: 4px;
+		margin-left: 2px;
+		margin-top: 2px;
+
+		border-radius: 3px;
+		border: 1px solid rgba(0, 0, 0, 0.4);
+		box-shadow: 0 0 0 1px rgba(230, 230, 230, 0.6), 0 0 3px 3px rgba(0, 0, 0, 0.4);
 	}
-	b {
+	.name {
+		width: 100%;
 		white-space: nowrap;
-		text-overflow: ellipsis;
-		overflow: hidden;
-		display: block;
-		margin-left: 3.5px;
+
+		margin-left: 5.5px;
 		font-size: 13.2px;
+		line-height: 1.2;
+
+		display: flex;
+
+		&,
+		.user {
+			overflow: hidden;
+		}
+
+		.date {
+			color: rgb(190, 190, 190);
+			font-size: 10px;
+			font-weight: 600;
+			padding: 3px 4px;
+			line-height: 1;
+		}
+
+		.user {
+			min-width: 0;
+			text-overflow: ellipsis;
+		}
 	}
 </style>

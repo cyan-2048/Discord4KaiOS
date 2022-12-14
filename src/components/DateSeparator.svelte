@@ -2,7 +2,7 @@
 	<span><slot /></span>
 </div>
 
-<style>
+<style lang="scss">
 	.strike {
 		display: block;
 		text-align: center;

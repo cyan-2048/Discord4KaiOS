@@ -816,6 +816,7 @@ export default (function () {
 			direction: direction,
 			sectionId: currentSectionId,
 			cause: "keydown",
+			repeat: evt.repeat,
 		};
 
 		if (fireEvent(currentFocusedElement, "willmove", willmoveProperties)) {
@@ -1017,6 +1018,8 @@ export default (function () {
 			}
 			return false;
 		},
+
+		_sections,
 
 		pause: function () {
 			_pause = true;

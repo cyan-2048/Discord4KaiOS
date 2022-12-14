@@ -1,35 +1,71 @@
 <script>
 	import { createEventDispatcher } from "svelte";
-	export let onclick = Promise.resolve(true);
+	import { settings } from "../lib/shared";
+	export let onClick = () => Promise.resolve(true);
 	let dispatch = createEventDispatcher();
-	let state = 0;
-	let changeOfState = async () => {
+	let state = 0,
+		button;
+	let changeOfState = async (...args) => {
 		if (state === 1) return;
 		state = 1;
+
+		let result;
 		try {
-			let wait = await onclick();
-			!!wait ? dispatch("success") : dispatch("error");
+			result = await onClick.call(button, ...args);
+			dispatch("success", result);
 		} catch (error) {
-			console.error(error);
-			dispatch("error", { error });
-		} finally {
-			state = 0;
+			$settings.debug && console.error(error);
+			dispatch("error", error);
 		}
+		state = 0;
+		if (result === "delete") state = null;
 	};
 </script>
 
-<button on:click={changeOfState}>
-	{#if !state}
-		<slot />
-	{:else}
-		<div class="dot-flashing" />
-	{/if}
-</button>
+{#if state !== null}
+	<button
+		bind:this={button}
+		class="Button"
+		{...$$props}
+		tabindex="0"
+		data-focusable
+		on:focus
+		on:keydown
+		on:click={changeOfState}
+	>
+		{#if !state}
+			<slot />
+		{:else}
+			<div class="dot-wrap">
+				<div class="dot-flashing" />
+			</div>
+		{/if}
+	</button>
+{/if}
 
-<style>
+<style lang="scss">
+	@use "../assets/shared" as *;
+
+	button {
+		@include linearGradient(10%, hsl(225, 32.7%, 42%));
+		background-color: hsl(226, 47.5%, 27.6%);
+		color: white;
+		border-radius: 5px;
+		border: 1px solid rgba(230, 230, 230, 0.6);
+		box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
+		min-width: fit-content;
+		padding: 2px 5px;
+		font-weight: 600;
+
+		&:focus {
+			@include linearGradient(10%, hsl(225, 27.6%, 49.8%));
+			background-color: hsl(226, 37%, 35.5%);
+		}
+	}
+	/*
 	button {
 		font-weight: 500;
-		background-color: rgb(88, 101, 242);
+		background-color: #5865f2;
 		margin-bottom: 8px;
 		height: 40px;
 		width: 100%;
@@ -41,17 +77,23 @@
 		background-image: none;
 		line-height: 1;
 		font-size: 16px;
-	}
 
-	button:focus {
-		background-color: rgb(60, 69, 165) !important;
-	}
+		&:focus {
+			background-color: #3c45a5 !important;
+		}
+	}*/
 
 	/**
  * ==============================================
  * Dot Flashing
  * ==============================================
  */
+
+	.dot-wrap {
+		width: 100%;
+		min-width: 30px;
+	}
+
 	.dot-flashing {
 		position: relative;
 		width: 10px;
@@ -63,36 +105,36 @@
 		animation-delay: 0.5s;
 		display: inline-block;
 		transform: scale(0.7);
-	}
 
-	.dot-flashing::before,
-	.dot-flashing::after {
-		content: "";
-		display: inline-block;
-		position: absolute;
-		top: 0;
-	}
+		&::before {
+			content: "";
+			display: inline-block;
+			position: absolute;
+			top: 0;
+			left: -15px;
+			width: 10px;
+			height: 10px;
+			border-radius: 5px;
+			background-color: #9880ff;
+			color: #9880ff;
+			animation: dotFlashing 1s infinite alternate;
+			animation-delay: 0s;
+		}
 
-	.dot-flashing::before {
-		left: -15px;
-		width: 10px;
-		height: 10px;
-		border-radius: 5px;
-		background-color: #9880ff;
-		color: #9880ff;
-		animation: dotFlashing 1s infinite alternate;
-		animation-delay: 0s;
-	}
-
-	.dot-flashing::after {
-		left: 15px;
-		width: 10px;
-		height: 10px;
-		border-radius: 5px;
-		background-color: #9880ff;
-		color: #9880ff;
-		animation: dotFlashing 1s infinite alternate;
-		animation-delay: 1s;
+		&::after {
+			content: "";
+			display: inline-block;
+			position: absolute;
+			top: 0;
+			left: 15px;
+			width: 10px;
+			height: 10px;
+			border-radius: 5px;
+			background-color: #9880ff;
+			color: #9880ff;
+			animation: dotFlashing 1s infinite alternate;
+			animation-delay: 1s;
+		}
 	}
 
 	@keyframes dotFlashing {

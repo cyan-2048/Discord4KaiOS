@@ -3,7 +3,7 @@ class DiscordGateway {
 		this.token = null;
 		this.ws = null;
 		this.persist = null;
-		this._debug = options && options.debug === true ? true : false;
+		this._debug = !!(options && options.debug);
 	}
 	// i don't understand why this has to be a get function...
 	// i'm just gonna follow it anyways
@@ -116,6 +116,8 @@ class DiscordGateway {
 
 let gateway;
 
+console.info("worker init:", Date.now());
+
 self.onmessage = (e) => {
 	let { event, token, object } = e.data;
 	if (event == "init") {
@@ -132,5 +134,7 @@ self.onmessage = (e) => {
 		gateway.init();
 	} else if (event === "send") {
 		gateway.send(object);
+	} else if (event === "debug") {
+		gateway._debug = !!object.debug;
 	}
 };
