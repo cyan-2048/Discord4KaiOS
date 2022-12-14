@@ -6,7 +6,7 @@ const kaios3 = process.env.kaios === "3";
 import * as fs from "fs/promises";
 import path from "path";
 const rootDir = path.resolve("./") + "/";
-//
+// test
 async function copyDirectory(src, dest) {
   const [entries] = await Promise.all([fs.readdir(src, { withFileTypes: true }), fs.mkdir(dest, { recursive: true })]);
 
