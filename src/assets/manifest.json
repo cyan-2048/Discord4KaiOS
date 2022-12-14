@@ -1,5 +1,5 @@
 {
-  "version": "2.0.11",
+  "version": "2.0.12",
   "name": "Sveltecord",
   "description": "Discord Client for KaiOS written in svelte.",
   "launch_path": "/index.html",

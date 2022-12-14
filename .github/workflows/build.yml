@@ -36,7 +36,7 @@ jobs:
         run: |
           cd dist/
           zip -r application.zip *
-          echo {\"version\": 1, \"manifestURL\": \"app://discord4kaios.bananahackers.net/manifest.webapp\"} > metadata.json
+          echo {\"version\": 1, \"manifestURL\": \"https://github.com/cyan-2048/Discord4KaiOS/releases/latest/download/manifest.webapp\"} > metadata.json
           zip omnisd.zip metadata.json application.zip
           echo "console.log('app_version='+JSON.parse(require('fs').readFileSync('./manifest.webapp', 'utf-8')).version)" | node >> $GITHUB_ENV
       - name: Release
