@@ -13,12 +13,6 @@ the end goal here is to have a usable discord client for KaiOS, I have no plans 
 3. `npm run build`
 4. In WebIDE, load the `/dist` folder as a packaged app.
 
-### Note:
-
-- Pre-built app packages will only be available through select users of the discord server.
-- The app will be fully published to the KaiStore once fully ready.
-- Please avoid sharing the app packages, I do not want my app to be seen as a "half assed discord app", if you choose to build the app from source please do me a favor and use it only for personal use. Once the app is considered ready, it would be fine to share.
-
 ### Credit
 
 (stuff mentioned here are libraries where the code was modified)
