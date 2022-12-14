@@ -37,7 +37,14 @@ jobs:
           cd dist/
           zip -r application.zip *
           echo {\"version\": 1, \"manifestURL\": \"app://discord4kaios.bananahackers.net/manifest.webapp\"} > metadata.json
-          zip discord4kaios-omnisd.zip metadata.json application.zip
+          zip omnisd.zip metadata.json application.zip
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/omnisd.zip
+            dist/application.zip
+            dist/manifest.webapp
       - name: discord webhook
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
