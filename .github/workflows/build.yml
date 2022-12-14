@@ -50,5 +50,6 @@ jobs:
       - name: discord webhook
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          APP_VERSION: ${{ env.app_version }}
         run: |
-          curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "{\"content\": \"New Discord4KaiOS release\"}" $DISCORD_WEBHOOK_URL
+          curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST --data "{\"content\":\"\",\"username\":\"Update\",\"embeds\":[{\"title\":\"New version: **$APP_VERSION**\",\"description\":\"[Source Code](https://github.com/cyan-2048/Discord4KaiOS/archive/refs/tags/$APP_VERSION.zip)\\n\\n**Download**:\\n[OmniSD](https://github.com/cyan-2048/Discord4KaiOS/releases/download/$APP_VERSION/omnisd.zip)\\n[WebIDE](https://github.com/cyan-2048/Discord4KaiOS/releases/download/$APP_VERSION/application.zip)\\n[manifest.webapp](https://github.com/cyan-2048/Discord4KaiOS/releases/download/$APP_VERSION/manifest.webapp)\",\"author\":{\"name\":\"Discord4KaiOS\",\"url\":\"https://github.com/cyan-2048/Discord4KaiOS/\",\"icon_url\":\"https://raw.githubusercontent.com/cyan-2048/Discord4KaiOS/main/public/css/56px.png\"}}]}" $DISCORD_WEBHOOK_URL
