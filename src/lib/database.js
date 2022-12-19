@@ -12,6 +12,9 @@ export const discord = new DiscordXHR({ cache: true });
 
 const discordWorker = new Worker("/worker.js");
 
+export const localStorage = window.localStorage;
+delete window.localStorage;
+
 class _gateway extends EventEmitter {
 	constructor() {
 		super();

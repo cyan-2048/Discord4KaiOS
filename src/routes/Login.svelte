@@ -1,7 +1,7 @@
 <script>
 	import { sn } from "../lib/shared";
 	import { onMount, tick } from "svelte";
-	import { discord } from "../lib/database.js";
+	import { discord, localStorage } from "../lib/database.js";
 	import { centerScroll } from "../lib/helper.js";
 	import { navigate } from "svelte-routing";
 	import Button from "../components/Button.svelte";

@@ -3,7 +3,7 @@
 	import { onMount } from "svelte";
 
 	import { settings, pushOptions } from "./lib/shared";
-	import { init } from "./lib/database";
+	import { init, localStorage } from "./lib/database";
 
 	import { Router, Route, navigate } from "svelte-routing";
 	import Channels from "./routes/Channels.svelte";
@@ -49,7 +49,10 @@
 
 	onMount(async () => {
 		await settings.init;
-		if ($settings.devmode) window.navigate = navigate;
+		if ($settings.devmode) {
+			window.navigate = navigate;
+			window.localStorage = localStorage;
+		}
 		window.changeSettings = (e) => ($settings = { ...$settings, ...e });
 		loaded = await init();
 	});
