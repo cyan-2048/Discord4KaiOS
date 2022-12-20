@@ -238,7 +238,9 @@
 	</div>
 	{#if guildID !== "@me"}
 		<div class="header" class:selected={selected !== 1}>
-			{guildName}
+			<div>
+				{guildName}
+			</div>
 		</div>
 	{/if}
 	<div data-channels class:isGuild={guildID !== "@me"} class:selected={selected === 1}>
@@ -313,12 +315,15 @@
 		font-size: 15px;
 		font-weight: 600;
 
+	div {
+		width: 100%;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+	}
+
 		display: flex;
 		align-items: center;
-
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		overflow: hidden;
 
 		position: absolute;
 		width: 100vw;

@@ -256,6 +256,7 @@
 									break;
 								case "edit":
 									editing = message;
+									textbox.replaceText(message.content);
 									focusTextbox();
 									break;
 								case "reply":
@@ -530,7 +531,7 @@
 			/>
 			<div class="softkeys">
 				<span>
-					{#if textboxFocused && textbox_text}
+					{#if textboxFocused && (textbox_text || $files.length > 0)}
 						<!-- prettier-ignore -->
 						<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-send" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
 							<path stroke="none" d="M0 0h24v24H0z" fill="none"></path>

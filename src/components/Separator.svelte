@@ -2,6 +2,9 @@
 
 <style lang="scss">
 	div {
+		white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
 		line-height: 30px;
 		height: 30px;
 		padding: 0 10px 0 17px;

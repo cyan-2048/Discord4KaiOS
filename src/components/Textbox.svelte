@@ -54,6 +54,11 @@
 		scrollToBottom(textarea);
 	}
 
+	export function replaceText(text) {
+		textarea.value = text;
+		updateHeight();
+	}
+
 	function sed(sedString) {
 		try {
 			if (!sedString) return null;
@@ -162,7 +167,7 @@
 				})();
 
 			if (key === "SoftLeft") {
-				if (!val) return;
+				if (!val && !$files.length) return;
 
 				stop();
 
