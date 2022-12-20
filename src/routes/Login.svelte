@@ -31,7 +31,8 @@
 	function done(token) {
 		_done = true;
 		localStorage.token = token;
-		navigate("/", { replace: true });
+		if (PRODUCTION) navigate("/index.html", { replace: true });
+		window.location.reload();
 	}
 
 	onMount(() => {
