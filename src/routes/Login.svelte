@@ -2,7 +2,7 @@
 	import { sn } from "../lib/shared";
 	import { onMount, tick } from "svelte";
 	import { discord, localStorage } from "../lib/database.js";
-	import { centerScroll } from "../lib/helper.js";
+	import { centerScroll, reload } from "../lib/helper.js";
 	import { navigate } from "svelte-routing";
 	import Button from "../components/Button.svelte";
 
@@ -31,8 +31,7 @@
 	function done(token) {
 		_done = true;
 		localStorage.token = token;
-		if (PRODUCTION) navigate("/index.html", { replace: true });
-		window.location.reload();
+		reload();
 	}
 
 	onMount(() => {

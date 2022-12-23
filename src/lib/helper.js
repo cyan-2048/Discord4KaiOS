@@ -13,6 +13,12 @@ export async function back() {
 	await tick();
 }
 
+export async function reload() {
+	if (PRODUCTION) {
+		window.location.replace("/index.html");
+	} else window.location.reload();
+}
+
 export function hashCode(string, seed = 0) {
 	const str = String(string);
 	let h1 = 0xdeadbeef ^ seed,
