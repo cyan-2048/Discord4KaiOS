@@ -47,7 +47,6 @@ jobs:
             dist/omnisd.zip
             dist/application.zip
             dist/manifest.webapp
-            dist/security.json
       - name: discord webhook
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

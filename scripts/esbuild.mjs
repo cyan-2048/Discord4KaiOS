@@ -85,29 +85,12 @@ const options = {
   external: ["*.png", "*.ttf", "*.svg"],
 };
 
-import crypto from "crypto";
-
-async function getFile(path) {
-	const file = await fs.readFile(path);
-	return digest(file.buffer);
-}
-
-async function digest(buffer) {
-	const hashBuffer = await crypto.webcrypto.subtle.digest("SHA-256", buffer); // hash the message
-	const hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
-	const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join(""); // convert bytes to hex string
-	return hashHex;
-}
-
 try {
 	await esbuild.build(options);
 	const regexp = /for((\s?)*)\(((\s?)*)const/g;
 	const text = await fs.readFile(outfile, "utf8");
 	// on KaiOS aka Firefox48, for(const is broken
 	await fs.writeFile(outfile, text.replace(regexp, "for(let "));
-
-	const [main_page, bundle] = await Promise.all([getFile("./dist/index.html"), getFile("./dist/build/bundle.js")]);
-	await fs.writeFile("./dist/security.json", JSON.stringify({ main_page, bundle }));
 } catch (err) {
 	console.error(err);
 	process.exit(1);

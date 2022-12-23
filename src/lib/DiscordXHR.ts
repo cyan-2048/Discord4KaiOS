@@ -71,7 +71,8 @@ function _query(obj = {}) {
 		.join("&");
 }
 
-// make storing tokens more secure
+// make storing tokens somehow more secure
+// erm useless because localStorage.token duh
 const tokens = new WeakMap();
 
 export default class DiscordXHR {

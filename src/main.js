@@ -5,10 +5,8 @@ import manifest from "./assets/manifest.json";
 import App from "./App.svelte";
 import scrollBy from "./lib/scrollBy";
 import { navigate } from "svelte-routing";
-import { self, settings } from "./lib/shared";
+import { self } from "./lib/shared";
 import * as helper from "./lib/helper";
-import { checkSecurity } from "./lib/security";
-import { localStorage } from "./lib/database";
 
 //polyfill
 scrollBy();
@@ -17,17 +15,6 @@ navigate("/", { replace: true });
 document.documentElement.lang = navigator.language;
 
 async function init() {
-	if (PRODUCTION && typeof SECURITY_CHECK == "object") {
-		await settings.init;
-		try {
-			await checkSecurity(SECURITY_CHECK);
-		} catch (e) {
-			console.error(e);
-
-			alert("security check failed! for your safety, the token is not revoked.");
-		}
-	}
-
 	new App({
 		target: document.body,
 	});
