@@ -233,13 +233,15 @@
 							const message = $messages.find((a) => a.id == actEl.id.slice("3"));
 
 							const itsMeHi = message.author.id == discord.user.id;
+							const isDM = guildID === "@me";
+							const manage = channelPermissions?.manage_messages;
 
 							const result = await $pushOptions([
 								itsMeHi  && !readOnly && { id: "edit", name: "Edit Message" },
-								{ name: "Pin Message" },
+								(isDM || manage ) && { name: "Pin Message" },
 								!readOnly && { id: "reply", name: "Reply" },
 								{ id: "speaknow", name: "Speak Message" },
-								itsMeHi && { id: "delete", name: "Delete Message" },
+								(itsMeHi || manage) && { id: "delete", name: "Delete Message" },
 							]);
 
 							function focusTextbox() {
