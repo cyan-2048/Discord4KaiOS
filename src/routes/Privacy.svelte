@@ -31,7 +31,7 @@
 		Discord4KaiOS does not collect data whatsoever... This app uses Discord's API, and it is probably collecting data
 		and that's not my problem.
 	</div>
-	<div tabindex="0" class="content">
+	<div class="content">
 		However, a few privacy things are not implemented in this app because of the limitations of KaiOS.
 	</div>
 	<div tabindex="0" class="content">

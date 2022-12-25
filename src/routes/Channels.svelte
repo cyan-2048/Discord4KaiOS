@@ -1,6 +1,6 @@
 <script>
 	import { onDestroy, onMount, tick } from "svelte";
-	import { channelUpdates, discord, discordGateway } from "../lib/database";
+	import { channelUpdates, discord, discordGateway, isServerOwner } from "../lib/database";
 
 	import Separator from "../components/Separator.svelte";
 	import Channel from "../components/Channel.svelte";
@@ -71,7 +71,7 @@
 				$serverProfiles.get(guildID + "/" + discord.user.id) ||
 				(await discord.getServerProfile(guildID, discord.user.id));
 			const raw = await discord.getChannels(guildID);
-			channels = siftChannels(raw, roles, serverProfile).map((a) => {
+			channels = siftChannels(raw, roles, serverProfile, await isServerOwner(guildID)).map((a) => {
 				let type = isNaN(a.type) ? a.type : "channel";
 				let ch_type =
 					a.type === 5

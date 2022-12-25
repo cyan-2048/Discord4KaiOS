@@ -47,7 +47,7 @@ function writableLF(name, defaultValue, checkUpdate = false, instance = null) {
 export const settings = writableLF(
 	"settings",
 	{
-		custom_rpc: true,
+		custom_rpc: false,
 		prompt_delete: false,
 		smooth_scroll: true,
 		preserve_deleted: false,

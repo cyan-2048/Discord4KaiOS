@@ -63,7 +63,7 @@ export function groupBy(arr, property) {
 /** make getting roles more readble, i am not a robot
  * @param profileRoles {Array} this is the roles the user has, must include server's @everyone id and user's id
  * */
-export function parseRoleAccess(channelOverwrites = [], profileRoles = [], serverRoles = []) {
+export function parseRoleAccess(channelOverwrites = [], profileRoles = [], serverRoles = [], isOwner = false) {
 	let obj = {};
 
 	let everyone_id = null;
@@ -84,7 +84,7 @@ export function parseRoleAccess(channelOverwrites = [], profileRoles = [], serve
 				});
 			});
 
-	if (obj.admin === true) {
+	if (obj.admin === true || isOwner) {
 		Object.values(bitwise2text).forEach((a) => (obj[a] = true));
 		// console.error("person is admin, gib all perms true", obj);
 		return obj;
@@ -94,16 +94,19 @@ export function parseRoleAccess(channelOverwrites = [], profileRoles = [], serve
 	Object.keys(grouped)
 		.sort((a, b) => a - b)
 		.forEach((a) => {
-			grouped[a]
-				.sort((x, y) => (x.id == everyone_id ? -1 : y.id == everyone_id ? 1 : 0))
-				.forEach((o) => {
-					if (profileRoles.includes(o.id)) {
-						Object.entries(bitwise2text).forEach(([num, perm]) => {
-							if ((o.deny & num) == num) obj[perm] = false;
-							if ((o.allow & num) == num) obj[perm] = true;
-						});
-					}
-				});
+			const overwrites = grouped[a];
+
+			const everyone = overwrites.find((o) => o.id == everyone_id);
+			everyone && overwrites.unshift(overwrites.splice(everyone, 1)[0]);
+
+			overwrites.forEach((o) => {
+				if (profileRoles.includes(o.id)) {
+					Object.entries(bitwise2text).forEach(([num, perm]) => {
+						if ((o.deny & num) == num) obj[perm] = false;
+						if ((o.allow & num) == num) obj[perm] = true;
+					});
+				}
+			});
 		});
 	return obj;
 }
@@ -123,7 +126,7 @@ export function wouldMessagePing(message, roles, userID) {
 
 export function wouldMessagePingDM(message) {}
 
-export function siftChannels(rawChannels, serverRoles, serverProfile, skipSeparators = false) {
+export function siftChannels(rawChannels, serverRoles, serverProfile, isOwner, skipSeparators = false) {
 	let position = (a, b) => a.position - b.position;
 	let sorted = [...rawChannels].sort(position);
 	let channels = { 0: [] };
@@ -138,7 +141,7 @@ export function siftChannels(rawChannels, serverRoles, serverProfile, skipSepara
 
 	sorted.forEach((channel) => {
 		if (channel.type == 0 || channel.type == 5) {
-			const perms = parseRoleAccess(channel.permission_overwrites, profileRoles, serverRoles);
+			const perms = parseRoleAccess(channel.permission_overwrites, profileRoles, serverRoles, isOwner);
 
 			if (perms.read !== false) (channels[channel.parent_id] || channels[0]).push(channel);
 		}
@@ -166,9 +169,7 @@ import scrollIntoView from "scroll-into-view";
 
 export async function centerScroll(el, sync) {
 	return new Promise((res) => {
-		scrollIntoView(el, { time: sync ? 0 : 200, align: { left: 0 }, ease: (e) => e }, (type) =>
-			res(type === "complete")
-		);
+		scrollIntoView(el, { time: sync ? 0 : 200, align: { left: 0 }, ease: (e) => e }, (type) => res(type === "complete"));
 	});
 }
 
@@ -193,13 +194,7 @@ export function decimal2rgb(ns, arr) {
 	return arr ? [r, g, b] : { r, g, b };
 }
 
-export const toHTML = (text) =>
-	text
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;")
-		.replace(/'/g, "&#039;");
+export const toHTML = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 
 export function shuffle(array) {
 	let currentIndex = array.length,
@@ -236,18 +231,8 @@ export function inViewport(element, partial) {
 	let height = element.offsetHeight;
 	let width = element.offsetWidth;
 	return partial
-		? !!(
-				bounding.top >= -height &&
-				bounding.left >= -width &&
-				bounding.right <= window.innerWidth + width &&
-				bounding.bottom <= window.innerHeight + height
-		  )
-		: !!(
-				bounding.top >= 0 &&
-				bounding.left >= 0 &&
-				bounding.right <= window.innerWidth &&
-				bounding.bottom <= window.innerHeight
-		  );
+		? !!(bounding.top >= -height && bounding.left >= -width && bounding.right <= window.innerWidth + width && bounding.bottom <= window.innerHeight + height)
+		: !!(bounding.top >= 0 && bounding.left >= 0 && bounding.right <= window.innerWidth && bounding.bottom <= window.innerHeight);
 }
 
 export function getTopBottom(el) {

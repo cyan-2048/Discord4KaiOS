@@ -1,6 +1,6 @@
 <script>
 	// js imports
-	import { discord, serverAck } from "../lib/database";
+	import { discord, isServerOwner, serverAck } from "../lib/database";
 
 	import { createEventDispatcher, onDestroy, onMount } from "svelte";
 	import { isChannelMuted, isGuildMuted, navigate, siftChannels } from "../lib/helper.js";
@@ -27,7 +27,7 @@
 			const serverProfile =
 				$serverProfiles.get(id + "/" + discord.user.id) || (await discord.getServerProfile(id, discord.user.id));
 
-			const sifted = siftChannels(raw, roles, serverProfile, true);
+			const sifted = siftChannels(raw, roles, serverProfile, await isServerOwner(id), true);
 			channel_ids = sifted.map((channel) => channel.id);
 
 			mentions = 0;

@@ -3,7 +3,7 @@
 	import Mentions from "./Mentions.svelte";
 
 	export let type = null,
-		content,
+		content = null,
 		target = null,
 		id = null,
 		name = null,

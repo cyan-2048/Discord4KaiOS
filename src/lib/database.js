@@ -1,7 +1,7 @@
 import { navigate } from "svelte-routing";
 import { get, writable } from "svelte/store";
 import DiscordXHR from "./DiscordXHR";
-import { testInternet, delay, wouldMessagePing, reload } from "./helper";
+import { testInternet, delay, wouldMessagePing, reload, Promise_defer } from "./helper";
 import { serverProfiles, settings, userProfiles, queryProfiles } from "./shared";
 
 import EventEmitter from "./EventEmitter.js";
@@ -44,6 +44,13 @@ export const discordGateway = new _gateway();
 export async function ack(channelID) {
 	const { last_message_id } = await discord.getChannel(channelID);
 	if (last_message_id !== null) discord.xhrRequestJSON("post", `channels/${channelID}/messages/${last_message_id}/ack`, {}, { token: "null" });
+}
+
+const readyEventHappened = Promise_defer();
+
+export async function isServerOwner(serverID) {
+	await readyEventHappened.promise;
+	return (await discord.getServer(serverID)).owner_id == discord.user.id;
 }
 
 //
@@ -140,6 +147,9 @@ discordGateway.once("t:ready", async function ready_ev() {
 			sendCustomPresence();
 		}
 	});
+
+	await delay(10);
+	readyEventHappened.resolve();
 });
 
 //
