@@ -232,10 +232,10 @@
 						} else {
 							const message = $messages.find((a) => a.id == actEl.id.slice("3"));
 
-							const itsMeHi = message.author.id == discord.user.id && !readOnly;
+							const itsMeHi = message.author.id == discord.user.id;
 
 							const result = await $pushOptions([
-								itsMeHi && { id: "edit", name: "Edit Message" },
+								itsMeHi  && !readOnly && { id: "edit", name: "Edit Message" },
 								{ name: "Pin Message" },
 								!readOnly && { id: "reply", name: "Reply" },
 								{ id: "speaknow", name: "Speak Message" },
