@@ -40,12 +40,7 @@
 					dm: true,
 					recipients,
 					last_message_id,
-					avatar:
-						!icon && !avatar
-							? "/css/default.png"
-							: `https://cdn.discordapp.com/${icon ? "channel-icons" : "avatars"}/${icon ? id : user_id}/${
-									icon || avatar
-							  }.jpg`,
+					avatar: !icon && !avatar ? "/css/default.png" : `https://cdn.discordapp.com/${icon ? "channel-icons" : "avatars"}/${icon ? id : user_id}/${icon || avatar}.jpg`,
 				};
 			});
 			sift.sort((a, b) => Number(b.last_message_id) - Number(a.last_message_id));
@@ -67,9 +62,7 @@
 			const guild = await discord.getServer(guildID);
 			guildName = guild.name;
 			const roles = await discord.getRoles(guildID);
-			const serverProfile =
-				$serverProfiles.get(guildID + "/" + discord.user.id) ||
-				(await discord.getServerProfile(guildID, discord.user.id));
+			const serverProfile = $serverProfiles.get(guildID + "/" + discord.user.id) || (await discord.getServerProfile(guildID, discord.user.id));
 			const raw = await discord.getChannels(guildID);
 			channels = siftChannels(raw, roles, serverProfile, await isServerOwner(guildID)).map((a) => {
 				let type = isNaN(a.type) ? a.type : "channel";
@@ -105,9 +98,7 @@
 				let folder = serverFolders.find((e) => e.id && e.guild_ids?.includes(a.id));
 				if (folder) {
 					const found = temp.find((a) => a.type === "folder" && a.id === folder.id);
-					found
-						? found.servers.push(a)
-						: temp.push({ type: "folder", id: folder.id, servers: [a], color: folder.color, name: folder.name });
+					found ? found.servers.push(a) : temp.push({ type: "folder", id: folder.id, servers: [a], color: folder.color, name: folder.name });
 				} else temp.push(a);
 			});
 
@@ -236,14 +227,15 @@
 			{/each}
 		</div>
 	</div>
-	{#if guildID !== "@me"}
-		<div class="header" class:selected={selected !== 1}>
-			<div>
-				{guildName}
-			</div>
-		</div>
-	{/if}
+
 	<div data-channels class:isGuild={guildID !== "@me"} class:selected={selected === 1}>
+		{#if guildID !== "@me"}
+			<div class="header" class:selected={selected !== 1}>
+				<div>
+					{guildName}
+				</div>
+			</div>
+		{/if}
 		{#if guildID === "@me"}
 			<Separator>DIRECT MESSAGES</Separator>
 		{/if}
@@ -277,11 +269,11 @@
 		}
 
 		> :last-child {
-			&.isGuild {
-				padding-top: 30px;
-			}
+			// &.isGuild {
+			// 	padding-top: 30px;
+			// }
 
-			width: 100%;
+			width: 100vw;
 			@include linearGradient(40%, hsl(240, 3.7%, 10.6%), !important);
 			background-color: hsl(225, 8%, 19.6%) !important;
 		}
@@ -315,33 +307,34 @@
 		font-size: 15px;
 		font-weight: 600;
 
-	div {
-		width: 100%;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
-	}
+		div {
+			width: 100%;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
 
 		display: flex;
 		align-items: center;
+		margin-bottom: 3px;
 
-		position: absolute;
+		position: sticky;
 		width: 100vw;
 		top: 0;
-		left: 0;
+		// left: 0;
 		z-index: 100;
 
 		color: #ffffff;
 
 		@include linearGradient(14%, rgba(58, 58, 58));
 		background-color: rgba(0, 0, 0);
-		border: 1px solid rgba(92, 92, 92);
+		border-bottom: 1px solid rgba(92, 92, 92);
 		box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 5px 5px rgba(0, 0, 0, 0.4) !important;
 
 		line-height: 1.6;
 
 		&.selected {
-			left: 72px;
+			// left: 72px;
 			width: calc(100vw - 72px);
 		}
 
