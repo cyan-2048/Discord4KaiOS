@@ -1,9 +1,10 @@
 <script>
-	import { discord } from "../lib/database";
+	import { discord, isServerOwner } from "../lib/database";
 
-	import { back, delay, last, scrollToBottom } from "../lib/helper";
-	import { sn } from "../lib/shared";
+	import { back, compareTwoStrings, delay, last, scrollToBottom, siftChannels } from "../lib/helper";
+	import { serverProfiles, settings, sn } from "../lib/shared";
 	import { messages } from "../routes/stores";
+	import TextboxQuery from "./TextboxQuery.svelte";
 
 	export let focused = false,
 		value = "",
@@ -12,13 +13,17 @@
 		replying,
 		showHeader,
 		channelID,
-		picker;
+		guildID,
+		picker,
+		channel,
+		roles;
 
 	const files = picker.files;
 
-	let textarea, after;
+	let textarea, after, textboxEl, textboxHeight;
 
-	let query = null;
+	let query = null,
+		queryTitle = 0;
 
 	export async function focus() {
 		await delay(50);
@@ -52,6 +57,7 @@
 		value = after.innerText = textarea.value;
 		textarea.style.height = after.offsetHeight + "px";
 		scrollToBottom(textarea);
+		textboxHeight = textboxEl.offsetHeight + 27 + "px";
 	}
 
 	export function replaceText(text) {
@@ -93,11 +99,16 @@
 	}
 
 	let isTyping = false;
+
+	let textboxQuery;
 </script>
 
-<div class="textbox">
+{#if query}
+	<TextboxQuery bind:this={textboxQuery} {query} title={queryTitle} bottom={textboxHeight} />
+{/if}
+<div bind:this={textboxEl} class="textbox">
 	<textarea
-		on:input={function () {
+		on:input={async function () {
 			if (!isTyping) {
 				isTyping = true;
 				discord.xhrRequestJSON("POST", `channels/${channelID}/typing`);
@@ -129,9 +140,56 @@
 				return null;
 			}
 
-			query = queryFind("#") || queryFind("@") || queryEmoji();
+			const _query = (guildID != "@me" && queryFind("#")) || queryFind("@") || queryEmoji();
+			const _title = _query ? ["@", "#", ":"].indexOf(_query[0]) : null;
 
-			query && console.error("query:", query);
+			function compareToQuery(string) {
+				if (!string) return false;
+				return compareTwoStrings(String(string).toLowerCase(), _query.slice(1).toLowerCase()) > 0.3;
+			}
+
+			if (_query) {
+				const _found = [];
+				if (_title === 0) {
+					if (guildID == "@me") {
+						for (let i = 0; i < channel.recipients.length; i++) {
+							const val = channel.recipients[i];
+							if (_found.length >= 5) break;
+							if (compareToQuery(val.username)) _found.push(val);
+						}
+
+						if (_found.length < 5 && compareToQuery(discord.user.username)) _found.push(discord.user);
+					} else {
+						for (const [key, val] of $serverProfiles) {
+							if (!key.startsWith(guildID)) continue;
+							if (_found.length >= 5) break;
+							if (compareToQuery(val.nick) || compareToQuery(val.user.username)) {
+								_found.push(val);
+							}
+						}
+					}
+				}
+				if (_title === 1) {
+					const raw = await discord.getChannels(guildID);
+					const serverProfile = $serverProfiles.get(guildID + "/" + discord.user.id) || (await discord.getServerProfile(guildID, discord.user.id));
+					const sifted = siftChannels(raw, roles, serverProfile, await isServerOwner(guildID), true);
+
+					for (let i = 0; i < sifted.length; i++) {
+						const val = sifted[i];
+						if (_found.length >= 5) break;
+						if (compareToQuery(val.name)) _found.push(val);
+					}
+				}
+				if (_title === 2) {
+				}
+				if (_found.length) query = _found;
+				else query = null;
+			}
+
+			if (query) {
+				$settings.devmode && console.error("query:", query);
+				queryTitle = _title;
+			}
 		}}
 		bind:this={textarea}
 		on:focus={() => {
@@ -149,22 +207,43 @@
 				e.stopPropagation();
 			}
 
-			if (key === "ArrowUp" && textarea.selectionStart === 0) {
-				showHeader = false;
-				(async () => {
-					await delay(50);
-					const el = chatbox.lastElementChild;
-					scrollToBottom(chatbox);
-					el?.focus();
-				})();
+			if (key === "ArrowUp") {
+				if (textarea.selectionStart === 0) {
+					showHeader = false;
+					(async () => {
+						await delay(50);
+						const el = chatbox.lastElementChild;
+						scrollToBottom(chatbox);
+						el?.focus();
+					})();
+				} else if (query) {
+					e.preventDefault();
+					stop();
+					textboxQuery.move(-1);
+					return;
+				}
 			}
 
-			if (!val && key === "ArrowLeft")
-				return (async () => {
-					await back();
-					await delay(50);
-					sn.focus("channels");
-				})();
+			if (key === "ArrowDown" && query) {
+				e.preventDefault();
+				stop();
+				textboxQuery.move(1);
+				return;
+			}
+
+			if (key === "Enter" && query) {
+				e.preventDefault();
+				stop();
+				console.error(textboxQuery.select());
+				return;
+			}
+
+			if (!val && key === "ArrowLeft") {
+				await back();
+				await delay(50);
+				sn.focus("channels");
+				return;
+			}
 
 			if (key === "SoftLeft") {
 				if (!val && !$files.length) return;

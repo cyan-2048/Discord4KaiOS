@@ -2,7 +2,7 @@
 	import { onMount } from "svelte";
 	import Button from "../components/Button.svelte";
 	import Switch from "../components/Switch.svelte";
-	import { back, delay, hashCode, navigate } from "../lib/helper";
+	import { back, centerScroll, delay, hashCode, navigate } from "../lib/helper";
 	import { sn } from "../lib/shared";
 	import { snackbar } from "../modals";
 
@@ -33,6 +33,7 @@
 </script>
 
 <main
+	on:focus|capture={(e) => centerScroll(e.target)}
 	on:keydown={async function ({ key, target }) {
 		if (key === "Backspace") {
 			await delay(50);
@@ -90,6 +91,7 @@
 		left: 0;
 		padding: 4px 4px;
 		@extend %layer1;
+		overflow: auto;
 
 		.toggles {
 			margin: 2px;

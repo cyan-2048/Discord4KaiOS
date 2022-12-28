@@ -4,19 +4,7 @@
 	import JoinMessage from "../components/JoinMessage.svelte";
 	import Textbox from "../components/Textbox.svelte";
 	import { ack, discord, discordGateway } from "../lib/database";
-	import {
-		back,
-		delay,
-		parseRoleAccess,
-		scrollToBottom,
-		wouldMessagePing,
-		getScrollBottom,
-		centerScroll,
-		last,
-		inViewport,
-		changeStatusbarColor,
-		navigate,
-	} from "../lib/helper";
+	import { back, delay, parseRoleAccess, scrollToBottom, wouldMessagePing, getScrollBottom, centerScroll, last, inViewport, changeStatusbarColor, navigate } from "../lib/helper";
 	import { serverProfiles, longpress, sn, settings, queryProfiles, pushOptions } from "../lib/shared";
 	if ($settings.devmode) Object.assign(window, { discord, discordGateway });
 	import { messages, _guildID, _channelID, _channel, typingState, picker } from "./stores";
@@ -101,18 +89,11 @@
 
 		roles = isDM ? null : await discord.getRoles(guildID);
 		$_channel = channel = await discord.getChannel(channelID);
-		const serverProfile =
-			!isDM &&
-			($serverProfiles.get(guildID + "/" + discord.user.id) ||
-				(await discord.getServerProfile(guildID, discord.user.id)));
+		const serverProfile = !isDM && ($serverProfiles.get(guildID + "/" + discord.user.id) || (await discord.getServerProfile(guildID, discord.user.id)));
 
 		channelPermissions = isDM
 			? {}
-			: parseRoleAccess(
-					channel.permission_overwrites,
-					serverProfile.roles?.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]),
-					roles
-			  );
+			: parseRoleAccess(channel.permission_overwrites, serverProfile.roles?.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]), roles);
 
 		await tick();
 		if (!readOnly) delay(50).then(() => textbox?.focus());
@@ -140,9 +121,7 @@
 		if (readOnly) last(chatbox.children)?.focus();
 
 		if (!isDM) {
-			const user_ids = [...new Set($messages.map((a) => a?.author?.id))].filter(
-				(a) => a && !$serverProfiles.has(guildID + "/" + a)
-			);
+			const user_ids = [...new Set($messages.map((a) => a?.author?.id))].filter((a) => a && !$serverProfiles.has(guildID + "/" + a));
 			if (user_ids.length !== 0) user_ids.forEach((id) => queryProfiles.add(id));
 		}
 
@@ -237,8 +216,8 @@
 							const manage = channelPermissions?.manage_messages;
 
 							const result = await $pushOptions([
-								itsMeHi  && !readOnly && { id: "edit", name: "Edit Message" },
-								(isDM || manage ) && { name: "Pin Message" },
+								itsMeHi && !readOnly && { id: "edit", name: "Edit Message" },
+								(isDM || manage) && { name: "Pin Message" },
 								!readOnly && { id: "reply", name: "Reply" },
 								{ id: "speaknow", name: "Speak Message" },
 								(itsMeHi || manage) && { id: "delete", name: "Delete Message" },
@@ -503,17 +482,7 @@
 				{#if editing}
 					Editing Message
 				{:else}
-					Replying to <b
-						><Mentions
-							{guildID}
-							mentions={false}
-							type="user"
-							username={replying.author.username}
-							id={replying.author.id}
-							{roles}
-							prefix={false}
-						/></b
-					>
+					Replying to <b><Mentions {guildID} mentions={false} type="user" username={replying.author.username} id={replying.author.id} {roles} prefix={false} /></b>
 				{/if}
 			</div>
 		{/if}
@@ -521,6 +490,9 @@
 			<div class="readonly">You do not have permission to send messages in this channel.</div>
 		{:else}
 			<Textbox
+				{roles}
+				{channel}
+				{guildID}
 				{channelID}
 				bind:value={textbox_text}
 				bind:editing
@@ -688,8 +660,12 @@
 		background-color: rgba(29, 29, 29);
 
 		> span {
-			height: 15px;
-			line-height: 13px;
+			height: 100%;
+			width: 100%;
+			line-height: 25px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		&.not_fixed {
