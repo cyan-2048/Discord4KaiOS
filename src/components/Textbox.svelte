@@ -23,7 +23,8 @@
 	let textarea, after, textboxEl, textboxHeight;
 
 	let query = null,
-		queryTitle = 0;
+		queryTitle = 0,
+		queryText = "";
 
 	export async function focus() {
 		await delay(50);
@@ -104,7 +105,7 @@
 </script>
 
 {#if query}
-	<TextboxQuery bind:this={textboxQuery} {query} title={queryTitle} bottom={textboxHeight} />
+	<TextboxQuery {queryText} {roles} {guildID} bind:this={textboxQuery} {query} title={queryTitle} bottom={textboxHeight} />
 {/if}
 <div bind:this={textboxEl} class="textbox">
 	<textarea
@@ -140,15 +141,15 @@
 				return null;
 			}
 
-			const _query = (guildID != "@me" && queryFind("#")) || queryFind("@") || queryEmoji();
-			const _title = _query ? ["@", "#", ":"].indexOf(_query[0]) : null;
+			queryText = (guildID != "@me" && queryFind("#")) || queryFind("@") || queryEmoji();
+			const _title = queryText ? ["@", "#", ":"].indexOf(queryText[0]) : null;
 
 			function compareToQuery(string) {
 				if (!string) return false;
-				return compareTwoStrings(String(string).toLowerCase(), _query.slice(1).toLowerCase()) > 0.3;
+				return compareTwoStrings(String(string).toLowerCase(), queryText.slice(1).toLowerCase()) > 0.3;
 			}
 
-			if (_query) {
+			if (queryText) {
 				const _found = [];
 				if (_title === 0) {
 					if (guildID == "@me") {
@@ -184,7 +185,7 @@
 				}
 				if (_found.length) query = _found;
 				else query = null;
-			}
+			} else query = null;
 
 			if (query) {
 				$settings.devmode && console.error("query:", query);
@@ -232,9 +233,28 @@
 			}
 
 			if (key === "Enter" && query) {
+				const selected = query[textboxQuery.select()];
+				if (!selected) return;
+
 				e.preventDefault();
 				stop();
-				console.error(textboxQuery.select());
+
+				const len = queryText.length;
+				let replaceWith = "";
+
+				if (queryTitle === 0) {
+					const id = selected.id || selected.user.id;
+					if (id) replaceWith = `<@${id}> `;
+					else {
+					}
+				}
+				if (queryTitle === 1) {
+					replaceWith = `<#${selected.id}> `;
+				}
+
+				insertMention(replaceWith, getCaret() - len, len);
+				query = null;
+
 				return;
 			}
 
