@@ -58,7 +58,7 @@
 		value = after.innerText = textarea.value;
 		textarea.style.height = after.offsetHeight + "px";
 		scrollToBottom(textarea);
-		textboxHeight = textboxEl.offsetHeight + 27 + "px";
+		textboxHeight = textboxEl.offsetHeight + 23 + "px";
 	}
 
 	export function replaceText(text) {

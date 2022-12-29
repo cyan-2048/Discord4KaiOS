@@ -79,9 +79,7 @@
 			if (d) {
 				status = d.status;
 			} else {
-				let found = discord.cache.guilds.find((a) =>
-					a.presences.find((e) => (e.user.id === recipients[0].id ? (p = e) : false))
-				);
+				let found = discord.cache.guilds.find((a) => a.presences.find((e) => (e.user.id === recipients[0].id ? (p = e) : false)));
 				if (found) status = p.status;
 			}
 			if (!status) status = "offline";
@@ -120,9 +118,7 @@
 	}}
 	tabindex="0"
 	id="channel{id}"
-	class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {(unread && !muted) || mentions > 0
-		? 'unread'
-		: ''}"
+	class="{avatar ? 'dm' : ''} {muted && mentions == 0 ? 'muted' : ''} {(unread && !muted) || mentions > 0 ? 'unread' : ''}"
 >
 	{#if avatar}
 		<div class="avatar">
@@ -281,20 +277,26 @@
 		width: fit-content;
 		min-width: 16px;
 		height: 100%;
-		right: 10px;
+		right: 8px;
 		display: flex;
 		align-items: center;
 
 		> div {
 			display: block;
 			width: fit-content;
-			min-width: 16px;
-			height: 16px;
-			background-color: #ed4245;
-			border-radius: 8px;
-			font-size: 10px;
+			min-width: 19px;
+			height: 19px;
+			border-radius: 10px;
+			font-size: 12px;
 			text-align: center;
 			color: white;
+			font-weight: 600;
+			padding: 0 4px;
+
+			background: linear-gradient(0deg, transparent 22%, rgba(217, 79, 77) 100%) !important;
+			border: 1px solid rgba(230, 230, 230, 0.6);
+			box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.5);
+			background-color: rgba(158, 58, 56) !important;
 		}
 	}
 

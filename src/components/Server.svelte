@@ -24,8 +24,7 @@
 		} else {
 			const raw = await discord.getChannels(id);
 
-			const serverProfile =
-				$serverProfiles.get(id + "/" + discord.user.id) || (await discord.getServerProfile(id, discord.user.id));
+			const serverProfile = $serverProfiles.get(id + "/" + discord.user.id) || (await discord.getServerProfile(id, discord.user.id));
 
 			const sifted = siftChannels(raw, roles, serverProfile, await isServerOwner(id), true);
 			channel_ids = sifted.map((channel) => channel.id);
@@ -92,7 +91,7 @@
 		<div class="image" data-name={shorten(name)} />
 	{/if}
 	{#if mentions > 0 && focusable}
-		<ServerMentions color={main?.parentNode.matches("[data-folder]") && "#2f3136"}>{mentions}</ServerMentions>
+		<ServerMentions>{mentions}</ServerMentions>
 	{/if}
 </main>
 

@@ -7,9 +7,10 @@
 	import MessageContent from "./MessageContent.svelte";
 
 	// js imports
-	import { onDestroy, tick } from "svelte";
+	import { onDestroy, onMount, tick } from "svelte";
 	import { centerScroll, decideHeight, niceBytes } from "../lib/helper.js";
 	import { discord, discordGateway } from "../lib/database";
+	import markdown from "../lib/discord-markdown";
 
 	import EmojiDict from "../lib/EmojiDict.js";
 
@@ -59,6 +60,10 @@
 	}
 	*/
 
+	onMount(() => {
+		$settings.devmode && (main._message = message);
+	});
+
 	function testEmojiFont(element) {
 		if (message.content === "") return;
 		function testString(string) {
@@ -80,10 +85,20 @@
 		testString(clone.innerText) && element.classList.add("emoji-big");
 	}
 
+	function hideContent() {
+		if (message.content === "") return true;
+		const parsed = markdown(message.content);
+		if (parsed.length === 1 && parsed[0].type === "link" && message.embeds.length == 1) {
+			return true;
+		}
+		return false;
+	}
+
 	async function updateElement(serverProfiles, message, contentEl, roles) {
 		await tick();
 		if (!contentEl) return;
 
+		/*
 		if (contentEl.childNodes.length === 1) {
 			if (contentEl.firstElementChild?.tagName === "A" && main.querySelectorAll(".v-image").length === 1) {
 				contentEl.style.display = "none";
@@ -91,6 +106,7 @@
 		} else {
 			contentEl.style.removeProperty("style");
 		}
+		*/
 
 		testEmojiFont(contentEl);
 	}
@@ -193,26 +209,13 @@
 		<div class="reply">
 			<div class="r-icon" />
 			<div class="r-text">
-				<b
-					><Mentions
-						{guildID}
-						mentions={false}
-						type="user"
-						username={user.username}
-						id={user.id}
-						{roles}
-						prefix={false}
-					/>
-				</b>
+				<b><Mentions {guildID} mentions={false} type="user" username={user.username} id={user.id} {roles} prefix={false} /> </b>
 				<span
 					>{" "}
 					{#if message.referenced_message}
 						<MessageContent {roles} {guildID} content={ref.content} />
 					{:else}
-						<MessageContent
-							options={{ embed: true }}
-							content="used [/{ref.name}](https://www.youtube.com/watch?v=dQw4w9WgXcQ)"
-						/>
+						<MessageContent options={{ embed: true }} content="used [/{ref.name}](https://www.youtube.com/watch?v=dQw4w9WgXcQ)" />
 					{/if}
 				</span>
 			</div>
@@ -225,16 +228,11 @@
 			if (target.classList.contains("spoiler") && target.tagName === "SPAN") target.classList.toggle("active");
 		}}
 		class="content"
-		style:display={message.content === "" ? "none" : null}
+		style:display={hideContent() ? "none" : null}
 		class:edited={!!message.edited_timestamp}
 		bind:this={contentEl}
 	>
-		{#if [0, 19, 20].includes(message.type)}<MessageContent
-				{guildID}
-				{roles}
-				content={message.content}
-				options={{ embed: !!message.author.bot }}
-			/>{:else}
+		{#if [0, 19, 20].includes(message.type)}<MessageContent {guildID} {roles} content={message.content} options={{ embed: !!message.author.bot }} />{:else}
 			UNKNOWN MESSAGE TYPE TYPE:{message.type}
 			CONTENT:{message.content}
 		{/if}
@@ -257,17 +255,8 @@
 			{:else}
 				<div class="default_attachment">
 					<div class="icon">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							fill="currentColor"
-							class="bi bi-file-earmark"
-							viewBox="0 0 16 16"
-						>
-							<path
-								d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"
-							/>
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-file-earmark" viewBox="0 0 16 16">
+							<path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z" />
 						</svg>
 					</div>
 					<div class="text">

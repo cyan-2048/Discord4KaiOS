@@ -70,7 +70,7 @@
 	main {
 		/*! margin: 10px; */
 		background: linear-gradient(to bottom, #404244, #212325);
-		border-radius: 8px;
+		border-radius: 5px 5px 0px 0px;
 		overflow: hidden;
 		position: fixed;
 		max-height: 222px;

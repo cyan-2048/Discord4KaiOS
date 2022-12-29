@@ -3,7 +3,7 @@
 	import Message from "../components/Message.svelte";
 	import JoinMessage from "../components/JoinMessage.svelte";
 	import Textbox from "../components/Textbox.svelte";
-	import { ack, discord, discordGateway } from "../lib/database";
+	import { ack, discord, discordGateway, isServerOwner } from "../lib/database";
 	import { back, delay, parseRoleAccess, scrollToBottom, wouldMessagePing, getScrollBottom, centerScroll, last, inViewport, changeStatusbarColor, navigate } from "../lib/helper";
 	import { serverProfiles, longpress, sn, settings, queryProfiles, pushOptions } from "../lib/shared";
 	if ($settings.devmode) Object.assign(window, { discord, discordGateway });
@@ -93,7 +93,12 @@
 
 		channelPermissions = isDM
 			? {}
-			: parseRoleAccess(channel.permission_overwrites, serverProfile.roles?.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]), roles);
+			: parseRoleAccess(
+					channel.permission_overwrites,
+					serverProfile.roles?.concat([roles.find((p) => p.position == 0).id, serverProfile.user.id]),
+					roles,
+					await isServerOwner(guildID)
+			  );
 
 		await tick();
 		if (!readOnly) delay(50).then(() => textbox?.focus());
@@ -186,6 +191,7 @@
 						let actEl = document.activeElement;
 						if (textboxFocused) {
 							if (replying || editing) {
+								if (editing) textbox.replaceText("");
 								replying = editing = null;
 							} else {
 								const result = await $pushOptions([
@@ -217,7 +223,8 @@
 
 							const result = await $pushOptions([
 								itsMeHi && !readOnly && { id: "edit", name: "Edit Message" },
-								(isDM || manage) && { name: "Pin Message" },
+								(isDM || manage) && !message.pinned && { id: "pin", name: "Pin Message" },
+								(isDM || manage) && message.pinned && { id: "unpin", name: "Unpin Message" },
 								!readOnly && { id: "reply", name: "Reply" },
 								{ id: "speaknow", name: "Speak Message" },
 								(itsMeHi || manage) && { id: "delete", name: "Delete Message" },
@@ -250,7 +257,12 @@
 										discord.deleteMessage(channelID, message.id);
 									}
 									break;
-
+								case "pin":
+									discord.pinMessage(channelID, message.id);
+									break;
+								case "unpin":
+									discord.unpinMessage(channelID, message.id);
+									break;
 								default:
 									if (result) snackbar("NOT IMPLEMENTED!!!");
 									break;

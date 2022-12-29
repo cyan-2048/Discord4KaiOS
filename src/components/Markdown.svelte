@@ -1,4 +1,5 @@
 <script>
+	import { onMount } from "svelte";
 	import MarkdownContent from "./MarkdownContent.svelte";
 	import Mentions from "./Mentions.svelte";
 
@@ -9,6 +10,15 @@
 		name = null,
 		animated = null,
 		ref = null;
+
+	let el,
+		inView = false;
+
+	onMount(() => {
+		if (el && animated) {
+			return observeElement(el).subscribe((val) => (inView = val));
+		}
+	});
 </script>
 
 {#if type === "codeBlock"}
@@ -20,10 +30,7 @@
 {:else if type === "link"}
 	<a href={target}><MarkdownContent {content} {ref} /></a>
 {:else if type === ":emoji:"}
-	<div
-		class="emoji"
-		style="--emoji_url: url('https://cdn.discordapp.com/emojis/{id}.{animated ? 'gif' : 'png'}?size=32');"
-	>
+	<div bind:this={el} class="emoji" style="--emoji_url: url('https://cdn.discordapp.com/emojis/{id}.{animated && inView ? 'gif' : 'png'}?size=32');">
 		<span>{name}</span>
 	</div>
 {:else if ["em", "strong", "u", "del", "code"].includes(type)}

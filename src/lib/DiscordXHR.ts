@@ -189,12 +189,7 @@ export default class DiscordXHR {
 	/**
 	 * @returns returns an xhr if you have attachments
 	 */
-	sendMessage(
-		channel: string,
-		message = "",
-		opts: any = {},
-		attachments: null | File[] = null
-	): Promise<any> | XMLHttpRequest | void {
+	sendMessage(channel: string, message = "", opts: any = {}, attachments: null | File[] = null): Promise<any> | XMLHttpRequest | void {
 		if (!message && !attachments && !tokens.get(this)) return;
 
 		const obj: any = { content: message.trim(), nonce: this.generateNonce(), ...opts };
@@ -225,12 +220,7 @@ export default class DiscordXHR {
 	}
 
 	editMessage(channel_id: string, message_id: string, message: string, opts: any = {}) {
-		return this.xhrRequestJSON(
-			"PATCH",
-			`channels/${channel_id}/messages/${message_id}`,
-			{},
-			Object.assign({ content: message.trim() }, opts)
-		);
+		return this.xhrRequestJSON("PATCH", `channels/${channel_id}/messages/${message_id}`, {}, Object.assign({ content: message.trim() }, opts));
 	}
 
 	_emojiURI(emoji: APIEmoji | string) {
@@ -242,10 +232,7 @@ export default class DiscordXHR {
 	}
 
 	reaction(method: string, channelID: string, messageID: string, emoji: APIEmoji | string, user = "@me") {
-		return this.xhrRequestJSON(
-			method,
-			`channels/${channelID}/messages/${messageID}/reactions/${this._emojiURI(emoji)}/${user}`
-		);
+		return this.xhrRequestJSON(method, `channels/${channelID}/messages/${messageID}/reactions/${this._emojiURI(emoji)}/${user}`);
 	}
 
 	addReaction() {
@@ -360,5 +347,13 @@ export default class DiscordXHR {
 		let url = `users/${userId}`;
 		if (userId != "@me") url += "/profile";
 		return this.xhrRequestJSON("GET", url);
+	}
+
+	pinMessage(channelId: string, messageId: string, put = true) {
+		return this.xhrRequestJSON(put ? "PUT" : "DELETE", `channels/${channelId}/pins/${messageId}`);
+	}
+
+	unpinMessage(channelId: string, messageId: string) {
+		return this.pinMessage(channelId, messageId, false);
 	}
 }

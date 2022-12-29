@@ -57,6 +57,16 @@
 						typing: true,
 					},
 				});
+				discordGateway.send({
+					op: 8,
+					d: {
+						guild_id: [guildID],
+						query: "",
+						limit: 100,
+						presences: false,
+						user_ids: undefined,
+					},
+				});
 				channels = [];
 			}
 			const guild = await discord.getServer(guildID);
