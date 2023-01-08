@@ -152,7 +152,7 @@
 				if (me) original.me = true;
 				original.count += 1;
 			}
-			console.log("original count:", original.count);
+			$settings.devmode && console.log("original count:", original.count);
 			if (original.count > 0)
 				message.reactions = message.reactions.map((item, i) => {
 					if (i === reactionIndex) return original;
@@ -184,9 +184,14 @@
 			"t:message_reaction_remove": (d) => updateReactions(d.detail, true),
 		})
 	);
+
+	let focused = false;
 </script>
 
 <main
+	on:focus={() => (focused = true)}
+	on:blur={() => document.activeElement !== main && (focused = false)}
+	class:focused
 	class:deleted
 	class:editing
 	class:replying

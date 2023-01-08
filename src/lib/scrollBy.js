@@ -17,6 +17,7 @@ export default function polyfill() {
 		scroll: w.scroll || w.scrollTo,
 		scrollBy: w.scrollBy,
 		elementScroll: Element.prototype.scroll || scrollElement,
+		scrollIntoView: Element.prototype.scrollIntoView,
 	};
 
 	// define timing method
@@ -51,13 +52,7 @@ export default function polyfill() {
 	 * @returns {Boolean}
 	 */
 	function shouldBailOut(firstArg) {
-		if (
-			firstArg === null ||
-			typeof firstArg !== "object" ||
-			firstArg.behavior === undefined ||
-			firstArg.behavior === "auto" ||
-			firstArg.behavior === "instant"
-		) {
+		if (firstArg === null || typeof firstArg !== "object" || firstArg.behavior === undefined || firstArg.behavior === "auto" || firstArg.behavior === "instant") {
 			// first argument is not an object/null
 			// or behavior is auto, instant or undefined
 			return true;
@@ -69,9 +64,7 @@ export default function polyfill() {
 		}
 
 		// throw error when behavior is not supported
-		throw new TypeError(
-			"behavior member of ScrollOptions " + firstArg.behavior + " is not a valid value for enumeration ScrollBehavior."
-		);
+		throw new TypeError("behavior member of ScrollOptions " + firstArg.behavior + " is not a valid value for enumeration ScrollBehavior.");
 	}
 
 	/**
@@ -156,17 +149,9 @@ export default function polyfill() {
 		if (shouldBailOut(arguments[0]) === true) {
 			original.scroll.call(
 				w,
-				arguments[0].left !== undefined
-					? arguments[0].left
-					: typeof arguments[0] !== "object"
-					? arguments[0]
-					: w.scrollX || w.pageXOffset,
+				arguments[0].left !== undefined ? arguments[0].left : typeof arguments[0] !== "object" ? arguments[0] : w.scrollX || w.pageXOffset,
 				// use top prop, second argument if present or fallback to scrollY
-				arguments[0].top !== undefined
-					? arguments[0].top
-					: arguments[1] !== undefined
-					? arguments[1]
-					: w.scrollY || w.pageYOffset
+				arguments[0].top !== undefined ? arguments[0].top : arguments[1] !== undefined ? arguments[1] : w.scrollY || w.pageYOffset
 			);
 
 			return;
@@ -200,12 +185,7 @@ export default function polyfill() {
 		}
 
 		// LET THE SMOOTHNESS BEGIN!
-		smoothScroll.call(
-			w,
-			d.body,
-			~~arguments[0].left + (w.scrollX || w.pageXOffset),
-			~~arguments[0].top + (w.scrollY || w.pageYOffset)
-		);
+		smoothScroll.call(w, d.body, ~~arguments[0].left + (w.scrollX || w.pageXOffset), ~~arguments[0].top + (w.scrollY || w.pageYOffset));
 	};
 
 	// Element.prototype.scroll and Element.prototype.scrollTo
@@ -225,17 +205,9 @@ export default function polyfill() {
 			original.elementScroll.call(
 				this,
 				// use left prop, first number argument or fallback to scrollLeft
-				arguments[0].left !== undefined
-					? ~~arguments[0].left
-					: typeof arguments[0] !== "object"
-					? ~~arguments[0]
-					: this.scrollLeft,
+				arguments[0].left !== undefined ? ~~arguments[0].left : typeof arguments[0] !== "object" ? ~~arguments[0] : this.scrollLeft,
 				// use top prop, second argument or fallback to scrollTop
-				arguments[0].top !== undefined
-					? ~~arguments[0].top
-					: arguments[1] !== undefined
-					? ~~arguments[1]
-					: this.scrollTop
+				arguments[0].top !== undefined ? ~~arguments[0].top : arguments[1] !== undefined ? ~~arguments[1] : this.scrollTop
 			);
 
 			return;
@@ -245,12 +217,7 @@ export default function polyfill() {
 		var top = arguments[0].top;
 
 		// LET THE SMOOTHNESS BEGIN!
-		smoothScroll.call(
-			this,
-			this,
-			typeof left === "undefined" ? this.scrollLeft : ~~left,
-			typeof top === "undefined" ? this.scrollTop : ~~top
-		);
+		smoothScroll.call(this, this, typeof left === "undefined" ? this.scrollLeft : ~~left, typeof top === "undefined" ? this.scrollTop : ~~top);
 	};
 
 	// Element.prototype.scrollBy
@@ -276,5 +243,98 @@ export default function polyfill() {
 			top: ~~arguments[0].top + this.scrollTop,
 			behavior: arguments[0].behavior,
 		});
+	};
+
+	/**
+	 * indicates if an element has a scrollable overflow property in the axis
+	 * @method canOverflow
+	 * @param {Node} el
+	 * @param {String} axis
+	 * @returns {Boolean}
+	 */
+	function canOverflow(el, axis) {
+		var overflowValue = w.getComputedStyle(el, null)["overflow" + axis];
+
+		return overflowValue === "auto" || overflowValue === "scroll";
+	}
+
+	/**
+	 * indicates if an element has scrollable space in the provided axis
+	 * @method hasScrollableSpace
+	 * @param {Node} el
+	 * @param {String} axis
+	 * @returns {Boolean}
+	 */
+	function hasScrollableSpace(el, axis) {
+		if (axis === "Y") {
+			return el.clientHeight + 0 < el.scrollHeight;
+		}
+
+		if (axis === "X") {
+			return el.clientWidth + 0 < el.scrollWidth;
+		}
+	}
+
+	/**
+	 * indicates if an element can be scrolled in either axis
+	 * @method isScrollable
+	 * @param {Node} el
+	 * @param {String} axis
+	 * @returns {Boolean}
+	 */
+	function isScrollable(el) {
+		var isScrollableY = hasScrollableSpace(el, "Y") && canOverflow(el, "Y");
+		var isScrollableX = hasScrollableSpace(el, "X") && canOverflow(el, "X");
+
+		return isScrollableY || isScrollableX;
+	}
+
+	/**
+	 * finds scrollable parent of an element
+	 * @method findScrollableParent
+	 * @param {Node} el
+	 * @returns {Node} el
+	 */
+	function findScrollableParent(el) {
+		while (el !== d.body && isScrollable(el) === false) {
+			el = el.parentNode || el.host;
+		}
+
+		return el;
+	}
+
+	Element.prototype.scrollIntoView = function () {
+		// avoid smooth behavior if not required
+		if (shouldBailOut(arguments[0]) === true) {
+			original.scrollIntoView.call(this, arguments[0] === undefined ? true : arguments[0]);
+
+			return;
+		}
+
+		// LET THE SMOOTHNESS BEGIN!
+		var scrollableParent = findScrollableParent(this);
+		var parentRects = scrollableParent.getBoundingClientRect();
+		var clientRects = this.getBoundingClientRect();
+
+		if (scrollableParent !== d.body) {
+			// reveal element inside parent
+			smoothScroll.call(this, scrollableParent, scrollableParent.scrollLeft + clientRects.left - parentRects.left, scrollableParent.scrollTop + clientRects.top - parentRects.top);
+
+			// reveal parent in viewport unless is fixed
+			if (w.getComputedStyle(scrollableParent).position !== "fixed") {
+				w.scrollBy({
+					left: parentRects.left,
+					top: parentRects.top,
+					behavior: "smooth",
+				});
+			}
+		} else {
+			// reveal element in viewport
+			w.scrollBy({
+				left: clientRects.left,
+				top: clientRects.top,
+				behavior: "smooth",
+			});
+		}
 	};
 }

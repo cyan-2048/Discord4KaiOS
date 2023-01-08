@@ -168,7 +168,7 @@
 		eventHandler(channelUpdates, "update", function (event) {
 			var { detail: d } = event || {};
 			if (guildID === d.guild_id) {
-				console.log(d);
+				// console.log(d);
 				loadChannels(guildID, true);
 			}
 		})

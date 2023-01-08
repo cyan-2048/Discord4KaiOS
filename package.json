@@ -28,6 +28,7 @@
 		"@ungap/event-target": "^0.2.3",
 		"emojibase": "*",
 		"emojibase-data": "^7.0.1",
+		"js-levenshtein": "^1.1.6",
 		"jsqr": "^1.4.0",
 		"localforage": "^1.10.0",
 		"lottie-web": "^5.9.6",

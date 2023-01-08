@@ -313,21 +313,26 @@
 								top: direction === "up" ? -66 : 66,
 								behavior: !$settings.smooth_scroll || $longpress ? "auto" : "smooth",
 							});
-						// if (!next) // console.warn("next element to focus not found!");
+						// if (!next) console.warn("next element to focus not found!");
 						if (!next) return;
 						if (next.offsetHeight > chatbox.offsetHeight) {
-							// console.warn("next element is bigger than viewport");
+							// console.warn("next element is bigger than viewport hmmmm");
 							if (inViewport(next, true)) {
-								const { scrollTop } = chatbox;
-								next.focus();
-								chatbox.scrollTop = scrollTop;
+								next.focus({ preventScroll: true });
 							}
 						} else if (inViewport(next)) {
 							// console.warn("next element is not bigger than viewport and is in viewport right now");
 							await center(next);
 							next.focus();
 						}
-					} else if (next && next.offsetHeight < chatbox.offsetHeight) center(next);
+					} else if (next.offsetHeight > chatbox.offsetHeight && direction === "up") {
+						// console.warn("next element is bigger than viewport but was not before big");
+						next.focus({ preventScroll: true });
+						next.scrollIntoView({ behavior: !$settings.smooth_scroll || $longpress ? "auto" : "smooth" });
+					} else if (next && next.offsetHeight < chatbox.offsetHeight) {
+						// console.warn("i have no idea how this work");
+						center(next);
+					}
 				},
 			},
 			mounted
