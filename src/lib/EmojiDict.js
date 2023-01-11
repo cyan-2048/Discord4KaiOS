@@ -3,6 +3,23 @@ import emoji_map from "../assets/emojis.json";
 
 const emojis = new Map(emoji_map);
 
+import levenshtein from "js-levenshtein";
+
+function textMatches(text, val) {
+	console.log(text, val);
+	return levenshtein(text, val) < 3;
+}
+
+const { isArray } = Array;
+
+function arrayMatches(text, array) {
+	for (let i = 0; i < array.length; i++) {
+		const val = array[i];
+		if (textMatches(text, val)) return true;
+	}
+	return false;
+}
+
 const EmojiDict = {
 	groups,
 	emojis,
@@ -17,14 +34,22 @@ const EmojiDict = {
 	/**
 	 * find emoji with closest match
 	 */
-	query() {},
+	query(emoji, limit = 5) {
+		const results = [];
+		for (const [unicode, { shortcode }] of emojis.entries()) {
+			if (limit === results.length) break;
+			const found = (isArray(shortcode) && arrayMatches(emoji, shortcode)) || textMatches(emoji, shortcode);
+			if (found) results.push(unicode);
+		}
+		return results;
+	},
 
 	/** find emoji unicode using shortcode */
 	fromShortcode(query) {
 		let bestMatch = null;
 
 		for (const [unicode, { shortcode }] of emojis.entries()) {
-			const found = (Array.isArray(shortcode) && shortcode.includes(query)) || shortcode === query;
+			const found = (isArray(shortcode) && shortcode.includes(query)) || shortcode === query;
 			if (found) {
 				bestMatch = unicode;
 				break;

@@ -25,7 +25,7 @@ import TypingState from "../lib/TypingState";
 const typingStateInstance = new TypingState();
 
 discordGateway.on("t:typing_start", (event) => {
-	var { detail: d } = event || {};
+	const d = event?.detail;
 	typingStateInstance.add(d);
 });
 
@@ -58,7 +58,7 @@ _channelID.subscribe((channelID) => {
 typingStateInstance.on("change", typingChange);
 
 discordGateway.on("t:message_create", async (event) => {
-	var { detail: d } = event || {};
+	const d = event?.detail;
 
 	if (get(_channelID) === d.channel_id) {
 		messages.update((arr) => [...arr, d]);
@@ -81,9 +81,7 @@ discordGateway.on("t:message_create", async (event) => {
 
 	let el = discord.cache.read_state.find((e) => e.id == d.channel_id);
 	if (d.guild_id) {
-		let r =
-			get(serverProfiles).get(d.guild_id + "/" + discord.user.id) ||
-			(await discord.getServerProfile(d.guild_id, discord.user.id));
+		let r = get(serverProfiles).get(d.guild_id + "/" + discord.user.id) || (await discord.getServerProfile(d.guild_id, discord.user.id));
 		let ping = wouldMessagePing(d, r.roles, discord.user.id);
 		if (el && ping) el.mention_count++;
 	}

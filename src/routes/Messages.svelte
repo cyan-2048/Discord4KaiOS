@@ -120,8 +120,10 @@
 		}
 
 		await tick();
+		scrollToBottom(chatbox);
 		await delay(5);
 		scrollToBottom(chatbox);
+		delay(100).then(() => scrollToBottom(chatbox));
 		ack(channelID);
 		if (readOnly) last(chatbox.children)?.focus();
 
@@ -157,7 +159,7 @@
 
 	onDestroy(
 		eventHandler(discordGateway, "t:message_create", async (event) => {
-			var { detail: d } = event || {};
+			const d = event?.detail;
 
 			if (channelID === d.channel_id && chatbox) {
 				const shouldScroll = textboxFocused || getScrollBottom(chatbox) < 100;

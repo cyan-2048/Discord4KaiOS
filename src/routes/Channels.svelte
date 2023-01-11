@@ -99,7 +99,6 @@
 
 		let temp = [];
 		wait
-			.map(({ id, name, icon, roles }) => ({ id, name, icon, roles }))
 			.sort((a, b) => {
 				let indexer = ({ id }) => serverPositions?.indexOf(id);
 				return indexer(a) - indexer(b);
@@ -157,7 +156,7 @@
 
 	onDestroy(
 		eventHandler(discordGateway, "t:guild_member_update", function (event) {
-			var { detail: d } = event || {};
+			const d = event?.detail;
 			if (guildID === d.guild_id) {
 				loadChannels(guildID, true);
 			}
@@ -166,7 +165,7 @@
 
 	onDestroy(
 		eventHandler(channelUpdates, "update", function (event) {
-			var { detail: d } = event || {};
+			const d = event?.detail;
 			if (guildID === d.guild_id) {
 				// console.log(d);
 				loadChannels(guildID, true);

@@ -72,7 +72,8 @@
 		}
 
 		const onStatus = (event) => {
-			const { detail: d } = event || {};
+			const d = event?.detail;
+
 			if (recipients?.length !== 1) return;
 			if (d && d.user?.id !== recipients[0].id) return;
 			let p;

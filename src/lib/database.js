@@ -58,7 +58,7 @@ export async function isServerOwner(serverID) {
 //
 
 discordGateway.on("t:presence_update", (event) => {
-	var { detail: d } = event || {};
+	const d = event?.detail;
 
 	if (!discord.cache) return;
 	let e = discord.cache.guilds.find((a) => a.id == d.guild_id);
@@ -93,7 +93,7 @@ discordGateway.on("t:channel_unread_update", (event) => {
 });
 
 discordGateway.on("t:user_guild_settings_update", (event) => {
-	var { detail: d } = event || {};
+	const d = event?.detail;
 	let m = discord.cache.user_guild_settings;
 	let ix = m.findIndex((a) => a.guild_id == d.guild_id);
 	if (ix > -1) m[ix] = d;
@@ -159,7 +159,7 @@ discordGateway.once("t:ready", async function ready_ev() {
 export const channelUpdates = new EventEmitter();
 
 discordGateway.on("t:channel_update", (event) => {
-	var { detail: d } = event || {};
+	const d = event?.detail;
 
 	if (d.guild_id) {
 		const e = discord.cache.guilds.find((a) => a.id === d.guild_id);
@@ -178,7 +178,7 @@ discordGateway.on("t:channel_update", (event) => {
 	}
 });
 discordGateway.on("t:channel_delete", (event) => {
-	var { detail: d } = event || {};
+	const d = event?.detail;
 
 	if (d.guild_id) {
 		const e = discord.cache.guilds.find((a) => a.id === d.guild_id);
@@ -190,7 +190,7 @@ discordGateway.on("t:channel_delete", (event) => {
 	}
 });
 discordGateway.on("t:channel_create", (event) => {
-	var { detail: d } = event || {};
+	const d = event?.detail;
 
 	if (d.guild_id) {
 		const e = discord.cache.guilds.find((a) => a.id === d.guild_id);
@@ -207,14 +207,14 @@ discordGateway.on("t:channel_create", (event) => {
 ///////////////////////////////
 
 discordGateway.on("t:guild_member_update", (event) => {
-	var { detail: d } = event || {};
+	const d = event?.detail;
 	const { user } = d;
 	serverProfiles.update((map) => map.set(d.guild_id + "/" + user.id, d));
 	userProfiles.update((e) => e.set(user.id, user));
 });
 
 discordGateway.on("t:guild_members_chunk", (event) => {
-	var { detail: d } = event || {};
+	const d = event?.detail;
 
 	if (!d.guild_id) return;
 	d.members.forEach((profile) => {

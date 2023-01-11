@@ -86,7 +86,7 @@
 	}
 
 	function hideContent() {
-		if (message.content === "") return true;
+		// if (message.content === "") return true;
 		const parsed = markdown(message.content);
 		if (parsed.length === 1 && parsed[0].type === "link" && message.embeds.length == 1) {
 			return true;
@@ -168,12 +168,14 @@
 
 	onDestroy(
 		multipleEventHandler(discordGateway, {
-			"t:message_update": function ({ detail: d }) {
+			"t:message_update": function (event) {
+				const d = event?.detail;
 				if (d.id === message.id) {
 					message = { ...message, ...d };
 				}
 			},
-			"t:message_delete": function ({ detail: d }) {
+			"t:message_delete": function (event) {
+				const d = event?.detail;
 				if (d.id === message.id) {
 					if ($settings.preserve_deleted) {
 						message.deleted = true;
@@ -188,6 +190,7 @@
 	let focused = false;
 </script>
 
+<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
 <main
 	on:focus={() => (focused = true)}
 	on:blur={() => document.activeElement !== main && (focused = false)}
@@ -227,6 +230,7 @@
 		</div>
 	{/if}
 	<slot />
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<div
 		on:click={function onClick(e) {
 			let { target } = e;

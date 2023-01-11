@@ -101,4 +101,4 @@
 		<Privacy />
 	</Route>
 </Router>
-<Options bind:push={$pushOptions} />
+<Options push={pushOptions} />

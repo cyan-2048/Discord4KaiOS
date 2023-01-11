@@ -1,6 +1,5 @@
 <script>
 	import markdown from "../lib/discord-markdown";
-	import EmojiDict from "../lib/EmojiDict";
 	import MarkdownContent from "./MarkdownContent.svelte";
 
 	export let content = "",

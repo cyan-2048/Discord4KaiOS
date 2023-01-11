@@ -2,8 +2,8 @@
 	// js imports
 	import { discord, isServerOwner, serverAck } from "../lib/database";
 
-	import { createEventDispatcher, onDestroy, onMount } from "svelte";
-	import { isChannelMuted, isGuildMuted, navigate, siftChannels } from "../lib/helper.js";
+	import { onDestroy, onMount } from "svelte";
+	import { isChannelMuted, isGuildMuted, navigate, siftChannels, xhr } from "../lib/helper.js";
 	import ServerMentions from "./ServerMentions.svelte";
 	import { serverProfiles } from "../lib/shared";
 	import { eventHandler } from "../lib/EventEmitter";
@@ -11,9 +11,13 @@
 	export let server = null;
 	export let selected;
 	export let focusable = true;
-	const dispatch = createEventDispatcher();
 
-	let { id, roles, name, icon } = server || { id: "@me" };
+	$: id = server?.id || "@me";
+	$: roles = server?.roles || [];
+	$: name = server?.name;
+	$: icon = server?.icon;
+
+	$: console.error(server);
 
 	let unread = false;
 	let mentions = 0;
@@ -62,18 +66,34 @@
 
 	onDestroy(
 		eventHandler(serverAck, "update", (event) => {
-			var { detail: d } = event || {};
+			const d = event?.detail;
 			if (channel_ids.includes(d.channel_id)) update();
 			if (d.channel_overrides?.find((g) => channel_ids.includes(g.channel_id))) update();
 		})
 	);
+
+	let focused = false;
+	let animated = null;
 </script>
 
+<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+<!-- svelte-ignore a11y-click-events-have-key-events -->
 <main
 	class="Server-svelte"
 	data-mentions={mentions}
 	on:click={() => {
 		navigate("/channels/" + id);
+	}}
+	on:blur={() => void (focused = false)}
+	on:focus={async () => {
+		focused = true;
+		if (animated !== null) return;
+		if (animated || server?.features?.includes("ANIMATED_ICON")) {
+			const e = await xhr(`https://cdn.discordapp.com/icons/${id}/${icon}.gif?size=16`);
+			animated = e !== "";
+		} else {
+			animated = false;
+		}
 	}}
 	data-focusable={focusable ? "" : null}
 	class:unread
@@ -86,7 +106,7 @@
 		<div class="hover" />
 	{/if}
 	{#if icon}
-		<div class="image" style:--image="url(https://cdn.discordapp.com/icons/{id}/{icon}.png?size=48)" />
+		<div class="image" style:--image="url(https://cdn.discordapp.com/icons/{id}/{icon}.{focused && animated ? "gif" : "png"}?size=48)" />
 	{:else}
 		<div class="image" data-name={shorten(name)} />
 	{/if}

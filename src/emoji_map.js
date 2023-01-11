@@ -11,4 +11,5 @@ const emojis = new Map(
 		return [unicode, { ...a, shortcode, group: "group" in a ? a.group : 8 }];
 	})
 );
-fs.writeFileSync("./assets/emojis.json", JSON.stringify([...emojis]));
+
+fs.writeFileSync("./assets/emojis.json", JSON.stringify([...emojis], null, "\t"));

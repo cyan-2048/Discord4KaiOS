@@ -12,7 +12,7 @@
 	});
 
 	export let push;
-	push = async function push(options = [], { focusIndex = 0 } = {}, _callback = null) {
+	push.set(async function push(options = [], { focusIndex = 0 } = {}, _callback = null) {
 		const { promise, resolve: res } = Promise_defer();
 
 		if (options.length < 1) throw new Error("no options given!");
@@ -35,7 +35,7 @@
 		queue = queue; // tell compiler array changed
 
 		return promise;
-	};
+	});
 
 	let main;
 

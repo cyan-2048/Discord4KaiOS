@@ -125,7 +125,7 @@
 					const sliced = value.slice(0, currentIndex);
 					if (sliced.includes(prefix)) {
 						const found = last(sliced.split(prefix));
-						if (found && !/\s/.test(found)) return prefix + found;
+						if (found && !/\s/.test(found) && !found.includes(prefix)) return prefix + found;
 					}
 				}
 				return null;
@@ -146,7 +146,7 @@
 
 			function compareToQuery(string) {
 				if (!string) return false;
-				return compareTwoStrings(String(string).toLowerCase(), queryText.slice(1).toLowerCase()) > 0.3;
+				return compareTwoStrings(string, queryText.slice(1)) < 3;
 			}
 
 			if (queryText) {

@@ -14,17 +14,7 @@
 	<img src={image || "/css/default.png"} alt />
 	<div class="name">
 		<div class="user">
-			<b
-				><Mentions
-					{guildID}
-					mentions={false}
-					type="user"
-					username={user.username}
-					id={user.id}
-					{roles}
-					prefix={false}
-				/></b
-			>
+			<b><Mentions {guildID} mentions={false} type="user" username={user.username} id={user.id} {roles} prefix={false} /></b>
 		</div>
 		{#if user.bot}
 			<div class="bot">{user.discriminator === "0000" ? "WEBHOOK" : "BOT"}</div>
@@ -63,6 +53,7 @@
 		border-radius: 3px;
 		border: 1px solid rgba(0, 0, 0, 0.4);
 		box-shadow: 0 0 0 1px rgba(230, 230, 230, 0.6), 0 0 3px 3px rgba(0, 0, 0, 0.4);
+		aspect-ratio: 1 / 1;
 	}
 	.name {
 		width: 100%;

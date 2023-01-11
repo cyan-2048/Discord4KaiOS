@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from "svelte";
+	import { observeElement } from "../lib/shared";
 	import MarkdownContent from "./MarkdownContent.svelte";
 	import Mentions from "./Mentions.svelte";
 
