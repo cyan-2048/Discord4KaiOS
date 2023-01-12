@@ -605,8 +605,7 @@
 		position: fixed;
 		top: 0;
 		left: 0;
-		@include linearGradient(35%, hsl(220, 7.7%, 22.9%));
-		background-color: hsl(210, 3.4%, 11.4%);
+		@extend %layer2;
 
 		&,
 		.header {
@@ -846,6 +845,12 @@
 			:last-child {
 				text-align: end;
 			}
+		}
+	}
+
+	:global(body.light) {
+		main {
+			@extend %layer2-light;
 		}
 	}
 </style>

@@ -143,11 +143,12 @@
 			opacity: 0;
 			/*transition: height 0.3s ease, opacity 0.3s ease;*/
 		}
-		&.selected *::after,
-		&.unread *::after,
-		&:focus *::after,
-		&:hover *::after {
-			opacity: 1;
+		&.selected,
+		&.unread,
+		&:focus {
+			*::after {
+				opacity: 1;
+			}
 		}
 
 		&:focus .hover::after {
@@ -201,7 +202,6 @@
 		}
 
 		&:focus,
-		&:hover,
 		&.selected {
 			.image {
 				--bg-color: #5865f2;

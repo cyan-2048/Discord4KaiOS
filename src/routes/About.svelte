@@ -191,8 +191,7 @@
 		<KaiAd />
 	{/if}
 	<div tabindex="0" class="content">
-		Sveltecord is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Discord™,
-		or any of its subsidiaries or its affiliates.
+		Sveltecord is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Discord™, or any of its subsidiaries or its affiliates.
 	</div>
 </main>
 
@@ -259,6 +258,12 @@
 				margin-top: auto;
 				margin-bottom: auto;
 			}
+		}
+	}
+
+	:global(body.light) {
+		main {
+			@extend %layer1-light;
 		}
 	}
 </style>

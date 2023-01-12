@@ -64,6 +64,8 @@ export const settings = writableLF(
 	true
 );
 
+export const folderOpened = writableLF("folderOpened", {});
+
 import sn from "./spatial_navigation";
 sn.init();
 

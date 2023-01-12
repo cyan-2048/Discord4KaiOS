@@ -112,8 +112,7 @@
 		*/
 		border: 1px solid rgba(92, 92, 92);
 		box-shadow: 0 0 3px 3px rgba(0, 0, 0, 0.4);
-		@include linearGradient(35%, hsl(220, 7.7%, 22.9%));
-		background-color: hsl(210, 3.4%, 11.4%);
+		@extend %layer2;
 		border-radius: 5px;
 		padding: 4px 4px;
 
@@ -127,6 +126,15 @@
 
 			&:focus {
 				@extend %focus;
+			}
+		}
+	}
+
+	:global(body.light) {
+		div.backdrop {
+			@extend %layer2-light;
+			div:focus {
+				@extend %focus-light;
 			}
 		}
 	}

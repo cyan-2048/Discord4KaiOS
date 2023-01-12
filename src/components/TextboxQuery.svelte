@@ -120,7 +120,6 @@
 					font-weight: 600;
 				}
 
-				&:hover,
 				&:focus,
 				&.selected {
 					@extend %focus;
@@ -148,6 +147,17 @@
 					box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 					margin-inline-end: 8px;
 					overflow: hidden;
+				}
+			}
+		}
+	}
+
+	:global(body.light) {
+		main {
+			ul > li {
+				&:focus,
+				&.selected {
+					@extend %focus-light;
 				}
 			}
 		}

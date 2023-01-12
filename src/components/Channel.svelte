@@ -343,4 +343,23 @@
 			opacity: 1;
 		}
 	}
+
+	:global(body.light) {
+		main {
+			> :global(*) {
+				color: rgb(94, 103, 114) !important;
+			}
+			&:focus > :global(*),
+			&.unread > :global(*) {
+				color: rgb(6, 6, 7) !important;
+			}
+			&:focus {
+				@extend %focus-light;
+			}
+		}
+
+		.unread .bar::after {
+			background-color: rgb(6, 6, 7) !important;
+		}
+	}
 </style>

@@ -8,31 +8,31 @@
 	import { decimal2rgb, delay } from "../lib/helper";
 	import { serverAck } from "../lib/database";
 	import { eventHandler } from "../lib/EventEmitter";
+	import { folderOpened } from "../lib/shared";
 
 	export let guildID, color, id, name, type;
 	export let servers = [];
 	//	export let name;
 	let mentions = 0;
 	let unread = false;
-	let open = true;
+	let open = false;
 	let main;
 
 	//	console.log("server color",name, color)
 
 	const update = () => {
 		unread = !!main.querySelector(".unread");
-		mentions = [...main.querySelectorAll("[data-mentions]")]
-			.map((a) => Number(a.dataset.mentions) || 0)
-			.reduce((a, b) => a + b, 0);
+		mentions = [...main.querySelectorAll("[data-mentions]")].map((a) => Number(a.dataset.mentions) || 0).reduce((a, b) => a + b, 0);
 	};
 
 	function toggleOpen(e) {
 		if (this !== e.target) return;
-		open = !open;
+		$folderOpened[id] = open = !open;
 		update();
 		setTimeout(() => (!open ? main && main.focus() : main && main.querySelector("[data-focusable]")?.focus()), 50);
 	}
 	onMount(update);
+	onMount(() => (open = $folderOpened[id] || false));
 	onDestroy(
 		eventHandler(serverAck, "update", async () => {
 			await delay(50);
@@ -41,6 +41,8 @@
 	);
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
 <main
 	{id}
 	data-type={type}
@@ -56,6 +58,8 @@
 >
 	<div class="hover" />
 	{#if open}
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
 		<div on:click={toggleOpen} tabindex="0" data-focusable class="folder-toggle">
 			<div class="hover" />
 		</div>
@@ -77,8 +81,7 @@
 		border-radius: 5px;
 
 		&.open {
-			box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6), 0 0 2px 2px rgba(0, 0, 0, 0.4),
-				inset 0 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+			box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6), 0 0 2px 2px rgba(0, 0, 0, 0.4), inset 0 0 1px 2px rgba(0, 0, 0, 0.8) !important;
 		}
 
 		&:not(.open) {

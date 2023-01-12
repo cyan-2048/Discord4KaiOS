@@ -2,7 +2,7 @@
 	import "./assets/global.css";
 	import { onMount } from "svelte";
 
-	import { settings, pushOptions } from "./lib/shared";
+	import { settings, pushOptions, folderOpened } from "./lib/shared";
 	import { init, localStorage } from "./lib/database";
 
 	import { Router, Route, navigate } from "svelte-routing";
@@ -48,12 +48,7 @@
 	})();
 
 	onMount(async () => {
-		await settings.init;
-		if ($settings.devmode) {
-			window.navigate = navigate;
-			window.localStorage = localStorage;
-		}
-		window.changeSettings = (e) => ($settings = { ...$settings, ...e });
+		await Promise.all([settings.init, folderOpened.init]);
 		loaded = await init();
 	});
 

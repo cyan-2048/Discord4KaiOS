@@ -22,6 +22,12 @@ export default defineConfig({
 				},
 			},
 			preprocess: sveltePreprocess(),
+			onwarn(warning, handler) {
+				if (warning.code.startsWith("a11y-")) {
+					return;
+				}
+				handler(warning);
+			},
 		}),
 	],
 });

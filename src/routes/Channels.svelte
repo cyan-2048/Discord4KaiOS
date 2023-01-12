@@ -227,7 +227,7 @@
 		busy = false;
 	}}
 >
-	<div class:selected={selected === 0} class:hidden={selected === 1}>
+	<div class="servers" class:selected={selected === 0} class:hidden={selected === 1}>
 		<div data-servers>
 			<Server selected={guildID === "@me"} dm={true} />
 			{#each servers as server (server.id)}
@@ -240,7 +240,7 @@
 		</div>
 	</div>
 
-	<div data-channels class:isGuild={guildID !== "@me"} class:selected={selected === 1}>
+	<div class="channels" data-channels class:isGuild={guildID !== "@me"} class:selected={selected === 1}>
 		{#if guildID !== "@me"}
 			<div class="header" class:selected={selected !== 1}>
 				<div>
@@ -280,7 +280,7 @@
 			position: relative;
 		}
 
-		> :last-child {
+		.channels {
 			// &.isGuild {
 			// 	padding-top: 30px;
 			// }
@@ -290,22 +290,22 @@
 			background-color: hsl(225, 8%, 19.6%) !important;
 		}
 
-		> :first-child {
+		.servers {
 			@extend %layer1;
 			background-attachment: fixed;
 			box-shadow: inset -1px 0 0 rgb(92, 92, 92);
-		}
 
-		> :first-child,
-		> :first-child > div {
-			width: 72px;
-			transition: width 0.25s ease;
-		}
+			&,
+			> div {
+				width: 72px;
+				transition: width 0.25s ease;
+			}
 
-		> :first-child > div {
-			padding: 8px 12px;
-			position: absolute;
-			right: 0;
+			> div {
+				padding: 8px 12px;
+				position: absolute;
+				right: 0;
+			}
 		}
 
 		.hidden {
@@ -351,5 +351,25 @@
 		}
 
 		transition: left 0.25s ease, width 0.25s ease;
+	}
+
+	:global(body.light) {
+		main {
+			.channels {
+				@include linearGradient(40%, hsl(48, 3.4%, 70.8%), !important);
+				background-color: hsl(43, 8.6%, 84.1%) !important;
+			}
+			.servers {
+				@extend %layer1-light;
+				box-shadow: inset -1px 0 0 rgb(60, 60, 60);
+			}
+		}
+		.header {
+			color: rgb(6, 6, 7);
+			@include linearGradient(12%, rgba(228, 228, 228), !important);
+			box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6), 0 0 5px 5px rgba(64, 64, 64, 0.2) !important;
+			background-color: rgba(174, 174, 174) !important;
+			border-bottom: 1px solid rgba(60, 60, 60) !important;
+		}
 	}
 </style>

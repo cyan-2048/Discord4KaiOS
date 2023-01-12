@@ -303,4 +303,10 @@
 		font-size: 12px;
 		color: #b9bbbe;
 	}
+
+	:global(body.light) {
+		main {
+			@extend %layer1-light;
+		}
+	}
 </style>

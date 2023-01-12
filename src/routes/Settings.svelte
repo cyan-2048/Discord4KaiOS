@@ -126,7 +126,15 @@
 	div {
 		&:focus {
 			@extend %focus;
-			color: white;
+		}
+	}
+
+	:global(body.light) {
+		main {
+			@extend %layer1-light;
+		}
+		div:focus {
+			@extend %focus-light;
 		}
 	}
 </style>
