@@ -8,21 +8,15 @@
 
 	// js imports
 	import { onDestroy, onMount, tick } from "svelte";
-	import { centerScroll, decideHeight, niceBytes } from "../lib/helper.js";
+	import { centerScroll, decideHeight, niceBytes, EmojiDict } from "../lib/helper.js";
 	import { discord, discordGateway } from "../lib/database";
 	import markdown from "../lib/discord-markdown";
-
-	import EmojiDict from "../lib/EmojiDict.js";
 
 	import { serverProfiles, settings, userProfiles } from "../lib/shared";
 	import { multipleEventHandler } from "../lib/EventEmitter.js";
 
 	import Mentions from "./Mentions.svelte";
 	import { showImage } from "../modals";
-
-	if ($settings.devmode) {
-		window.EmojiDict = EmojiDict;
-	}
 
 	export let guildID,
 		pinged = false,

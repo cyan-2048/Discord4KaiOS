@@ -408,7 +408,10 @@ export function changeStatusbarColor(color) {
 	document.querySelector('head meta[name="theme-color"]')?.setAttribute("content", color);
 }
 
-export { default as compareTwoStrings } from "js-levenshtein";
+import * as levenshtein from "fastest-levenshtein";
+
+export const compareTwoStrings = (a, b) => levenshtein.distance(a, b);
+export const closest = levenshtein.closest;
 
 export function stringifyDate(_date) {
 	const date = new Date(_date),
@@ -442,3 +445,5 @@ export function Promise_defer() {
 
 	return _;
 }
+
+export { default as EmojiDict } from "./EmojiDict.js";

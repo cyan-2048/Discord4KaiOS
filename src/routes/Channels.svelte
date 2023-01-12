@@ -95,12 +95,15 @@
 	async function loadServers() {
 		servers = [];
 		const wait = await discord.getServers();
-		const { guild_positions: serverPositions, guild_folders: serverFolders } = discord.cache.user_settings;
+		const serverFolders = discord.cache.user_settings.guild_folders;
 
 		let temp = [];
+
+		const arrangment = serverFolders.map((a) => a.guild_ids).flat();
+
 		wait
 			.sort((a, b) => {
-				let indexer = ({ id }) => serverPositions?.indexOf(id);
+				let indexer = ({ id }) => arrangment.indexOf(id);
 				return indexer(a) - indexer(b);
 			})
 			.forEach((a) => {

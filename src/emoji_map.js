@@ -5,7 +5,7 @@ const compact_emojis = require("emojibase-data/en/compact.json");
 const fs = require("fs");
 
 const emojis = new Map(
-	compact_emojis.map(({ hexcode, unicode, ...a }) => {
+	compact_emojis.map(({ hexcode, unicode, label, ...a }) => {
 		let shortcode = shortcodes[hexcode];
 		a.skins?.forEach((a) => delete a.hexcode);
 		return [unicode, { ...a, shortcode, group: "group" in a ? a.group : 8 }];

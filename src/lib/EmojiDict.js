@@ -3,21 +3,21 @@ import emoji_map from "../assets/emojis.json";
 
 const emojis = new Map(emoji_map);
 
-import levenshtein from "js-levenshtein";
+import { compareTwoStrings } from "./helper.js";
 
-function textMatches(text, val) {
-	console.log(text, val);
-	return levenshtein(text, val) < 3;
+function getScore(text, val) {
+	return compareTwoStrings(String(text), String(val));
 }
 
-const { isArray } = Array;
-
-function arrayMatches(text, array) {
+function getScoreArray(text, array) {
+	let res = Infinity;
 	for (let i = 0; i < array.length; i++) {
+		if (!res) break;
 		const val = array[i];
-		if (textMatches(text, val)) return true;
+		const score = getScore(text, val);
+		res = Math.min(res, score);
 	}
-	return false;
+	return res;
 }
 
 const EmojiDict = {
@@ -34,22 +34,14 @@ const EmojiDict = {
 	/**
 	 * find emoji with closest match
 	 */
-	query(emoji, limit = 5) {
-		const results = [];
-		for (const [unicode, { shortcode }] of emojis.entries()) {
-			if (limit === results.length) break;
-			const found = (isArray(shortcode) && arrayMatches(emoji, shortcode)) || textMatches(emoji, shortcode);
-			if (found) results.push(unicode);
-		}
-		return results;
-	},
+	query(text, limit = 5) {},
 
 	/** find emoji unicode using shortcode */
 	fromShortcode(query) {
 		let bestMatch = null;
 
 		for (const [unicode, { shortcode }] of emojis.entries()) {
-			const found = (isArray(shortcode) && shortcode.includes(query)) || shortcode === query;
+			const found = (Array.isArray(shortcode) && shortcode.includes(query)) || shortcode === query;
 			if (found) {
 				bestMatch = unicode;
 				break;
