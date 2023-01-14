@@ -26,7 +26,7 @@
 			"Don't ask for ETAs. No 'When will *something* arrive?'. We're all humans.",
 			"never gonna give you up",
 			"We're connecting to Discord's gateways to retrieve account info, server list and message history. Be patient!",
-			"This is app is a fork of Frank128's Discord-KaiOS-Unofficial.",
+			"This app is a fork of Frank128's Discord-KaiOS-Unofficial.",
 			"The app 99% only connects to discord's servers!",
 			"The Discord API Docs gives you enough information to create your own Discord Client.",
 		]; // wanna add something? just tell cyan in discord
