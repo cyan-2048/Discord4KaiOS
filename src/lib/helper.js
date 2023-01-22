@@ -90,24 +90,22 @@ export function parseRoleAccess(channelOverwrites = [], profileRoles = [], serve
 		return obj;
 	}
 
-	let grouped = groupBy(channelOverwrites, "type");
-	Object.keys(grouped)
-		.sort((a, b) => a - b)
-		.forEach((a) => {
-			const overwrites = grouped[a];
+	//	let grouped = groupBy(channelOverwrites, "type");
 
-			const everyone = overwrites.find((o) => o.id == everyone_id);
-			everyone && overwrites.unshift(overwrites.splice(everyone, 1)[0]);
+	const overwrites = [...channelOverwrites];
 
-			overwrites.forEach((o) => {
-				if (profileRoles.includes(o.id)) {
-					Object.entries(bitwise2text).forEach(([num, perm]) => {
-						if ((o.deny & num) == num) obj[perm] = false;
-						if ((o.allow & num) == num) obj[perm] = true;
-					});
-				}
+	const everyone = overwrites.find((o) => o.id == everyone_id);
+	everyone && overwrites.unshift(overwrites.splice(everyone, 1)[0]);
+
+	overwrites.forEach((o) => {
+		if (profileRoles.includes(o.id)) {
+			Object.entries(bitwise2text).forEach(([num, perm]) => {
+				if ((o.deny & num) == num) obj[perm] = false;
+				if ((o.allow & num) == num) obj[perm] = true;
 			});
-		});
+		}
+	});
+
 	return obj;
 }
 
