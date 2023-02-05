@@ -69,11 +69,11 @@ const options = {
 					],
 				},
 			}),
-			onwarn(warning, handler) {
-				if (warning.code.startsWith("a11y-")) {
-					return;
+			filterWarnings(warning) {
+				if (warning.code.toLowerCase().includes("a11y")) {
+					return false;
 				}
-				handler(warning);
+				return true;
 			},
 			compilerOptions: {
 				// compiler checks makes the thing very slow
@@ -84,16 +84,22 @@ const options = {
 			},
 		}),
 	],
+	write: false,
 	// annoying CSS
 	external: ["*.png", "*.ttf", "*.svg"],
 };
 
 try {
-	await esbuild.build(options);
 	const regexp = /for((\s?)*)\(((\s?)*)const/g;
-	const text = await fs.readFile(outfile, "utf8");
-	// on KaiOS aka Firefox48, for(const is broken
-	await fs.writeFile(outfile, text.replace(regexp, "for(let "));
+	const build = await esbuild.build(options);
+
+	build.outputFiles.forEach((file) => {
+		let text = null;
+		if (file.path.endsWith("bundle.js")) {
+			text = file.text.replace(regexp, "for(let ");
+		}
+		fs.writeFile(file.path, text || file.contents);
+	});
 } catch (err) {
 	console.error(err);
 	process.exit(1);
