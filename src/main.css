@@ -1,0 +1,28 @@
+pre {
+	width: 100%;
+}
+
+.List {
+	display: flex;
+	flex-direction: column;
+	height: 300px;
+	width: 300px;
+	background: cyan;
+	overflow: scroll;
+	border: 2px solid black;
+	box-sizing: border-box;
+}
+
+.List-item {
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+	margin: 0;
+	padding: 5px;
+	overflow: hidden;
+}
+
+.List-item:focus {
+	background-color: red !important;
+}

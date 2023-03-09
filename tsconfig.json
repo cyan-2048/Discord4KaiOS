@@ -1,0 +1,15 @@
+{
+	"compilerOptions": {
+		"lib": ["dom", "es6"],
+		"jsx": "react",
+		"jsxFactory": "h",
+		"jsxFragmentFactory": "Fragment",
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"],
+			"discord": ["backend"],
+			"discord/*": ["backend/src/*"],
+			"react": ["./node_modules/preact/compat/"]
+		}
+	}
+}

@@ -5,7 +5,6 @@ const kaios3 = process.env.kaios === "3";
 
 import * as fs from "fs/promises";
 import path from "path";
-const rootDir = path.resolve("./") + "/";
 
 async function copyDirectory(src, dest) {
 	const [entries] = await Promise.all([fs.readdir(src, { withFileTypes: true }), fs.mkdir(dest, { recursive: true })]);
@@ -19,16 +18,13 @@ async function copyDirectory(src, dest) {
 	);
 }
 
+await fs.mkdir("./dist/build/", { recursive: true });
+await Promise.all([fs.copyFile("./src/assets/manifest.json", "./dist/manifest.webapp")]);
 await copyDirectory("./public", "./dist");
-await Promise.all([fs.mkdir("./dist/build/", { recursive: true }), fs.copyFile("./src/assets/manifest.json", "./dist/manifest.webapp")]);
 
 import esbuild from "esbuild";
-import svelte from "esbuild-svelte";
-import sveltePreprocess from "svelte-preprocess";
 import autoprefixer from "autoprefixer";
 import hslFix from "postcss-color-hsl";
-
-hslFix;
 
 const outfile = "./dist/build/bundle.js";
 const polyfills = await esbuild.transform(await fs.readFile("./scripts/polyfills.js", "utf-8"), {
@@ -38,7 +34,7 @@ const polyfills = await esbuild.transform(await fs.readFile("./scripts/polyfills
 
 const options = {
 	entryPoints: ["./src/main.js"],
-	mainFields: ["svelte", "browser", "module", "main"],
+	mainFields: ["browser", "module", "main"],
 	outfile,
 	format: "iife",
 	logLevel: "info",
@@ -56,34 +52,10 @@ const options = {
 	supported: {
 		"hex-rgba": false,
 	},
-	plugins: [
-		svelte({
-			cache: true,
-			preprocess: sveltePreprocess({
-				postcss: {
-					plugins: [
-						autoprefixer({
-							overrideBrowserslist: "firefox 48",
-						}),
-						hslFix,
-					],
-				},
-			}),
-			filterWarnings(warning) {
-				if (warning.code.toLowerCase().includes("a11y")) {
-					return false;
-				}
-				return true;
-			},
-			compilerOptions: {
-				// compiler checks makes the thing very slow
-				dev: false,
-				cssHash({ hash, css, name, filename }) {
-					return `s-${hash(filename)}`;
-				},
-			},
-		}),
-	],
+	plugins: [],
+	alias: {
+		react: "preact/compat",
+	},
 	write: false,
 	// annoying CSS
 	external: ["*.png", "*.ttf", "*.svg"],
