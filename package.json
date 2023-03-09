@@ -10,14 +10,20 @@
 	},
 	"devDependencies": {
 		"@preact/preset-vite": "^2.5.0",
+		"@preact/signals": "^1.1.3",
 		"autoprefixer": "^10.4.8",
 		"core-js": "^3.24.0",
+		"cssnano": "^5.1.15",
 		"discord-api-types": "^0.37.18",
 		"esbuild": "^0.15.10",
-		"postcss": "^8.4.16",
+		"esbuild-sass-plugin": "^2.6.0",
+		"postcss": "^8.4.21",
 		"postcss-color-hsl": "^2.0.0",
+		"postcss-modules": "^6.0.0",
+		"preact-router": "^4.1.0",
 		"sass": "^1.54.0",
-		"vite": "^3.0.2"
+		"vite": "^3.0.2",
+		"vite-tsconfig-paths": "^4.0.5"
 	},
 	"dependencies": {
 		"@ungap/event-target": "^0.2.3",
@@ -30,7 +36,7 @@
 		"preact": "^10.13.0",
 		"react": "npm:@preact/compat@17.0.3",
 		"react-dom": "npm:@preact/compat@17.0.3",
-		"react-dynamic-virtual-scroll": "^1.4.0",
-		"scroll-into-view": "^1.16.2"
+		"scroll-into-view": "^1.16.2",
+		"svelte": "^3.55.1"
 	}
 }

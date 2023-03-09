@@ -25,6 +25,8 @@ await copyDirectory("./public", "./dist");
 import esbuild from "esbuild";
 import autoprefixer from "autoprefixer";
 import hslFix from "postcss-color-hsl";
+import postcss from "postcss";
+import { sassPlugin } from "esbuild-sass-plugin";
 
 const outfile = "./dist/build/bundle.js";
 const polyfills = await esbuild.transform(await fs.readFile("./scripts/polyfills.js", "utf-8"), {
@@ -52,7 +54,19 @@ const options = {
 	supported: {
 		"hex-rgba": false,
 	},
-	plugins: [],
+	plugins: [
+		sassPlugin({
+			async transform(source, resolveDir) {
+				const { css } = await postcss([
+					autoprefixer({
+						overrideBrowserslist: kaios3 ? "firefox 84" : "firefox 48",
+					}),
+					hslFix,
+				]).process(source);
+				return css;
+			},
+		}),
+	],
 	alias: {
 		react: "preact/compat",
 	},

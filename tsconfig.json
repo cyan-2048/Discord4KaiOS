@@ -1,15 +1,21 @@
 {
 	"compilerOptions": {
-		"lib": ["dom", "es6"],
+		"allowJs": true,
+		"lib": ["dom", "es6", "ES2016"],
 		"jsx": "react",
 		"jsxFactory": "h",
 		"jsxFragmentFactory": "Fragment",
 		"baseUrl": ".",
 		"paths": {
 			"@/*": ["src/*"],
+			"@components/*": ["src/components/*"],
+			"@routes/*": ["src/routes/*"],
+			"@lib/*": ["src/lib/*"],
 			"discord": ["backend"],
 			"discord/*": ["backend/src/*"],
 			"react": ["./node_modules/preact/compat/"]
-		}
-	}
+		},
+		"outDir": "./dist"
+	},
+	"include": ["src/**/*"]
 }

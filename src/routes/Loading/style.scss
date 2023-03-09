@@ -1,0 +1,40 @@
+%center-left-right {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.Loading {
+	width: 100vw;
+	height: 100vh;
+	position: absolute;
+	display: flex;
+	top: 0;
+	left: 0;
+	background-color: #2f3136;
+	text-align: center;
+	flex-direction: column;
+	img {
+		width: 200px;
+		height: 200px;
+		margin-top: auto;
+		margin-bottom: 8px;
+		display: inline-block;
+		@extend %center-left-right;
+	}
+
+	#dyk {
+		font-size: 12px;
+		margin-top: -35px;
+		font-weight: 600;
+		margin-bottom: 6px;
+		line-height: 1.4;
+	}
+	#fact {
+		font-size: 14px;
+		height: 75px;
+		width: 240px;
+		padding: 0 6px;
+		margin-bottom: auto;
+		@extend %center-left-right;
+	}
+}
