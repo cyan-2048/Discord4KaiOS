@@ -1,5 +1,7 @@
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+import fastHashCode from "fast-hash-code";
+import { EffectCallback, MutableRef, useEffect, useState } from "preact/hooks";
 import scrollIntoView from "scroll-into-view";
 
 export async function centerScroll(el: Element, sync = false, opts: object = {}) {
@@ -46,4 +48,84 @@ export async function testInternet() {
 		return typeof e === "number" ? e : InternetResults.NO_INTERNET;
 	}
 	return InternetResults.OK;
+}
+
+export function useMountDebug(name: string) {
+	useMount(() => {
+		console.log(`<${name} /> mounted`);
+		return () => console.log(`<${name} /> unmounted`);
+	});
+}
+
+export function useInputValue(inputEl: MutableRef<HTMLInputElement | HTMLTextAreaElement>, stateFunc: Function | typeof useState = useState): [string, (value: string) => void] {
+	const [value, setValue] = stateFunc("");
+
+	useEffect(() => {
+		const el = inputEl.current;
+		if (!el) return;
+		const handler = () => setValue(el.value);
+		el.value = value;
+		el.addEventListener("input", handler);
+		return () => el.removeEventListener("input", handler);
+	}, [inputEl]);
+
+	return [
+		value,
+		function (value: string) {
+			setValue(value);
+			if (inputEl.current) inputEl.current.value = value;
+		},
+	];
+}
+
+const memoryState = new Map<any, any>();
+
+export function useMemoryState(key: any, initialState: any) {
+	const [state, setState] = useState(() => {
+		const hasMemoryValue = memoryState.has(key);
+		if (hasMemoryValue) {
+			return memoryState.get(key);
+		} else {
+			return typeof initialState === "function" ? initialState() : initialState;
+		}
+	});
+
+	function onChange(nextState: any) {
+		memoryState.set(key, nextState);
+		setState(nextState);
+	}
+
+	return [state, onChange];
+}
+
+export function bindedMemoryState(key: any) {
+	return (value: any) => {
+		return useMemoryState(key, value);
+	};
+}
+
+export function toggleCursor(value: boolean): boolean {
+	// @ts-ignore
+	return (navigator.spatialNavigationEnabled = value);
+}
+
+/**
+ * it's like `onMount` but for hooks
+ * @param fn {EffectCallback}
+ * @returns {void}
+ */
+export function useMount(fn: EffectCallback) {
+	return useEffect(fn, []);
+}
+
+export function delayedCallback(callback: Function, delay: number = 100): () => void {
+	const timeout = setTimeout(callback, delay);
+	return () => clearTimeout(timeout);
+}
+
+export { debounce } from "ts-debounce";
+
+export function hash(text: string) {
+	// @ts-ignore
+	return btoa(fastHashCode(text, { forcePositive: true }));
 }

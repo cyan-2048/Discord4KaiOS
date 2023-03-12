@@ -29,6 +29,7 @@
 		"@ungap/event-target": "^0.2.3",
 		"emojibase": "^6.1.0",
 		"emojibase-data": "^7.0.1",
+		"fast-hash-code": "^2.1.0",
 		"fastest-levenshtein": "^1.0.16",
 		"jsqr-es6": "1.4.0-1",
 		"localforage": "^1.10.0",
@@ -37,6 +38,7 @@
 		"react": "npm:@preact/compat@17.0.3",
 		"react-dom": "npm:@preact/compat@17.0.3",
 		"scroll-into-view": "^1.16.2",
-		"svelte": "^3.55.1"
+		"svelte": "^3.55.1",
+		"ts-debounce": "^4.0.0"
 	}
 }

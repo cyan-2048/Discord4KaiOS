@@ -20,7 +20,8 @@
 		"video-capture": {
 			"description": "Reading Codes using the Camera"
 		},
-		"desktop-notification": {}
+		"desktop-notification": {},
+		"spatialnavigation-app-manage": {}
 	},
 	"installs_allowed_from": ["*"],
 	"locales": {

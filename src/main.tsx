@@ -1,5 +1,5 @@
 import "@lib/focusin.min.js";
-import { useCallback, useContext, useEffect, useRef } from "preact/hooks";
+import { useCallback, useContext, useEffect, useRef, useState } from "preact/hooks";
 import { h, render, Component, Fragment, ComponentProps } from "preact";
 
 import "./assets/global.scss";
@@ -9,14 +9,17 @@ sn.init();
 
 import { route, Router, useRouter } from "preact-router";
 
-import { centerScroll, InternetResults, sleep, testInternet } from "./lib/utils";
+import { InternetResults, sleep, testInternet, useMountDebug } from "./lib/utils";
 
-import { signal } from "@preact/signals";
 import Loading from "@routes/Loading";
-import { appReady } from "./lib/shared";
+import { appReady, getToken } from "./lib/shared";
 import Login from "./routes/Login";
 
 async function loadDiscord() {
+	route("/", true);
+
+	appReady.value = false;
+
 	const internetConnection = await testInternet();
 	if (internetConnection !== InternetResults.OK) {
 		if (InternetResults.EXPIRED_CERTS) {
@@ -27,22 +30,39 @@ async function loadDiscord() {
 		return window.close();
 	}
 
-	appReady.value = true;
-	// await sleep(100);
+	if (!getToken()) {
+		appReady.value = true;
+		await sleep(100);
+		route("/login", true);
+		return;
+	}
 
-	route("/login", true);
+	appReady.value = true;
 }
 
-loadDiscord();
+function LoadingScreen(props: any) {
+	useMountDebug("LoadingScreen");
+	return <Loading></Loading>;
+}
+
+function TestRoute(props: any) {
+	useMountDebug("TestRoute");
+	return <div>Test Route</div>;
+}
 
 function App() {
-	return (
-		<>
-			<Router>
-				<Login path="/login"></Login>
-			</Router>
-			{!appReady.value && <Loading></Loading>}
-		</>
+	useMountDebug("App");
+	useEffect(() => {
+		loadDiscord();
+	}, []);
+
+	return appReady.value ? (
+		<Router>
+			<Login path="/login"></Login>
+			<TestRoute path="test"></TestRoute>
+		</Router>
+	) : (
+		<LoadingScreen />
 	);
 }
 

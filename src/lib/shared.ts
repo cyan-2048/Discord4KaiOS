@@ -35,4 +35,10 @@ export function observeElement(element: HTMLElement) {
 
 export const appReady = signal(false);
 
-export const loggedIn = false;
+export function getToken(): string | null {
+	return localStorage.getItem("token");
+}
+
+export function setToken(token: string): void {
+	localStorage.setItem("token", token);
+}
