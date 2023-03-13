@@ -11,7 +11,7 @@ interface ButtonProps extends Omit<HTMLAttributes<HTMLButtonElement>, "onClick" 
 
 export const DeleteSymbol = Symbol("delete");
 
-export default forwardRef<HTMLButtonElement, ButtonProps>(function Button({ onClick, onError, onSuccess, ...props }: ButtonProps, forwardedRef) {
+export default forwardRef<HTMLButtonElement, ButtonProps>(function Button({ onClick, onError, onSuccess, ...props }: ButtonProps, forwardTheRef) {
 	const [state, setState] = useState(false);
 
 	async function changeOfState(...args: any[]) {
@@ -38,7 +38,7 @@ export default forwardRef<HTMLButtonElement, ButtonProps>(function Button({ onCl
 	return state === null ? (
 		<></>
 	) : (
-		<button class="Button" tabIndex={0} data-focusable="" {...props} onClick={changeOfState} ref={forwardedRef}>
+		<button class="Button" tabIndex={0} data-focusable="" {...props} onClick={changeOfState} ref={forwardTheRef}>
 			{state ? (
 				<div class="dot-wrap">
 					<div class="dot-flashing" />

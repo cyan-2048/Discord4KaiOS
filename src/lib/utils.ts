@@ -1,8 +1,10 @@
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+import { signal } from "@preact/signals";
 import fastHashCode from "fast-hash-code";
-import { EffectCallback, MutableRef, useEffect, useState } from "preact/hooks";
+import { EffectCallback, MutableRef, StateUpdater, useEffect, useState } from "preact/hooks";
 import scrollIntoView from "scroll-into-view";
+import { get, writable, readable, derived, Writable, Readable, Subscriber, StartStopNotifier } from "svelte/store";
 
 export async function centerScroll(el: Element, sync = false, opts: object = {}) {
 	return new Promise((res) => {
@@ -80,8 +82,8 @@ export function useInputValue(inputEl: MutableRef<HTMLInputElement | HTMLTextAre
 
 const memoryState = new Map<any, any>();
 
-export function useMemoryState(key: any, initialState: any) {
-	const [state, setState] = useState(() => {
+export function useMemoryState<T>(key: any, initialState: any): [T, StateUpdater<T>] {
+	const [state, setState] = useState<T>(() => {
 		const hasMemoryValue = memoryState.has(key);
 		if (hasMemoryValue) {
 			return memoryState.get(key);
@@ -98,9 +100,9 @@ export function useMemoryState(key: any, initialState: any) {
 	return [state, onChange];
 }
 
-export function bindedMemoryState(key: any) {
+export function bindedMemoryState<T>(key: any) {
 	return (value: any) => {
-		return useMemoryState(key, value);
+		return useMemoryState<T>(key, value);
 	};
 }
 
@@ -115,7 +117,7 @@ export function toggleCursor(value: boolean): boolean {
  * @returns {void}
  */
 export function useMount(fn: EffectCallback) {
-	return useEffect(fn, []);
+	useEffect(fn, []);
 }
 
 export function delayedCallback(callback: Function, delay: number = 100): () => void {
@@ -128,4 +130,25 @@ export { debounce } from "ts-debounce";
 export function hash(text: string) {
 	// @ts-ignore
 	return btoa(fastHashCode(text, { forcePositive: true }));
+}
+
+// stolen code: https://www.npmjs.com/package/react-use-svelte-store
+
+export type Setter<T> = (v: T) => void;
+export type UpdateFn<T> = (v: T) => T;
+export type Updater<T> = (u: UpdateFn<T>) => void;
+
+const unset: any = Symbol();
+
+export function useReadable<T>(store: Readable<T>): T {
+	const [value, set] = useState<T>(unset as unknown as T);
+
+	useEffect(() => store.subscribe(set), [store]);
+
+	return value === unset ? get(store) : value;
+}
+
+export function useWritable<T>(store: Writable<T>): [T, Setter<T>, Updater<T>] {
+	const value = useReadable(store);
+	return [value, store.set, store.update];
 }

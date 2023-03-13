@@ -28,7 +28,7 @@ function EmojiElement({ name, id, animated }: { id: string; animated: boolean; n
 		if (animated) {
 			return observeElement(emojiRef.current).subscribe((val) => setState(val));
 		}
-	});
+	}, [animated]);
 
 	return (
 		<div ref={emojiRef} class="emoji" style={{ "--emoji_url": `url('https://cdn.discordapp.com/emojis/${id}.${animated && inView ? "gif" : "png"}?size=32'))` }}>

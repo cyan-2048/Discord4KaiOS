@@ -1,5 +1,8 @@
 import { signal } from "@preact/signals";
+import { useEffect, useState } from "preact/hooks";
 import { readable } from "svelte/store";
+import spatial_navigation from "./spatial_navigation";
+import Discord from "discord";
 
 const observed_elements = new WeakMap();
 
@@ -34,6 +37,9 @@ export function observeElement(element: HTMLElement) {
 }
 
 export const appReady = signal(false);
+export const discordInstance = signal(new Discord(true));
+
+console.log(discordInstance);
 
 export function getToken(): string | null {
 	return localStorage.getItem("token");
@@ -42,3 +48,5 @@ export function getToken(): string | null {
 export function setToken(token: string): void {
 	localStorage.setItem("token", token);
 }
+
+export const sn = spatial_navigation;
