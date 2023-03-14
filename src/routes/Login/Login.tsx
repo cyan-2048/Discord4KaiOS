@@ -4,7 +4,8 @@ import { ComponentProps, Fragment, h } from "preact";
 import { route } from "preact-router";
 import { MutableRef, useMemo, useRef, useState } from "preact/hooks";
 import "./style.scss";
-import { sn } from "@lib/shared";
+import { discordInstance, loadDiscord, setToken, sn } from "@lib/shared";
+import MFA from "discord/MFA";
 
 const symbol0 = Symbol(),
 	symbol1 = Symbol(),
@@ -24,6 +25,12 @@ const RequiredField = () => (
 		<i>This field is required</i>
 	</>
 );
+
+async function testToken(authorization: string) {
+	const settings = await discordInstance.peek().xhr("users/@me", { method: "get", headers: { authorization } });
+	if (settings.code === 0) throw settings;
+	return settings;
+}
 
 interface SeparatorProps extends ComponentProps<"div"> {
 	required?: true | null;
@@ -75,8 +82,19 @@ function Home({ setPage }: LoginPagesProps) {
 						password: !pwLen || null,
 					});
 					if (!emLen || !pwLen) return;
-					await sleep(1000); // simulate
-					route("/test");
+
+					const discord = discordInstance.peek();
+
+					try {
+						const res = await discord.signin(emailValue, passwordValue);
+						if (res instanceof MFA) {
+						} else {
+							setToken(res);
+							loadDiscord();
+						}
+					} catch (e) {
+						alert(e);
+					}
 				}}
 			>
 				Login

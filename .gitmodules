@@ -1,4 +1,3 @@
 [submodule "backend"]
 	path = backend
 	url = https://github.com/cyan-2048/discord.ts/
-	branch = typescript

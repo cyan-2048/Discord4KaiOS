@@ -1,44 +1,16 @@
-import "@lib/focusin.min.js";
-import { useCallback, useContext, useEffect, useRef, useState } from "preact/hooks";
-import { h, render, Component, Fragment, ComponentProps } from "preact";
+import { h, render } from "preact";
 
 import "./assets/global.scss";
+import "@lib/focusin.min.js";
 
-import sn from "@lib/spatial_navigation";
+import { useMount, useMountDebug } from "./lib/utils";
+import { appReady, loadDiscord, sn } from "./lib/shared";
 sn.init();
 
-import { route, Router, useRouter } from "preact-router";
-
-import { InternetResults, sleep, testInternet, useMountDebug } from "./lib/utils";
-
+import { Router } from "preact-router";
 import Loading from "@routes/Loading";
-import { appReady, getToken } from "./lib/shared";
-import Login from "./routes/Login";
-
-async function loadDiscord() {
-	route("/", true);
-
-	appReady.value = false;
-
-	const internetConnection = await testInternet();
-	if (internetConnection !== InternetResults.OK) {
-		if (InternetResults.EXPIRED_CERTS) {
-			alert("You have expired certificate problem thing, go to the KaiStore to get the update.");
-		} else {
-			alert("You don't have internet go away");
-		}
-		return window.close();
-	}
-
-	if (!getToken()) {
-		appReady.value = true;
-		await sleep(100);
-		route("/login", true);
-		return;
-	}
-
-	appReady.value = true;
-}
+import Login from "@routes/Login";
+import Channels from "@routes/Channels";
 
 function LoadingScreen(props: any) {
 	useMountDebug("LoadingScreen");
@@ -52,14 +24,17 @@ function TestRoute(props: any) {
 
 function App() {
 	useMountDebug("App");
-	useEffect(() => {
+	useMount(() => {
 		loadDiscord();
-	}, []);
+	});
+
+	// /channels/@me/823842249069953036
 
 	return appReady.value ? (
 		<Router>
 			<Login path="/login"></Login>
-			<TestRoute path="test"></TestRoute>
+			<TestRoute path="/test"></TestRoute>
+			<Channels path="/channels/:guildID/:channelID?"></Channels>
 		</Router>
 	) : (
 		<LoadingScreen />
