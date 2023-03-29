@@ -1,0 +1,102 @@
+@use "../../assets/shared" as *;
+
+.Server__ {
+	&:not(:last-child) {
+		margin-bottom: 8px;
+	}
+	.hover {
+		position: absolute;
+		height: 100%;
+		width: 10px;
+		left: -17px;
+		display: grid;
+		align-items: center;
+	}
+	.hover::after {
+		content: "";
+		@include linearGradient(10%, rgba(234, 234, 234));
+		background-color: rgba(155, 155, 155);
+		border: 1px solid black;
+		box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.3), inset 0 0 0 1px white;
+		width: 10px;
+		border-radius: 80px;
+		display: block;
+		height: 10px;
+		opacity: 0;
+		/*transition: height 0.3s ease, opacity 0.3s ease;*/
+	}
+	&.selected,
+	&.unread,
+	&:focus {
+		*::after {
+			opacity: 1;
+		}
+	}
+	&:focus .hover::after {
+		height: 25px;
+	}
+	&.selected .hover::after {
+		height: 100% !important;
+	}
+	&,
+	.image {
+		width: 48px;
+		height: 48px;
+		position: relative;
+	}
+	.image {
+		overflow: hidden;
+		box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.6);
+		&,
+		&::before,
+		&::after {
+			border-radius: 50%;
+			transition: border-radius 0.2s linear, background-color linear 0.2s;
+		}
+		&::before,
+		&::after {
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			position: absolute;
+		}
+		font-size: 13px;
+		text-align: center;
+		line-height: 45px;
+		&::before {
+			content: "";
+		}
+		&::after {
+			content: attr(data-name);
+			background-image: var(--image);
+			box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.8), inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
+		}
+	}
+	&:focus,
+	&.selected {
+		.image {
+			--bg-color: #5865f2;
+			--gradient-color: rgba(32, 42, 65);
+		}
+	}
+	.image::before {
+		content: "";
+		@include linearGradient(5%, var(--gradient-color, rgb(36, 36, 38)));
+	}
+	&.dm .image::after {
+		--image: url(/css/dms.png) !important;
+		background-size: 100%;
+	}
+	&:focus,
+	&.selected {
+		.image {
+			background-color: var(--bg-color, rgba(67, 69, 74));
+		}
+		.image,
+		.image::after,
+		.image::before {
+			border-radius: 7px !important;
+		}
+	}
+}

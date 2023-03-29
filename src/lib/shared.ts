@@ -1,12 +1,11 @@
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
-import { readable } from "svelte/store";
+
 import spatial_navigation from "./spatial_navigation";
-import Discord from "discord";
+import Discord, { readable } from "discord";
 import { route } from "preact-router";
 import { InternetResults, sleep, testInternet } from "./utils";
 import { Guild } from "discord/Guilds";
-import { h } from "preact";
 
 const observed_elements = new WeakMap();
 
@@ -53,10 +52,13 @@ export const sn = spatial_navigation;
 
 export const appReady = signal(false);
 export const discordInstance = signal(new Discord(true));
-console.log(discordInstance.peek());
 export const guilds = signal<Guild[]>([]);
 
 export async function loadDiscord() {
+	await sleep(100);
+
+	console.log(discordInstance.peek());
+
 	const discord = discordInstance.peek();
 	await discord.gateway.close();
 
@@ -66,11 +68,9 @@ export async function loadDiscord() {
 
 	const internetConnection = await testInternet();
 	if (internetConnection !== InternetResults.OK) {
-		if (InternetResults.EXPIRED_CERTS) {
-			alert("You have expired certificate problem thing, go to the KaiStore to get the update.");
-		} else {
-			alert("You don't have internet go away");
-		}
+		alert(
+			internetConnection === InternetResults.EXPIRED_CERTS ? "You have expired certificate problem thing, go to the KaiStore to get the update." : "You don't have internet go away"
+		);
 		return window.close();
 	}
 
@@ -90,7 +90,7 @@ export async function loadDiscord() {
 
 	appReady.value = true;
 
-	await sleep(100);
+	await sleep(10);
 	route("/channels/@me/");
 }
 

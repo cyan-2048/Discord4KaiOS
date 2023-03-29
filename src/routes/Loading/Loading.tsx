@@ -1,3 +1,4 @@
+import { useMountDebug } from "@/lib/utils";
 import { Markdown } from "@components/Markdown";
 import { h, Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
@@ -30,6 +31,8 @@ function randomNoRepeats(array: any[]) {
 }
 
 export default function Loading(props: any) {
+	useMountDebug("LoadingScreen");
+
 	const [text, setText] = useState(getRandomText());
 
 	useEffect(() => {

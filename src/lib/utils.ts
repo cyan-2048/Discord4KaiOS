@@ -2,9 +2,10 @@ export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve
 
 import { signal } from "@preact/signals";
 import fastHashCode from "fast-hash-code";
-import { EffectCallback, MutableRef, StateUpdater, useEffect, useState } from "preact/hooks";
+import { EffectCallback, MutableRef, StateUpdater, useEffect, useLayoutEffect, useReducer, useState } from "preact/hooks";
 import scrollIntoView from "scroll-into-view";
-import { get, writable, readable, derived, Writable, Readable, Subscriber, StartStopNotifier } from "svelte/store";
+import { Readable, Writable, get } from "discord";
+import { sn } from "./shared";
 
 export async function centerScroll(el: Element, sync = false, opts: object = {}) {
 	return new Promise((res) => {
@@ -82,7 +83,7 @@ export function useInputValue(inputEl: MutableRef<HTMLInputElement | HTMLTextAre
 
 const memoryState = new Map<any, any>();
 
-export function useMemoryState<T>(key: any, initialState: any): [T, StateUpdater<T>] {
+export function useMemoryState<T>(key: any, initialState: T): [T, StateUpdater<T>] {
 	const [state, setState] = useState<T>(() => {
 		const hasMemoryValue = memoryState.has(key);
 		if (hasMemoryValue) {
@@ -138,17 +139,49 @@ export type Setter<T> = (v: T) => void;
 export type UpdateFn<T> = (v: T) => T;
 export type Updater<T> = (u: UpdateFn<T>) => void;
 
-const unset: any = Symbol();
+/**
+ * This is like useState, but it doesn't compare the new state to the old state.
+ * fuck you React for making me do this
+ */
+export function useStateMutable<T>(initialState: T): [T, StateUpdater<T>] {
+	const [state, setState] = useState([initialState]);
+	return [state[0], (newState: T) => setState([newState])];
+}
 
 export function useReadable<T>(store: Readable<T>): T {
-	const [value, set] = useState<T>(unset as unknown as T);
+	const [value, set] = useStateMutable(get(store));
 
 	useEffect(() => store.subscribe(set), [store]);
 
-	return value === unset ? get(store) : value;
+	return value;
 }
 
 export function useWritable<T>(store: Writable<T>): [T, Setter<T>, Updater<T>] {
 	const value = useReadable(store);
 	return [value, store.set, store.update];
+}
+
+export function useForceUpdate(): () => void {
+	// @ts-ignore
+	return useReducer((x) => x + 1, 0)[1];
+}
+
+interface SpatialNavigationOptions {
+	id: string;
+	selector: string;
+	enterTo?: string;
+	leaveFor?: string;
+	defaultElement?: string;
+	restrict?: "self-first" | "self-only" | "none";
+	rememberSource?: boolean;
+}
+
+/**
+ * Function that takes spacial nav options and removes it when unmounted
+ */
+export function useSpatialNav(...options: SpatialNavigationOptions[]) {
+	useLayoutEffect(() => {
+		options.forEach((opt) => sn.add(opt));
+		return () => options.forEach((opt) => sn.remove(opt.id));
+	});
 }

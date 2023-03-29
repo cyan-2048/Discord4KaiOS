@@ -1,0 +1,165 @@
+@use "../../assets/shared" as *;
+
+.Channel__ {
+	width: calc(100vw - 20px);
+	margin-left: 10px;
+	border-radius: 5px;
+	position: relative;
+	margin-bottom: 2px;
+	height: 32px;
+	&:last-child {
+		margin-bottom: 6.5px;
+	}
+	&:first-child {
+		margin-top: 6.5px;
+	}
+	.text {
+		font-weight: 600;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	&:not(.dm) .text {
+		left: 32px;
+		font-size: 14px;
+		top: 0;
+		height: 100%;
+		vertical-align: middle;
+		width: calc(100vw - 4rem);
+		line-height: 32px;
+	}
+	> * {
+		color: #72767d;
+	}
+	&:focus > *,
+	&.unread > * {
+		color: white !important;
+	}
+	&:focus {
+		@extend %focus;
+	}
+	&:focus .status {
+		background-color: #393c42;
+	}
+	svg {
+		width: 20px;
+		height: 100%;
+		object-fit: contain;
+		left: 6px;
+	}
+
+	.muted:not(:focus) .avatar {
+		opacity: 0.5;
+	}
+	.bar {
+		width: 10px;
+		height: 100%;
+		display: grid;
+		align-items: center;
+		left: -15px;
+	}
+	.mobile {
+		height: 21px !important;
+		border-radius: 18% !important;
+	}
+	.bar::after {
+		content: "";
+		display: block;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background-color: transparent;
+	}
+	&.unread .bar::after {
+		background-color: white;
+	}
+	.mentions,
+	.subtext,
+	.text,
+	.avatar,
+	.status,
+	svg,
+	.bar {
+		position: absolute;
+	}
+	.status {
+		background-size: 11px;
+		background-repeat: no-repeat;
+		background-position: 2.9px;
+		width: 16px;
+		height: 16px;
+		border-radius: 100%;
+		bottom: 5px;
+		right: 0;
+		background-color: #2f3136;
+	}
+	.avatar {
+		top: 5px;
+		left: 5px;
+		img {
+			width: 32px;
+			height: 32px;
+			border-radius: 100%;
+			object-fit: contain;
+		}
+	}
+	.mentions {
+		width: fit-content;
+		min-width: 16px;
+		height: 100%;
+		right: 8px;
+		display: flex;
+		align-items: center;
+		> div {
+			display: block;
+			width: fit-content;
+			min-width: 19px;
+			height: 19px;
+			border-radius: 10px;
+			font-size: 12px;
+			text-align: center;
+			color: white;
+			font-weight: 600;
+			padding: 0 4px;
+			background: linear-gradient(0deg, transparent 22%, rgba(217, 79, 77) 100%) !important;
+			border: 1px solid rgba(230, 230, 230, 0.6);
+			box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.5);
+			background-color: rgba(158, 58, 56) !important;
+		}
+	}
+	.flow {
+		padding: 0 3px;
+	}
+	.subtext {
+		bottom: 6px;
+		left: 50px;
+		font-size: 11px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		width: 160px;
+		+ .text {
+			top: 3px !important;
+		}
+	}
+	.dm {
+		height: 42px !important;
+		.text {
+			font-size: 15px;
+			top: 10.5px;
+			left: 50px;
+			width: calc(100vw - 80px);
+			line-height: 20px;
+			height: 20px;
+		}
+	}
+	.muted {
+		opacity: 0.7;
+		> * {
+			color: #4f545c;
+		}
+		&:focus {
+			opacity: 1;
+		}
+	}
+}

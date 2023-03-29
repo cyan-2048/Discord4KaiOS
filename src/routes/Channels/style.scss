@@ -1,0 +1,119 @@
+@use "../../assets/shared" as *;
+
+.Channels__ {
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	overflow: hidden;
+	border: 1px solid rgb(92, 92, 92);
+
+	.channels,
+	.servers {
+		flex-grow: 0;
+		flex-shrink: 0;
+		height: 100%;
+		overflow: -moz-hidden-unscrollable;
+		overflow-y: auto;
+		position: relative;
+	}
+
+	.channels {
+		// &.isGuild {
+		// 	padding-top: 30px;
+		// }
+
+		width: 100vw;
+		@include linearGradient(40%, hsl(240, 3.7%, 10.6%), !important);
+		background-color: hsl(225, 8%, 19.6%) !important;
+
+		.__separator {
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			line-height: 30px;
+			height: 30px;
+			padding: 0 10px 0 17px;
+			font-size: 13px;
+			font-weight: bold;
+			background: transparent;
+			color: #dcddde;
+			text-transform: uppercase;
+			letter-spacing: -0.4px;
+		}
+
+		.header {
+			padding: 0 10px;
+			height: 30px;
+			font-size: 15px;
+			font-weight: 600;
+			div {
+				width: 100%;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+			display: flex;
+			align-items: center;
+			margin-bottom: 3px;
+			position: sticky;
+			width: 100vw;
+			top: 0;
+			// left: 0;
+			z-index: 100;
+			color: #ffffff;
+			@include linearGradient(14%, rgba(58, 58, 58));
+			background-color: rgba(0, 0, 0);
+			border-bottom: 1px solid rgba(92, 92, 92);
+			box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 5px 5px rgba(0, 0, 0, 0.4) !important;
+			line-height: 1.6;
+			&.selected {
+				// left: 72px;
+				width: calc(100vw - 72px);
+			}
+			transition: left 0.25s ease, width 0.25s ease;
+		}
+	}
+
+	.servers {
+		@extend %layer1;
+		background-attachment: fixed;
+		box-shadow: inset -1px 0 0 rgb(92, 92, 92);
+		overflow: auto;
+
+		&,
+		> div {
+			width: 72px;
+			transition: width 0.25s ease;
+		}
+
+		> div {
+			padding: 8px 12px;
+			position: absolute;
+			right: 0;
+		}
+	}
+
+	.hidden {
+		width: 0 !important;
+	}
+
+	.ServerMentions__ {
+		display: block !important;
+		position: absolute;
+		border-radius: 20px;
+		color: white;
+		height: 19px;
+		min-width: 19px;
+		font-size: 13px;
+		text-align: center;
+		line-height: 16px;
+		font-weight: 600;
+		padding: 0 4px;
+		bottom: 0;
+		right: 0;
+		background: linear-gradient(0deg, transparent 22%, rgba(217, 79, 77) 100%) !important;
+		border: 1px solid rgba(230, 230, 230, 0.6);
+		box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.5);
+		background-color: rgba(158, 58, 56) !important;
+	}
+}
