@@ -29,6 +29,24 @@ import postcss from "postcss";
 import { sassPlugin } from "esbuild-sass-plugin";
 
 const outfile = "./dist/build/bundle.js";
+
+const workerScriptSrc = await esbuild.build({
+	entryPoints: ["./scripts/worker.js"],
+	write: false,
+	minify: true,
+	target: "es6",
+	bundle: true,
+	treeShaking: true,
+	format: "iife",
+});
+
+let workerScript = "";
+
+workerScriptSrc.outputFiles.forEach((file) => {
+	const _EVAL = (code) => (workerScript = code);
+	eval(file.text);
+});
+
 const polyfills = await esbuild.transform(await fs.readFile("./scripts/polyfills.js", "utf-8"), {
 	minify: true,
 	target: "es6",
@@ -79,13 +97,18 @@ try {
 	const regexp = /for((\s?)*)\(((\s?)*)const/g;
 	const build = await esbuild.build(options);
 
+	let bundlePath = null;
+
 	build.outputFiles.forEach((file) => {
 		let text = null;
 		if (file.path.endsWith("bundle.js")) {
+			bundlePath = file.path;
 			text = file.text.replace(regexp, "for(let ");
 		}
 		fs.writeFile(file.path, text || file.contents);
 	});
+
+	fs.writeFile(bundlePath.replace("build/bundle.js", "worker.js"), workerScript);
 } catch (err) {
 	console.error(err);
 	process.exit(1);

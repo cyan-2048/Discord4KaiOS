@@ -1,3 +1,9 @@
+import { Gateway } from "discord/DiscordGateway";
+
+Gateway.workerSrc = "/worker.js";
+// @ts-ignore
+window.__workerSrc = "/worker.js";
+
 import "core-js/actual/array/flat";
 import "core-js/actual/array/find-last";
 import "core-js/actual/string/match-all";
