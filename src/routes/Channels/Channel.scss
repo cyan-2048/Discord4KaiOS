@@ -5,14 +5,16 @@
 	margin-left: 10px;
 	border-radius: 5px;
 	position: relative;
-	margin-bottom: 2px;
 	height: 32px;
+
+	margin-bottom: 2px;
 	&:last-child {
 		margin-bottom: 6.5px;
 	}
 	&:first-child {
 		margin-top: 6.5px;
 	}
+
 	.text {
 		font-weight: 600;
 		white-space: nowrap;

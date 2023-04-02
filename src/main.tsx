@@ -1,3 +1,5 @@
+import "preact/debug";
+
 import { Gateway } from "discord/DiscordGateway";
 
 Gateway.workerSrc = "/worker.js";
@@ -7,7 +9,6 @@ window.__workerSrc = "/worker.js";
 import "core-js/actual/array/flat";
 import "core-js/actual/array/find-last";
 import "core-js/actual/string/match-all";
-import "preact/debug";
 
 import { Fragment, h, render } from "preact";
 
@@ -43,6 +44,10 @@ function TestRoute(props: any) {
 	);
 }
 
+function NullComponent() {
+	return <></>;
+}
+
 function App() {
 	useMountDebug("App");
 	useMount(() => {
@@ -66,16 +71,13 @@ function App() {
 					} else {
 						setHidden(true);
 					}
-
-					console.log(props.matches);
 				}}
 			>
 				<Login path="/login"></Login>
 				<TestRoute path="/test"></TestRoute>
-				<Match path="/channels/:guildID/:channelID?">{() => <></>}</Match>
+				<NullComponent path="/channels/:guildID/:channelID?"></NullComponent>
 			</Router>
 			{mounted && <Channels hidden={channelsHidden} guildID={guildID}></Channels>}
-			<div>{guildID}</div>
 		</>
 	) : (
 		<Loading />

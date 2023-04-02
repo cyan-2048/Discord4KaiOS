@@ -180,8 +180,17 @@ interface SpatialNavigationOptions {
  * Function that takes spacial nav options and removes it when unmounted
  */
 export function useSpatialNav(...options: SpatialNavigationOptions[]) {
-	useLayoutEffect(() => {
+	useMount(() => {
 		options.forEach((opt) => sn.add(opt));
 		return () => options.forEach((opt) => sn.remove(opt.id));
 	});
+}
+
+/**
+ * only use with React.memo(), only re-render when the given props changed
+ */
+export function ifPropsChange(...props: string[]) {
+	return (prevProps: any, nextProps: any) => {
+		return props.some((prop) => prevProps[prop] !== nextProps[prop]);
+	};
 }

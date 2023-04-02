@@ -92,6 +92,7 @@ export async function loadDiscord() {
 
 	await sleep(10);
 	route("/channels/@me/");
+	discord.gateway.on("close", loadDiscord);
 }
 
 export type RouteProps<T> = {

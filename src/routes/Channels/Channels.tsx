@@ -2,7 +2,7 @@ import "./style.scss";
 import "./Server.scss";
 import "./Channel.scss";
 
-import { centerScroll, useMemoryState, useMount, useMountDebug, useReadable, useSpatialNav } from "@/lib/utils";
+import { centerScroll, ifPropsChange, sleep, useMemoryState, useMount, useMountDebug, useReadable, useSpatialNav, useStateMutable } from "@/lib/utils";
 import { discordInstance, RouteProps, sn } from "@lib/shared";
 
 import { Guild } from "discord/Guilds";
@@ -15,6 +15,8 @@ import { route } from "preact-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { get, Readable } from "discord";
 import Button from "@/components/Button";
+import { signal } from "@preact/signals";
+import { memo } from "preact/compat";
 
 const ChannelIcons = {
 	text: (
@@ -96,12 +98,13 @@ interface ServerChannelProps {
 }
 
 /* For Channels in Servers aka not DMS */
-function ServerChannel({ channel, class: _class = "", ..._props }: ServerChannelProps) {
+const Channel = memo(function Channel({ channel, class: _class, ..._props }: ServerChannelProps) {
 	const props = useReadable(channel.props);
 
-	const readState = safeGetReadable(channel.readState);
-	const unread = Boolean(safeGetReadable(channel.unread));
-	const muted = useMemo(() => channel.isMuted(), [channel]);
+	const readState = channel.readState && useReadable(channel.readState);
+	const unread = Boolean(channel.unread && useReadable(channel.unread));
+	const muted = channel.isMuted();
+
 	const mentions = readState?.mention_count || 0;
 
 	const ch_type = props.type === 5 ? "announce" : channel.isPrivate() ? "limited" : "text";
@@ -112,6 +115,9 @@ function ServerChannel({ channel, class: _class = "", ..._props }: ServerChannel
 			tabIndex={0}
 			id={`channel${channel.id}`}
 			class={`Channel__ ${muted && mentions == 0 ? "muted" : ""} ${(unread && !muted) || mentions > 0 ? "unread" : ""} ${_class}`}
+			onFocus={async (e) => {
+				await centerScroll(e.target as HTMLElement);
+			}}
 			{..._props}
 		>
 			<div class="bar" />
@@ -124,7 +130,7 @@ function ServerChannel({ channel, class: _class = "", ..._props }: ServerChannel
 			<div class="text">{props.name}</div>
 		</main>
 	);
-}
+});
 
 function ServerFolder({ guildID, ...props }: any) {
 	return <div>ServerFolder</div>;
@@ -137,7 +143,7 @@ const shorten = (e: string) =>
 		.join("")
 		.slice(0, 3) || "";
 
-function Server({ selected = false, focusable = true, guild, setPage }: { focusable?: boolean; selected?: boolean; guild: Guild; setPage: (page: 0 | 1) => void }) {
+const Server = memo(function Server({ focusable = true, guild, selected }: { focusable?: boolean; selected?: boolean; guild: Guild }) {
 	const props: RawGuild = useReadable(guild.props);
 
 	const [mentions, setMentions] = useMemoryState("mentions-" + props.id, 0);
@@ -213,11 +219,11 @@ function Server({ selected = false, focusable = true, guild, setPage }: { focusa
 			onKeyDown={(e) => {
 				if (["Enter", "SoftRight", "ArrowRight"].includes(e.key)) {
 					route("/channels/" + guild.id);
-					setPage(1);
+					pageState.value = 1;
 				}
 			}}
 			data-focusable={focusable ? "" : null}
-			class={"Server__ " + clx({ selected, unread, focused })}
+			class={clx({ Server: 1, selected, unread, focused })}
 			tabIndex={0}
 		>
 			{focusable && <div class="hover" />}
@@ -230,17 +236,18 @@ function Server({ selected = false, focusable = true, guild, setPage }: { focusa
 			{mentions > 0 && focusable && <div class="ServerMentions__">{mentions}</div>}
 		</main>
 	);
-}
+});
 
 const pageStateSymbol = Symbol();
 
-window.onkeydown = ({ key }) => key == "0" && void document.querySelector("button").click();
+window.onkeydown = ({ key }) => void (key == "0");
 
-function ServerChannelList({ guildID, guilds }: { guildID: string; guilds: Guild[] }) {
+function ServerChannelList({ guilds }: { guilds: Guild[] }) {
 	useMountDebug("ServerChannelList");
+
 	const channels = useMemo(
 		() =>
-			safeGetReadable(guilds.find((a) => a.id == guildID)?.channels.siftedChannels)
+			safeGetReadable(guilds.find((a) => a.id == guildID.peek())?.channels.siftedChannels)
 				?.filter((a) => {
 					if (a.type === 0 || a.type == 5) {
 						const perms = a.roleAccess();
@@ -257,14 +264,7 @@ function ServerChannelList({ guildID, guilds }: { guildID: string; guilds: Guild
 				})
 				.map((a, i) => {
 					if ([5, 0].includes(a.type)) {
-						return (
-							<ServerChannel
-								onFocus={async (e) => {
-									await centerScroll(e.target as HTMLElement);
-								}}
-								channel={a}
-							/>
-						);
+						return <Channel channel={a} />;
 					} else if (a.type == 4) {
 						return <ChannelSeparator>{a.name}</ChannelSeparator>;
 					} else {
@@ -272,7 +272,7 @@ function ServerChannelList({ guildID, guilds }: { guildID: string; guilds: Guild
 						return <div>{a.name}</div>;
 					}
 				}),
-		[guildID]
+		[guildID.value]
 	);
 
 	return <>{channels}</>;
@@ -285,97 +285,78 @@ function safeGetReadable<T>(r?: Readable<T>) {
 	return r ? get(r) : undefined;
 }
 
-export default function Channels({ channelID, guildID, hidden, ...props }: RouteProps<{ hidden?: boolean; channelID: string; guildID: string }>) {
+const guildID = signal("@me");
+const pageState = signal<0 | 1>(0);
+
+export default function Channels({ channelID, guildID: _guildID, hidden, ...props }: RouteProps<{ hidden?: boolean; channelID: string; guildID: string }>) {
 	const discord = discordInstance.value;
 
 	const guilds: Guild[] = useMemo(() => discord.gateway.guilds.getAll(), [discord]);
 
-	const [pageState, setPageState] = useMemoryState<0 | 1>(pageStateSymbol, 0);
+	const channelsEl = useRef<HTMLDivElement>(null);
+
+	const guildsList = useMemo(() => guilds.map((a) => <Server selected={guildID.value === a.id} guild={a} />), [guilds, guildID.value]);
+
+	useEffect(() => {
+		channelsEl.current.querySelector(".focused")?.classList.remove("focused");
+	}, [_guildID]);
+
+	useEffect(() => {
+		guildID.value = _guildID;
+	}, [channelID, _guildID]);
 
 	useSpatialNav(
 		{
 			id: serversSN,
-			selector: ".Channels__ .servers [data-focusable]",
+			selector: ".Channels .servers [data-focusable]",
 			defaultElement: ".selected",
 			restrict: "self-only",
 		},
 		{
 			id: channelsSN,
-			selector: ".Channels__ .channels [data-focusable]",
+			selector: ".Channels .channels [data-focusable]",
 			restrict: "self-only",
 			defaultElement: ".focused",
 		}
 	);
 
 	useEffect(() => {
-		sn.focus(pageState ? channelsSN : serversSN);
-	}, [pageState, hidden]);
-
-	const channelsEl = useRef<HTMLDivElement>(null);
+		!hidden && sleep(50).then(() => sn.focus(pageState.value ? channelsSN : serversSN));
+	}, [pageState.value, hidden]);
 
 	return (
-		<>
-			<main style={{ visibility: hidden ? "hidden" : null }} hidden={hidden} class="Channels__">
-				<div class={clx({ servers: 1, hidden: pageState == 1 })}>
-					<div data-servers="">
-						{guilds.map((a) => (
-							<Server setPage={setPageState} selected={a.id == guildID} guild={a} />
-						))}
-					</div>
-				</div>
-				<div
-					onKeyDown={(e) => {
-						if (e.key == "ArrowLeft") {
-							setPageState(0);
-						}
-					}}
-					onFocus={(e) => {
-						const el = e.target as HTMLElement;
-						centerScroll(el);
-						el.classList.add("focused");
-					}}
-					onBlur={(e) => {
-						const el = e.target as HTMLElement;
-						if (pageState == 1 && !hidden) {
-							el.classList.remove("focused");
-						}
-					}}
-					ref={channelsEl}
-					class="channels"
-				>
-					{guildID == "@me" && <ChannelSeparator>DIRECT MESSAGES</ChannelSeparator>}
-					<ServerChannelList guilds={guilds} guildID={guildID} />
-					<Button onClick={() => route("/test")}>Test Route Change</Button>
-				</div>
-			</main>
-		</>
+		<main style={{ visibility: hidden ? "hidden" : null }} hidden={hidden} class="Channels">
+			<div class={clx({ servers: 1, hidden: pageState.value == 1 })}>
+				<div data-servers="">{guildsList}</div>
+			</div>
+			<div
+				onKeyDown={(e) => {
+					if (e.key == "ArrowLeft") {
+						pageState.value = 0;
+					}
+				}}
+				onFocus={(e) => {
+					const el = e.target as HTMLElement;
+					centerScroll(el);
+					el.classList.add("focused");
+				}}
+				onBlur={(e) => {
+					const el = e.target as HTMLElement;
+					if (pageState.value == 1 && !hidden) {
+						el.classList.remove("focused");
+					}
+				}}
+				ref={channelsEl}
+				class="channels"
+			>
+				{_guildID == "@me" ? (
+					<>
+						<ChannelSeparator>DIRECT MESSAGES</ChannelSeparator>
+					</>
+				) : (
+					<ServerChannelList guilds={guilds} />
+				)}
+			</div>
+		</main>
 	);
-
-	/*
-	return (
-		<>
-			<main>
-				<div class="servers">
-					<div data-servers>
-						<ServerFolder />
-						<Server selected={guildID === "e"} server={null} />
-					</div>
-				</div>
-
-				<div data-channels class={clx({ channels: true, guildID: guildID !== "@me", selected: false })}>
-					{guildID != "@me" && (
-						<div class={"header " + "selected"}>
-							<div>{"guildName"}</div>
-						</div>
-					)}
-					{guildID == "@me" && <div class="Channels__separator">DIRECT MESSAGES</div>}
-
-					
-					<Channel>{"channel.name" || ""}</Channel>
-					<div className="Channels__separator">{"channel.name"}</div>
-				</div>
-			</main>
-		</>
-	);
-	*/
 }
