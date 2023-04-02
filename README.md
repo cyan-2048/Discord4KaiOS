@@ -1,10 +1,12 @@
 [![Discord server](https://invidget.switchblade.xyz/W9DF2q3Vv2)](https://discord.gg/W9DF2q3Vv2)
 
-the end goal here is to have a usable discord client for KaiOS, I have no plans on fully replicating a discord client.
+the end goal here is to have a usable discord client for KaiOS 2.5.x, I have no plans on fully replicating a discord client.
+
+_if you're on KaiOS 3.x use https://github.com/diamondburned/kaicord/ instead_
 
 ### Development and testing
 
-`npm run dev` builds the app in watch mode and serves the site. Great for testing the app in a desktop browser. CORS may or may not work properly on non-KaiOS devices, please use a browser extension.
+`npm run dev` builds the app in watch mode and serves the site. Great for testing the app in a desktop browser.
 
 ### Deploying to a device
 
