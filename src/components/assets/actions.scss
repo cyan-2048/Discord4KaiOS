@@ -1,0 +1,41 @@
+@use "../../assets/shared" as *;
+
+.ActionMessageBase {
+	display: flex;
+	font-size: 13px;
+	padding: 2px 0;
+	padding-right: 5px;
+	margin: 2px 0;
+
+	.icon {
+		width: 32px;
+		display: flex;
+		flex-shrink: 0;
+
+		svg {
+			width: 18px;
+			height: 18px;
+			margin: auto;
+			transform: scale(0.8);
+		}
+	}
+
+  .call_text {
+		white-space: pre;
+		color: rgb(150, 152, 157);
+	}
+	.call_date {
+		color: rgb(190, 190, 190);
+		font-size: 10px;
+		font-weight: 600;
+		line-height: 1;
+	}
+
+  .join_text {
+		color: rgb(150, 152, 157);
+	}
+
+	&:focus {
+		@extend %MessageFocus;
+	}
+}

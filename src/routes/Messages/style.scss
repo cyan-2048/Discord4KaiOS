@@ -1,40 +1,238 @@
+@use "../../assets/shared" as *;
+
+@mixin emphasize($color1, $color2) {
+	@include linearGradient(30%, $color1, !important);
+	background-color: $color2 !important;
+	box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.4) !important;
+	border-radius: 0px;
+}
+
+@mixin emphasizeFocus($color1, $color2) {
+	@include linearGradient(30%, $color1, !important);
+	background-color: $color2 !important;
+	box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6) !important;
+}
+
 .Messages {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
 
-  .chatbox {
-    height: 100%;
-    overflow: scroll;
-  }
-
+	.chatbox {
+		height: 100%;
+		overflow: scroll;
+	}
 }
 
 .Message {
-  .emoji {
-    position: relative;
-    width: 16px;
-    height: 16px;
-    display: inline-block;
+	padding-left: 34px;
+	font-size: 13px;
+	padding-right: 5px;
+	padding-bottom: 2px;
+	padding-top: 2px;
 
-    span {
-      font-size: 0;
-      position: absolute;
-    }
+	&:focus,
+	&.mention {
+		@extend %MessageFocus;
+	}
 
-    &::before {
-      content: "";
-      position: absolute;
-      background-image: var(--emoji_url);
-      width: 16px;
-      height: 16px;
-      background-position: center;
-      background-repeat: no-repeat;
-      background-attachment: local;
-      overflow: hidden;
-      background-size: contain;
-    }
-  }
+	&:not(.mention):focus {
+		background-color: hsla(204, 7.7%, 12.7%, 0.6);
+	}
+
+	&.mention {
+		@include linearGradient(20%, hsla(56, 37.6%, 56.7%, 0.4));
+		background-color: hsla(42, 97.7%, 33.5%, 0.4) !important;
+
+		&:focus {
+			@include linearGradient(20%, hsla(57, 47.4%, 66.5%, 0.6), !important);
+			background-color: hsla(38, 77.8%, 44.1%, 0.6) !important;
+		}
+	}
+
+	&.deleted {
+		background-color: #4a3a40;
+
+		&:focus {
+			background-color: #44373c !important;
+		}
+	}
+
+	&.replying {
+		@include emphasize(
+			hsla(221, 37.6%, 56.7%, 0.4),
+			hsla(197, 97.7%, 33.5%, 0.4)
+		);
+
+		&:focus {
+			@include emphasizeFocus(
+				hsla(211, 45.9%, 64.5%, 0.4),
+				hsla(197, 79.1%, 41.4%, 0.4)
+			);
+		}
+	}
+
+	&.editing {
+		@include emphasize(hsla(204, 20%, 4.9%, 0.8), hsla(204, 5.9%, 16.7%, 0.8));
+
+		&:focus {
+			@include emphasizeFocus(
+				hsla(204, 20%, 4.9%, 0.8),
+				hsla(204, 5.9%, 16.7%, 0.8)
+			);
+		}
+
+		border-radius: 5px !important;
+		box-shadow: inset 0 0 0 1px rgba(28, 29, 30),
+			inset 0 0 0 2px rgba(134, 134, 134, 0.8) !important;
+		// background-color: #32353b;
+	}
+
+	.content {
+		hyphens: auto;
+		white-space: pre-wrap;
+		word-wrap: break-word;
+
+		&.edited::after {
+			content: "(edited)";
+			color: #a3a6aa;
+			margin-left: 3px;
+			font-size: 9.1px;
+		}
+
+		+ .embed {
+			margin-top: 4px;
+			word-wrap: break-word;
+			hyphens: auto;
+		}
+
+		.emoji-big .emoji,
+		.emoji-big .emoji::before {
+			width: 32px !important;
+			height: 32px !important;
+		}
+
+		.emoji-big {
+			font-size: 32px;
+			line-height: 1;
+			padding-top: 1.5px;
+			padding-bottom: 1.5px;
+		}
+
+		
+			pre,
+			code {
+				font-family: "Droid Sans Mono", monospace;
+				border-radius: 3px;
+				background-color: #2f3136;
+			}
+
+			code {
+				font-size: 0.9em;
+				padding: 1px;
+			}
+
+			pre {
+				margin: 2px 0;
+				border: solid 1.5px #202225;
+				padding: 2px 5px;
+				word-break: break-all;
+				white-space: pre-wrap;
+
+				&:first-child {
+					margin-top: 0;
+				}
+			}
+
+			.spoiler {
+				width: 100%;
+				height: 100%;
+				background-color: #202225;
+				color: transparent;
+
+				&.active {
+					background-color: hsla(0, 0%, 100%, 0.1);
+					color: white;
+				}
+			}
+
+			blockquote {
+				margin: 0;
+				padding-left: 8px;
+				position: relative;
+
+				&::before {
+					content: "";
+					position: absolute;
+					height: 100%;
+					width: 3px;
+					left: 0;
+					top: 0;
+					background-color: #4f545c;
+					border-radius: 3px;
+				}
+			}
+		
+	}
+
+	.reply {
+		display: flex;
+		font-size: 9.6px;
+		color: rgba(185, 187, 190, 0.5);
+
+		.r-text {
+			width: 100%;
+			height: 14px;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			overflow: hidden;
+
+			:global(.emoji) {
+				width: 10px !important;
+				height: 10px !important;
+			}
+		}
+		.r-icon {
+			height: 12px;
+			width: 13px;
+			background-image: url(/css/reply_.png);
+			margin-top: 1.5px;
+			margin-right: 2px;
+			background-size: contain;
+			background-repeat: no-repeat;
+			margin-left: -15px;
+		}
+	}
+
+	.reactions {
+		display: flex;
+		flex-wrap: wrap;
+	}
+
+	.emoji {
+		position: relative;
+		width: 16px;
+		height: 16px;
+		display: inline-block;
+
+		span {
+			font-size: 0;
+			position: absolute;
+		}
+
+		&::before {
+			content: "";
+			position: absolute;
+			background-image: var(--emoji_url);
+			width: 16px;
+			height: 16px;
+			background-position: center;
+			background-repeat: no-repeat;
+			background-attachment: local;
+			overflow: hidden;
+			background-size: contain;
+		}
+	}
 }

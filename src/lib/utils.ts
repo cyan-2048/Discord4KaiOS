@@ -217,3 +217,25 @@ export function decimal2rgb(ns: number, arr: boolean = false) {
 		b = ns % 256;
 	return arr ? [r, g, b] : { r, g, b };
 }
+
+export function stringifyDate(_date: Date) {
+	const date = new Date(_date),
+		date_string = date.toDateString(),
+		date_time = date.toLocaleTimeString([], {
+			hour: "2-digit",
+			minute: "2-digit",
+		});
+
+	const today = new Date();
+
+	if (today.toDateString() === date_string) {
+		return "Today at " + date_time;
+	}
+
+	today.setDate(today.getDate() - 1);
+	if (today.toDateString() === date_string) {
+		return "Yesterday at " + date_time;
+	}
+
+	return date.toLocaleDateString();
+}

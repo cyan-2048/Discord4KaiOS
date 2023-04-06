@@ -9,7 +9,7 @@ import { GuildMember } from "discord/GuildMembers";
 interface MentionsProps {
 	type: string;
 	id: string;
-	guildInstance: Guild;
+	guildInstance?: Guild;
 	prefix?: boolean;
 	mentions?: boolean;
 	username?: string;
@@ -21,13 +21,13 @@ function prefi(s: string, prefix: boolean) {
 
 async function getProfile(
 	id: string,
-	guildInstance: Guild,
 	prefix: boolean,
 	setText: (text: string) => void,
-	setStyle: (style: h.JSX.CSSProperties | null) => void
+	setStyle: (style: h.JSX.CSSProperties | null) => void,
+	guildInstance?: Guild
 ) {
 	const profile =
-		(await guildInstance.getServerProfile(id)) ||
+		(await guildInstance?.getServerProfile(id)) ||
 		discordInstance.peek().gateway.users_cache.get(id);
 	if (!profile) setText(prefi("@", prefix) + "unknown-user");
 
@@ -61,7 +61,7 @@ export default memo(function Mentions({
 
 	useEffect(() => {
 		if (type === "role") {
-			const role = guildInstance.rawGuild.roles?.find((e) => e.id === id);
+			const role = guildInstance?.rawGuild.roles?.find((e) => e.id === id);
 			if (role && role.color > 0) {
 				const rgb = decimal2rgb(role.color, true);
 				setStyle({
@@ -71,7 +71,7 @@ export default memo(function Mentions({
 			}
 			setText(prefi("@", prefix) + (role?.name || "deleted-role"));
 		} else if (type === "user") {
-			getProfile(id, guildInstance, prefix, setText, setStyle);
+			getProfile(id, prefix, setText, setStyle, guildInstance);
 		} else if (type === "channel") {
 			const channel = discordGateway.findChannelByID(id);
 			if (!channel) return setText("deleted-channel");
