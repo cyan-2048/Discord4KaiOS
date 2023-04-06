@@ -1,0 +1,40 @@
+.Messages {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+
+  .chatbox {
+    height: 100%;
+    overflow: scroll;
+  }
+
+}
+
+.Message {
+  .emoji {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+
+    span {
+      font-size: 0;
+      position: absolute;
+    }
+
+    &::before {
+      content: "";
+      position: absolute;
+      background-image: var(--emoji_url);
+      width: 16px;
+      height: 16px;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: local;
+      overflow: hidden;
+      background-size: contain;
+    }
+  }
+}

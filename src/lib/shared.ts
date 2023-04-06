@@ -6,6 +6,7 @@ import Discord, { readable } from "discord";
 import { route } from "preact-router";
 import { InternetResults, sleep, testInternet } from "./utils";
 import { Guild } from "discord/Guilds";
+import { ChannelBase } from "discord/GuildChannels";
 
 const observed_elements = new WeakMap();
 
@@ -53,23 +54,28 @@ export const sn = spatial_navigation;
 export const appReady = signal(false);
 export const discordInstance = signal(new Discord(true));
 export const guilds = signal<Guild[]>([]);
+export const currentChannel = signal<ChannelBase | null>(null);
 
 export async function loadDiscord() {
 	await sleep(100);
 
+	appReady.value = false;
+
+	let discord = discordInstance.peek();
+	await discord.gateway.close();
+	discord = new Discord(true);
+	discordInstance.value = discord;
+
 	console.log(discordInstance.peek());
 
-	const discord = discordInstance.peek();
-	await discord.gateway.close();
-
 	route("/", true);
-
-	appReady.value = false;
 
 	const internetConnection = await testInternet();
 	if (internetConnection !== InternetResults.OK) {
 		alert(
-			internetConnection === InternetResults.EXPIRED_CERTS ? "You have expired certificate problem thing, go to the KaiStore to get the update." : "You don't have internet go away"
+			internetConnection === InternetResults.EXPIRED_CERTS
+				? "You have expired certificate problem thing, go to the KaiStore to get the update."
+				: "You don't have internet go away"
 		);
 		return window.close();
 	}

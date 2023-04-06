@@ -3,7 +3,7 @@ import "./Server.scss";
 import "./Channel.scss";
 
 import { centerScroll, ifPropsChange, sleep, useMemoryState, useMount, useMountDebug, useReadable, useSpatialNav, useStateMutable } from "@/lib/utils";
-import { discordInstance, RouteProps, sn } from "@lib/shared";
+import { currentChannel, discordInstance, RouteProps, sn } from "@lib/shared";
 
 import { Guild } from "discord/Guilds";
 import { RawGuild, ReadState } from "discord/libs/types";
@@ -12,7 +12,13 @@ import { GuildChannel } from "discord/GuildChannels";
 import clx from "obj-str";
 import { Fragment, h } from "preact";
 import { route } from "preact-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
 import { get, Readable } from "discord";
 import Button from "@/components/Button";
 import { signal } from "@preact/signals";
@@ -20,7 +26,12 @@ import { memo } from "preact/compat";
 
 const ChannelIcons = {
 	text: (
-		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+		>
 			<path
 				fill="currentColor"
 				fillRule="evenodd"
@@ -30,7 +41,12 @@ const ChannelIcons = {
 		</svg>
 	),
 	limited: (
-		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+		>
 			<path
 				fill="currentColor"
 				d="M14 8C14 7.44772 13.5523 7 13 7H9.76001L10.3657 3.58738C10.4201 3.28107 10.1845 3 9.87344 3H8.88907C8.64664 3 8.43914 3.17391 8.39677 3.41262L7.76001 7H4.18011C3.93722 7 3.72946 7.17456 3.68759 7.41381L3.51259 8.41381C3.45905 8.71977 3.69449 9 4.00511 9H7.41001L6.35001 15H2.77011C2.52722 15 2.31946 15.1746 2.27759 15.4138L2.10259 16.4138C2.04905 16.7198 2.28449 17 2.59511 17H6.00001L5.39427 20.4126C5.3399 20.7189 5.57547 21 5.88657 21H6.87094C7.11337 21 7.32088 20.8261 7.36325 20.5874L8.00001 17H14L13.3943 20.4126C13.3399 20.7189 13.5755 21 13.8866 21H14.8709C15.1134 21 15.3209 20.8261 15.3632 20.5874L16 17H19.5799C19.8228 17 20.0306 16.8254 20.0724 16.5862L20.2474 15.5862C20.301 15.2802 20.0655 15 19.7549 15H16.35L16.6758 13.1558C16.7823 12.5529 16.3186 12 15.7063 12C15.2286 12 14.8199 12.3429 14.7368 12.8133L14.3504 15H8.35045L9.41045 9H13C13.5523 9 14 8.55228 14 8Z"
@@ -42,7 +58,12 @@ const ChannelIcons = {
 		</svg>
 	),
 	announce: (
-		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="24"
+			height="24"
+			viewBox="0 0 24 24"
+		>
 			<path d="M3.9 8.26H2V15.2941H3.9V8.26Z" fill="currentColor" />
 			<path
 				d="M19.1 4V5.12659L4.85 8.26447V18.1176C4.85 18.5496 5.1464 18.9252 5.5701 19.0315L9.3701 19.9727C9.4461 19.9906 9.524 20 9.6 20C9.89545 20 10.1776 19.8635 10.36 19.6235L12.7065 16.5242L19.1 17.9304V19.0588H21V4H19.1ZM9.2181 17.9944L6.75 17.3826V15.2113L10.6706 16.0753L9.2181 17.9944Z"
@@ -52,23 +73,43 @@ const ChannelIcons = {
 	),
 };
 
-const ChannelSeparator = (props) => <div class="__separator">{props.children}</div>;
+const ChannelSeparator = (props) => (
+	<div class="__separator">{props.children}</div>
+);
 
-function _Channel({ avatar, status, id, muted, mentions, unread, client, ch_type, subtext, name, children }: any) {
+function _Channel({
+	avatar,
+	status,
+	id,
+	muted,
+	mentions,
+	unread,
+	client,
+	ch_type,
+	subtext,
+	name,
+	children,
+}: any) {
 	return (
 		<main
 			data-focusable=""
 			tabIndex={0}
 			id={`channel${id}`}
-			class={`${avatar ? "dm" : ""} ${muted && mentions == 0 ? "muted" : ""} ${(unread && !muted) || mentions > 0 ? "unread" : ""}`}
+			class={`${avatar ? "dm" : ""} ${muted && mentions == 0 ? "muted" : ""} ${
+				(unread && !muted) || mentions > 0 ? "unread" : ""
+			}`}
 		>
 			{avatar ? (
 				<div class="avatar">
 					<img src={avatar} alt="" />
 					{status && (
 						<div
-							class={`status ${client === "mobile" && status !== "offline" ? "mobile" : ""}`}
-							style={`background-image:url(/css/status/${status !== "offline" ? client + "_" : ""}${status}.png);`}
+							class={`status ${
+								client === "mobile" && status !== "offline" ? "mobile" : ""
+							}`}
+							style={`background-image:url(/css/status/${
+								status !== "offline" ? client + "_" : ""
+							}${status}.png);`}
 						/>
 					)}
 				</div>
@@ -81,7 +122,9 @@ function _Channel({ avatar, status, id, muted, mentions, unread, client, ch_type
 
 			{!isNaN(mentions) && mentions > 0 && (
 				<div class="mentions">
-					<div class={String(mentions).length > 2 ? "flow" : ""}>{mentions}</div>
+					<div class={String(mentions).length > 2 ? "flow" : ""}>
+						{mentions}
+					</div>
 				</div>
 			)}
 			{subtext && <div class="subtext">{subtext}</div>}
@@ -98,7 +141,11 @@ interface ServerChannelProps {
 }
 
 /* For Channels in Servers aka not DMS */
-const Channel = memo(function Channel({ channel, class: _class, ..._props }: ServerChannelProps) {
+const Channel = memo(function Channel({
+	channel,
+	class: _class,
+	..._props
+}: ServerChannelProps) {
 	const props = useReadable(channel.props);
 
 	const readState = channel.readState && useReadable(channel.readState);
@@ -107,16 +154,27 @@ const Channel = memo(function Channel({ channel, class: _class, ..._props }: Ser
 
 	const mentions = readState?.mention_count || 0;
 
-	const ch_type = props.type === 5 ? "announce" : channel.isPrivate() ? "limited" : "text";
+	const ch_type =
+		props.type === 5 ? "announce" : channel.isPrivate() ? "limited" : "text";
 
 	return (
 		<main
 			data-focusable=""
 			tabIndex={0}
 			id={`channel${channel.id}`}
-			class={`Channel__ ${muted && mentions == 0 ? "muted" : ""} ${(unread && !muted) || mentions > 0 ? "unread" : ""} ${_class}`}
+			class={`Channel ${muted && mentions == 0 ? "muted" : ""} ${
+				(unread && !muted) || mentions > 0 ? "unread" : ""
+			} ${_class}`}
 			onFocus={async (e) => {
 				await centerScroll(e.target as HTMLElement);
+			}}
+			onClick={async () => {
+				// @ts-ignore: idc
+				if (channel.messages.messages.length < 15)
+					await channel.messages.loadMessages();
+				route(`/channels/${guildID.peek()}/${channel.id}`);
+				channel.messages.ack();
+				currentChannel.value = channel;
 			}}
 			{..._props}
 		>
@@ -124,7 +182,9 @@ const Channel = memo(function Channel({ channel, class: _class, ..._props }: Ser
 			{ChannelIcons[ch_type as keyof typeof ChannelIcons]}
 			{mentions > 0 && (
 				<div class="mentions">
-					<div class={String(mentions).length > 2 ? "flow" : ""}>{mentions}</div>
+					<div class={String(mentions).length > 2 ? "flow" : ""}>
+						{mentions}
+					</div>
 				</div>
 			)}
 			<div class="text">{props.name}</div>
@@ -143,7 +203,15 @@ const shorten = (e: string) =>
 		.join("")
 		.slice(0, 3) || "";
 
-const Server = memo(function Server({ focusable = true, guild, selected }: { focusable?: boolean; selected?: boolean; guild: Guild }) {
+const Server = memo(function Server({
+	focusable = true,
+	guild,
+	selected,
+}: {
+	focusable?: boolean;
+	selected?: boolean;
+	guild: Guild;
+}) {
 	const props: RawGuild = useReadable(guild.props);
 
 	const [mentions, setMentions] = useMemoryState("mentions-" + props.id, 0);
@@ -158,7 +226,9 @@ const Server = memo(function Server({ focusable = true, guild, selected }: { foc
 			a.subscribe((val: ReadState) => {
 				states.add(val);
 				// @ts-ignore
-				const _mentions = [...states].map((a: ReadState) => a.mention_count).reduce((a, b) => a + b, 0);
+				const _mentions = [...states]
+					.map((a: ReadState) => a.mention_count)
+					.reduce((a, b) => a + b, 0);
 				setMentions(_mentions);
 
 				if (_mentions) {
@@ -182,7 +252,10 @@ const Server = memo(function Server({ focusable = true, guild, selected }: { foc
 		return () => unsubs.forEach((a) => a());
 	});
 
-	const animated = useMemo(() => Boolean(props.icon?.startsWith("a_")), [props.icon]);
+	const animated = useMemo(
+		() => Boolean(props.icon?.startsWith("a_")),
+		[props.icon]
+	);
 
 	const [focused, setFocused] = useState(false);
 
@@ -228,26 +301,43 @@ const Server = memo(function Server({ focusable = true, guild, selected }: { foc
 		>
 			{focusable && <div class="hover" />}
 			{props.icon ? (
-				<div class="image" style={{ "--image": `url(https://cdn.discordapp.com/icons/${guild.id}/${props.icon}.${animated && focused ? "gif" : "png"}?size=48)` }} />
+				<div
+					class="image"
+					style={{
+						"--image": `url(https://cdn.discordapp.com/icons/${guild.id}/${
+							props.icon
+						}.${animated && focused ? "gif" : "png"}?size=48)`,
+					}}
+				/>
 			) : (
 				<div class="image" data-name={shorten(props.name)} />
 			)}
 
-			{mentions > 0 && focusable && <div class="ServerMentions__">{mentions}</div>}
+			{mentions > 0 && focusable && (
+				<div class="ServerMentions">{mentions}</div>
+			)}
 		</main>
 	);
 });
 
-const pageStateSymbol = Symbol();
+window.onkeydown = ({ key }) =>
+	void (key == "0" && document.querySelector("button")?.click());
 
-window.onkeydown = ({ key }) => void (key == "0");
+async function noChannelsFound() {
+	await sleep(10);
+	pageState.value = 0;
+	sn.focus(serversSN);
+	console.log("TODO Modals", "no channels found");
+}
 
 function ServerChannelList({ guilds }: { guilds: Guild[] }) {
 	useMountDebug("ServerChannelList");
 
 	const channels = useMemo(
 		() =>
-			safeGetReadable(guilds.find((a) => a.id == guildID.peek())?.channels.siftedChannels)
+			safeGetReadable(
+				guilds.find((a) => a.id == guildID.peek())?.channels.siftedChannels
+			)
 				?.filter((a) => {
 					if (a.type === 0 || a.type == 5) {
 						const perms = a.roleAccess();
@@ -275,6 +365,12 @@ function ServerChannelList({ guilds }: { guilds: Guild[] }) {
 		[guildID.value]
 	);
 
+	useEffect(() => {
+		if (channels && !channels.length) {
+			noChannelsFound();
+		}
+	}, [channels]);
+
 	return <>{channels}</>;
 }
 
@@ -288,14 +384,55 @@ function safeGetReadable<T>(r?: Readable<T>) {
 const guildID = signal("@me");
 const pageState = signal<0 | 1>(0);
 
-export default function Channels({ channelID, guildID: _guildID, hidden, ...props }: RouteProps<{ hidden?: boolean; channelID: string; guildID: string }>) {
+const DMasGuild = memo(
+	function ({ selected }: { selected: boolean }) {
+		const [focused, setFocused] = useState(false);
+
+		return (
+			<main
+				tabIndex={0}
+				data-focusable=""
+				class={clx({ selected, Server: 1, dm: 1, focused })}
+				onFocus={() => setFocused(true)}
+				onBlur={() => setFocused(false)}
+				onKeyDown={(e) => {
+					if (["Enter", "SoftRight", "ArrowRight"].includes(e.key)) {
+						route("/channels/@me");
+						noChannelsFound();
+						// pageState.value = 1;
+					}
+				}}
+			>
+				<div class="hover"></div>
+				<div class="image" data-name="" />
+			</main>
+		);
+	},
+	(prev, next) => {
+		return prev.selected == next.selected;
+	}
+);
+
+export default function Channels({
+	channelID,
+	guildID: _guildID,
+	hidden,
+	...props
+}: RouteProps<{ hidden?: boolean; channelID: string; guildID: string }>) {
 	const discord = discordInstance.value;
 
-	const guilds: Guild[] = useMemo(() => discord.gateway.guilds.getAll(), [discord]);
+	const guilds: Guild[] = useMemo(
+		() => discord.gateway.guilds.getAll(),
+		[discord]
+	);
 
 	const channelsEl = useRef<HTMLDivElement>(null);
 
-	const guildsList = useMemo(() => guilds.map((a) => <Server selected={guildID.value === a.id} guild={a} />), [guilds, guildID.value]);
+	const guildsList = useMemo(
+		() =>
+			guilds.map((a) => <Server selected={guildID.value === a.id} guild={a} />),
+		[guilds, guildID.value]
+	);
 
 	useEffect(() => {
 		channelsEl.current.querySelector(".focused")?.classList.remove("focused");
@@ -321,13 +458,21 @@ export default function Channels({ channelID, guildID: _guildID, hidden, ...prop
 	);
 
 	useEffect(() => {
-		!hidden && sleep(50).then(() => sn.focus(pageState.value ? channelsSN : serversSN));
+		!hidden &&
+			sleep(50).then(() => sn.focus(pageState.value ? channelsSN : serversSN));
 	}, [pageState.value, hidden]);
 
 	return (
-		<main style={{ visibility: hidden ? "hidden" : null }} hidden={hidden} class="Channels">
+		<main
+			style={{ visibility: hidden ? "hidden" : null }}
+			hidden={hidden}
+			class="Channels"
+		>
 			<div class={clx({ servers: 1, hidden: pageState.value == 1 })}>
-				<div data-servers="">{guildsList}</div>
+				<div data-servers="">
+					<DMasGuild selected={_guildID == "@me"}></DMasGuild>
+					{guildsList}
+				</div>
 			</div>
 			<div
 				onKeyDown={(e) => {
@@ -356,6 +501,9 @@ export default function Channels({ channelID, guildID: _guildID, hidden, ...prop
 				) : (
 					<ServerChannelList guilds={guilds} />
 				)}
+				<Button onClick={useCallback(() => route("/test"), [])}>
+					{"Test Route"}
+				</Button>
 			</div>
 		</main>
 	);

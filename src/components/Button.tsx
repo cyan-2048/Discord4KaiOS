@@ -1,9 +1,10 @@
 import { delayedCallback } from "@/lib/utils";
 import { h, Fragment } from "preact";
-import { forwardRef, HTMLAttributes, useState } from "preact/compat";
+import { forwardRef, HTMLAttributes, memo, useState } from "preact/compat";
 import "./assets/button.scss";
 
-interface ButtonProps extends Omit<HTMLAttributes<HTMLButtonElement>, "onClick" | "onError"> {
+interface ButtonProps
+	extends Omit<HTMLAttributes<HTMLButtonElement>, "onClick" | "onError"> {
 	onError?: (err: any) => any;
 	onSuccess?: (result: any) => any;
 	onClick?: (...args: any[]) => any;
@@ -11,7 +12,10 @@ interface ButtonProps extends Omit<HTMLAttributes<HTMLButtonElement>, "onClick" 
 
 export const DeleteSymbol = Symbol("delete");
 
-export default forwardRef<HTMLButtonElement, ButtonProps>(function Button({ onClick, onError, onSuccess, ...props }: ButtonProps, forwardTheRef) {
+export default memo(function Button(
+	{ onClick, onError, onSuccess, ...props }: ButtonProps,
+	forwardTheRef
+) {
 	const [state, setState] = useState(false);
 
 	async function changeOfState(...args: any[]) {
@@ -38,7 +42,14 @@ export default forwardRef<HTMLButtonElement, ButtonProps>(function Button({ onCl
 	return state === null ? (
 		<></>
 	) : (
-		<button class="Button" tabIndex={0} data-focusable="" {...props} onClick={changeOfState} ref={forwardTheRef}>
+		<button
+			class="Button"
+			tabIndex={0}
+			data-focusable=""
+			{...props}
+			onClick={changeOfState}
+			ref={forwardTheRef}
+		>
 			{state ? (
 				<div class="dot-wrap">
 					<div class="dot-flashing" />

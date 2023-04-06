@@ -1,13 +1,15 @@
 import { observeElement } from "@/lib/shared";
 import parse from "@lib/discord-markdown";
 import { h, Fragment, Component } from "preact";
+import { CSSProperties, memo } from "preact/compat";
 import { MutableRef, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { Readable, Unsubscriber } from "svelte/store";
+import Mentions from "./Mentions";
 
 interface Props {
 	text: string;
 	discordOnly: boolean;
 	embed: boolean;
+	reference: any;
 }
 
 interface MarkdownNodeProps {
@@ -20,7 +22,15 @@ interface MarkdownNodeProps {
 	reference?: any;
 }
 
-function EmojiElement({ name, id, animated }: { id: string; animated: boolean; name: string }) {
+function EmojiElement({
+	name,
+	id,
+	animated,
+}: {
+	id: string;
+	animated: boolean;
+	name: string;
+}) {
 	const [inView, setState] = useState(false);
 	const emojiRef = useRef<HTMLDivElement>(null);
 
@@ -30,14 +40,34 @@ function EmojiElement({ name, id, animated }: { id: string; animated: boolean; n
 		}
 	}, [animated]);
 
+	const url = `url('https://cdn.discordapp.com/emojis/${id}.${
+		animated && inView ? "gif" : "png"
+	}?size=32')`;
+
 	return (
-		<div ref={emojiRef} class="emoji" style={{ "--emoji_url": `url('https://cdn.discordapp.com/emojis/${id}.${animated && inView ? "gif" : "png"}?size=32'))` }}>
+		<div
+			ref={emojiRef}
+			class="emoji"
+			style={
+				{
+					"--emoji_url": url,
+				} as CSSProperties
+			}
+		>
 			<span>{name}</span>
 		</div>
 	);
 }
 
-function MarkdownNode({ type, content, target, id, name, animated, reference: ref }: MarkdownNodeProps) {
+function MarkdownNode({
+	type,
+	content,
+	target,
+	id,
+	name,
+	animated,
+	reference: ref,
+}: MarkdownNodeProps) {
 	if (type == "codeBlock") {
 		return (
 			<pre>
@@ -57,27 +87,48 @@ function MarkdownNode({ type, content, target, id, name, animated, reference: re
 			</a>
 		);
 	} else if (type == ":emoji:") {
-		return <EmojiElement id={id} name={name} animated={animated}></EmojiElement>;
+		return (
+			<EmojiElement id={id} name={name} animated={animated}></EmojiElement>
+		);
 	} else if (["em", "strong", "u", "del", "code"].includes(type)) {
 		return h(type, null, <MarkdownContent content={content} reference={ref} />);
 	} else if (["@everyone", "@here"].includes(type)) {
 		return <span class="mentions">{type}</span>;
 	} else if (type === "text") {
 		return <>{content}</>;
-	}
-	// TODO: Mentions component
-	// {:else if /^(@|#)/.test(type)}
-	// 	<Mentions type={type.slice(1)} {id} {...ref} />
-	else if (content) {
+	} else if (
+		// TODO: Mentions component
+		/^(@|#)/.test(type)
+	) {
+		return <Mentions type={type.slice(1)} id={id} {...ref} />;
+	} else if (content) {
 		return <MarkdownContent content={content} reference={ref} />;
 	}
 }
 
-function MarkdownContent({ content = [], reference }: { content: string | MarkdownNodeProps[]; reference?: any }) {
-	return <>{typeof content === "string" ? content : content.map((node) => MarkdownNode({ ...node, reference }))}</>;
-}
+const MarkdownContent = memo(function MarkdownContent({
+	content = [],
+	reference,
+}: {
+	content: string | MarkdownNodeProps[];
+	reference?: any;
+}) {
+	return (
+		<>
+			{typeof content === "string"
+				? content
+				: content.map((node) => MarkdownNode({ ...node, reference }))}
+		</>
+	);
+});
 
-export function Markdown({ text = "", ...props }: Partial<Props> = {}) {
-	const tree: MarkdownNodeProps[] = useMemo(() => parse(text, props), [text, props]);
-	return <MarkdownContent content={tree} reference={null} />;
-}
+export const Markdown = memo(function Markdown({
+	text = "",
+	...props
+}: Partial<Props> = {}) {
+	const tree: MarkdownNodeProps[] = useMemo(
+		() => parse(text, props),
+		[text, props]
+	);
+	return <MarkdownContent content={tree} reference={props.reference || null} />;
+});

@@ -194,3 +194,26 @@ export function ifPropsChange(...props: string[]) {
 		return props.some((prop) => prevProps[prop] !== nextProps[prop]);
 	};
 }
+
+export function scrollToBottom(el?: HTMLElement) {
+	if (!el) return;
+	return (el.scrollTop = el.scrollHeight);
+}
+
+/**
+ *
+ * @param ns the decimal
+ * @param arr should it return rgb in array form
+ * @returns
+ */
+export function decimal2rgb(
+	ns: number,
+	arr: false
+): { r: number; g: number; b: number };
+export function decimal2rgb(ns: number, arr: true): number[];
+export function decimal2rgb(ns: number, arr: boolean = false) {
+	let r = Math.floor(ns / (256 * 256)),
+		g = Math.floor(ns / 256) % 256,
+		b = ns % 256;
+	return arr ? [r, g, b] : { r, g, b };
+}

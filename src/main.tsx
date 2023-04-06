@@ -26,6 +26,7 @@ import Login from "@routes/Login";
 import Channels from "@routes/Channels";
 import Button from "@components/Button";
 import { useState } from "preact/hooks";
+import Messages from "@routes/Messages";
 
 function TestRoute(props: any) {
 	useMountDebug("TestRoute");
@@ -44,7 +45,7 @@ function TestRoute(props: any) {
 	);
 }
 
-function NullComponent() {
+function NullComponent(props: { path: string }) {
 	return <></>;
 }
 
@@ -55,8 +56,12 @@ function App() {
 	});
 
 	const [guildID, setGuild] = useState("");
-	const [mounted, setMounted] = useState(false);
-	const [channelsHidden, setHidden] = useState(false);
+	const [channelsMounted, setChannelsMounted] = useState(false);
+	const [channelsHidden, setChannelsHidden] = useState(false);
+
+	const [messagesMounted, setMessagesMounted] = useState(false);
+	const [messagesHidden, setMessagesHidden] = useState(false);
+	const [channelID, setChannel] = useState("");
 
 	// /channels/@me/823842249069953036
 
@@ -66,18 +71,33 @@ function App() {
 				onChange={(props) => {
 					if (props.matches?.guildID) {
 						setGuild(props.matches.guildID);
-						!mounted && setMounted(true);
-						setHidden(false);
+						!channelsMounted && setChannelsMounted(true);
+						if (props.matches.channelID) {
+							!messagesMounted && setMessagesMounted(true);
+							setChannel(props.matches.channelID);
+							setChannelsHidden(true);
+							setMessagesHidden(false);
+							return;
+						} else {
+							setMessagesHidden(true);
+						}
+						setChannelsHidden(false);
 					} else {
-						setHidden(true);
+						setChannelsHidden(true);
 					}
 				}}
 			>
 				<Login path="/login"></Login>
 				<TestRoute path="/test"></TestRoute>
-				<NullComponent path="/channels/:guildID/:channelID?"></NullComponent>
+				<NullComponent path="/channels/:guildID/"></NullComponent>
+				<NullComponent path="/channels/:guildID/:channelID"></NullComponent>
 			</Router>
-			{mounted && <Channels hidden={channelsHidden} guildID={guildID}></Channels>}
+			{channelsMounted && (
+				<Channels hidden={channelsHidden} guildID={guildID}></Channels>
+			)}
+			{messagesMounted && (
+				<Messages hidden={messagesHidden} channelID={channelID}></Messages>
+			)}
 		</>
 	) : (
 		<Loading />
