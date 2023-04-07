@@ -2,7 +2,13 @@ import { Markdown } from "@components/Markdown";
 import "./style.scss";
 
 import { currentChannel } from "@lib/shared";
-import { scrollToBottom, sleep, useMount, useReadable } from "@lib/utils";
+import {
+	scrollToBottom,
+	sleep,
+	stringifyDate,
+	useMount,
+	useReadable,
+} from "@lib/utils";
 import { ChannelBase } from "discord/GuildChannels";
 import DiscordMessage, { RawMessage } from "discord/Message";
 import { get } from "discord/main";
@@ -51,6 +57,48 @@ function decideMessageSeparator(
 	);
 }
 
+function setMapAndReturn<K, V>(map: Map<K, V>, key: K, value: V) {
+	map.set(key, value);
+	return value;
+}
+
+const MessageSeparator = memo(function MessageSeparator({
+	children: { rawMessage: msg, guildInstance },
+}: {
+	children: DiscordMessage;
+}) {
+	const user = msg.author;
+	const image = user.avatar
+		? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.jpg?size=24`
+		: null;
+
+	return (
+		<main class="MessageSeparator">
+			<img src={image || "/css/default.png"} />
+			<div class="name">
+				<div class="user">
+					<b>
+						<Mentions
+							guildInstance={guildInstance}
+							mentions={false}
+							type="user"
+							username={user.username}
+							id={user.id}
+							prefix={false}
+						/>
+					</b>
+				</div>
+				{user.bot && (
+					<div class="bot">
+						{user.discriminator === "0000" ? "WEBHOOK" : "BOT"}
+					</div>
+				)}
+				<div class="date">{stringifyDate(msg.timestamp)}</div>
+			</div>
+		</main>
+	);
+});
+
 const MessageContent = memo(function MessageContent({
 	children: message,
 }: {
@@ -61,14 +109,10 @@ const MessageContent = memo(function MessageContent({
 		<Markdown
 			reference={{ guildInstance: message.guildInstance }}
 			text={content}
+			embed={!!message.rawMessage.author.bot}
 		></Markdown>
 	);
 });
-
-function setMapAndReturn<K, V>(map: Map<K, V>, key: K, value: V) {
-	map.set(key, value);
-	return value;
-}
 
 const MessageReference = memo(function MessageReference({
 	guildInstance,
@@ -147,7 +191,7 @@ const Message = memo(function Message({
 					}
 				></MessageReference>
 			)}
-			{separate && "________"}
+			{separate && <MessageSeparator>{message}</MessageSeparator>}
 			{children}
 			<div class={clx({ content: 1, edited: messageProps.edited_timestamp })}>
 				<MessageContent>{message}</MessageContent>
