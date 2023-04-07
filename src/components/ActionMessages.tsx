@@ -172,7 +172,6 @@ const ActionMessages = memo(function ActionMessages({
 });
 
 export default function handleActionMessage(message: Message) {
-	console.log("tESTs");
 	return [6, 7, 8, 3].includes(message.rawMessage.type) ? (
 		<ActionMessages>{message}</ActionMessages>
 	) : null;

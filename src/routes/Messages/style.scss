@@ -121,60 +121,58 @@
 			padding-bottom: 1.5px;
 		}
 
-		
-			pre,
-			code {
-				font-family: "Droid Sans Mono", monospace;
-				border-radius: 3px;
-				background-color: #2f3136;
+		pre,
+		code {
+			font-family: "Droid Sans Mono", monospace;
+			border-radius: 3px;
+			background-color: #2f3136;
+		}
+
+		code {
+			font-size: 0.9em;
+			padding: 1px;
+		}
+
+		pre {
+			margin: 2px 0;
+			border: solid 1.5px #202225;
+			padding: 2px 5px;
+			word-break: break-all;
+			white-space: pre-wrap;
+
+			&:first-child {
+				margin-top: 0;
 			}
+		}
 
-			code {
-				font-size: 0.9em;
-				padding: 1px;
+		.spoiler {
+			width: 100%;
+			height: 100%;
+			background-color: #202225;
+			color: transparent;
+
+			&.active {
+				background-color: hsla(0, 0%, 100%, 0.1);
+				color: white;
 			}
+		}
 
-			pre {
-				margin: 2px 0;
-				border: solid 1.5px #202225;
-				padding: 2px 5px;
-				word-break: break-all;
-				white-space: pre-wrap;
+		blockquote {
+			margin: 0;
+			padding-left: 8px;
+			position: relative;
 
-				&:first-child {
-					margin-top: 0;
-				}
-			}
-
-			.spoiler {
-				width: 100%;
+			&::before {
+				content: "";
+				position: absolute;
 				height: 100%;
-				background-color: #202225;
-				color: transparent;
-
-				&.active {
-					background-color: hsla(0, 0%, 100%, 0.1);
-					color: white;
-				}
+				width: 3px;
+				left: 0;
+				top: 0;
+				background-color: #4f545c;
+				border-radius: 3px;
 			}
-
-			blockquote {
-				margin: 0;
-				padding-left: 8px;
-				position: relative;
-
-				&::before {
-					content: "";
-					position: absolute;
-					height: 100%;
-					width: 3px;
-					left: 0;
-					top: 0;
-					background-color: #4f545c;
-					border-radius: 3px;
-				}
-			}
-		
+		}
 	}
 
 	.reply {
@@ -209,6 +207,23 @@
 	.reactions {
 		display: flex;
 		flex-wrap: wrap;
+	}
+
+	.mentions {
+		background-color: var(--color, rgba(88, 101, 242, 0.3));
+		border-radius: 2px;
+		color: white;
+		@include linearGradient(50%, rgba(255, 255, 255, 0.4));
+		box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6);
+		background-color: rgba(22, 65, 132, 0.6);
+		padding: 0 2px;
+
+		&.me {
+			background: transparent !important;
+			box-shadow: none !important;
+			font-weight: bolder;
+			color: rgba(229, 179, 52) !important;
+		}
 	}
 
 	.emoji {

@@ -19,6 +19,10 @@ function prefi(s: string, prefix: boolean) {
 	return prefix ? s : "";
 }
 
+function getGateway() {
+	return discordInstance.peek().gateway;
+}
+
 async function getProfile(
 	id: string,
 	prefix: boolean,
@@ -27,22 +31,37 @@ async function getProfile(
 	guildInstance?: Guild
 ) {
 	const profile =
-		(await guildInstance?.getServerProfile(id)) ||
-		discordInstance.peek().gateway.users_cache.get(id);
-	if (!profile) setText(prefi("@", prefix) + "unknown-user");
+		guildInstance?.members.get(id) || getGateway().users_cache.get(id);
+
+	function setter(profile: any) {
+		const raw = profile.rawProfile || profile;
+		setText(
+			prefi("@", prefix) +
+				(raw.nick || raw.user?.username || raw.username || "")
+		);
+
+		if (profile instanceof GuildMember) {
+			const color = profile.getColor();
+			color &&
+				setStyle({
+					color: `rgb(${profile.getColor()})`,
+				});
+		}
+	}
+
+	if (!profile) setText("");
+	else setter(profile);
 
 	// @ts-ignore
-	const raw = profile.rawProfile || profile;
-
-	setText(
-		prefi("@", prefix) +
-			(raw.nick || raw.user?.username || raw.username || "unknown-user")
-	);
-
-	if (profile instanceof GuildMember)
-		setStyle({
-			color: `rgb(${profile.getColor()})`,
-		});
+	if (guildInstance && !profile?.rawProfile) {
+		const lazy = await guildInstance.members.lazy(id);
+		const color = lazy.getColor();
+		console.log(
+			"LAZY %c" + (lazy.rawProfile.nick || lazy.rawProfile.user?.username),
+			`color:${color ? `rgb(${color})` : "white"};`
+		);
+		if (lazy) setter(lazy);
+	}
 }
 
 export default memo(function Mentions({
@@ -53,8 +72,8 @@ export default memo(function Mentions({
 	mentions = true,
 	username = "loading...",
 }: MentionsProps) {
-	const discordGateway = discordInstance.peek().gateway;
-	const me = id === discordGateway.user.id;
+	const discordGateway = getGateway();
+	const me = id === discordGateway.user?.id;
 
 	const [text, setText] = useState("");
 	const [style, setStyle] = useState<h.JSX.CSSProperties | null>(null);

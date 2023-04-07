@@ -4,9 +4,9 @@ import "./style.scss";
 import { currentChannel } from "@lib/shared";
 import { scrollToBottom, sleep, useMount, useReadable } from "@lib/utils";
 import { ChannelBase } from "discord/GuildChannels";
-import DiscordMessage from "discord/Message";
+import DiscordMessage, { RawMessage } from "discord/Message";
 import { get } from "discord/main";
-import { Fragment, JSX, h } from "preact";
+import { ComponentChildren, Fragment, JSX, h } from "preact";
 import {
 	memo,
 	useEffect,
@@ -20,6 +20,36 @@ import { Guild } from "discord/Guilds";
 import { User } from "discord/libs/types";
 import { GuildMember } from "discord/GuildMembers";
 import handleActionMessage from "@/components/ActionMessages";
+
+function timeDif(...args: Date[]) {
+	const [dt2, dt1] = args.map((a) => +new Date(a));
+	var diff = (dt2 - dt1) / 1000;
+	diff /= 60;
+	return Math.abs(Math.round(diff)) > 0;
+}
+
+function decideDateSeparator(...args: RawMessage[]) {
+	return (
+		new Set(args.map((a) => new Date(a?.timestamp).toLocaleDateString("en-us")))
+			.size != 1
+	);
+}
+
+function decideMessageSeparator(
+	index: number,
+	message: RawMessage,
+	last_message?: RawMessage
+) {
+	return Boolean(
+		decideDateSeparator(message, last_message) ||
+			timeDif(last_message?.timestamp, message.timestamp) ||
+			index == 0 ||
+			last_message?.author.id != message.author?.id ||
+			last_message?.type != message.type ||
+			message.referenced_message ||
+			message.interaction
+	);
+}
 
 const MessageContent = memo(function MessageContent({
 	children: message,
@@ -71,23 +101,21 @@ const MessageReference = memo(function MessageReference({
 						text={content}
 						embed={embed}
 					></Markdown>
-					{/*<MessageContent ></MessageContent>
-					>{" "}
-					
-					{/*<MessageContent ></MessageContent>
-					{#if message.referenced_message}
-						<MessageContent {roles} {guildID} content={ref.content} />
-					{:else}
-						<MessageContent options={{ embed: true }} content="used [/{ref.name}](https://www.youtube.com/watch?v=dQw4w9WgXcQ)" />
-					{/if}
-*/}
 				</span>
 			</div>
 		</div>
 	);
 });
 
-const Message = memo(function ({ message }: { message: DiscordMessage }) {
+const Message = memo(function Message({
+	message,
+	separate,
+	children,
+}: {
+	message: DiscordMessage;
+	children?: ComponentChildren;
+	separate: boolean;
+}) {
 	// const [focused, setFocused] = useState(false);
 	const messageEl = useRef<HTMLDivElement>(null);
 	const messageProps = useReadable(message.props);
@@ -119,6 +147,8 @@ const Message = memo(function ({ message }: { message: DiscordMessage }) {
 					}
 				></MessageReference>
 			)}
+			{separate && "________"}
+			{children}
 			<div class={clx({ content: 1, edited: messageProps.edited_timestamp })}>
 				<MessageContent>{message}</MessageContent>
 			</div>
@@ -150,19 +180,24 @@ export default memo(function Messages({
 	return (
 		<main class="Messages" style={{ visibility: hidden ? "hidden" : null }}>
 			<div ref={chatboxEl} class="chatbox">
-				{messages.map((message) => {
-					console.log(message.rawMessage.type);
-					return (
+				{messages.map(
+					(message, index, arr) =>
 						messagesElementsCached.current.get(message.id) ||
 						setMapAndReturn(
 							messagesElementsCached.current,
 							message.id,
 							handleActionMessage(message) || (
-								<Message message={message}></Message>
+								<Message
+									separate={decideMessageSeparator(
+										index,
+										message.rawMessage,
+										arr[index - 1]?.rawMessage
+									)}
+									message={message}
+								></Message>
 							)
 						)
-					);
-				})}
+				)}
 			</div>
 		</main>
 	);
