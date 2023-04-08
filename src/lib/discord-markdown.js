@@ -259,7 +259,9 @@ const rules = {
 	blockquote: {
 		order: currOrder++,
 		match: function (source, state, prevSource) {
-			return !/^$|\n *$/.test(prevSource) || state.inQuote ? null : /^( *>>> ([\s\S]*))|^( *> [^\n]*(\n *> [^\n]*)*\n?)/.exec(source);
+			return !/^$|\n *$/.test(prevSource) || state.inQuote
+				? null
+				: /^( *>>> ([\s\S]*))|^( *> [^\n]*(\n *> [^\n]*)*\n?)/.exec(source);
 		},
 		parse: function (capture, parse, state) {
 			const all = capture[0];
@@ -317,7 +319,11 @@ const rules = {
 	},
 	link: {
 		order: currOrder++,
-		match: inlineRegex(new RegExp("^\\[(" + LINK_INSIDE + ")\\]\\(" + LINK_HREF_AND_TITLE + "\\)")),
+		match: inlineRegex(
+			new RegExp(
+				"^\\[(" + LINK_INSIDE + ")\\]\\(" + LINK_HREF_AND_TITLE + "\\)"
+			)
+		),
 		parse(capture, parse, state) {
 			var link = {
 				content: parse(capture[1], state),
@@ -380,13 +386,20 @@ const rules = {
 		match: inlineRegex(/^(`+)([\s\S]*?[^`])\1(?!`)/),
 		parse(capture, parse, state) {
 			return {
-				content: [{ type: "text", content: capture[2].replace(INLINE_CODE_ESCAPE_BACKTICKS_R, "$1") }],
+				content: [
+					{
+						type: "text",
+						content: capture[2].replace(INLINE_CODE_ESCAPE_BACKTICKS_R, "$1"),
+					},
+				],
 			};
 		},
 	},
 	text: {
 		order: currOrder++,
-		match: anyScopeRegex(/^[\s\S]+?(?=[^0-9A-Za-z\s\u00c0-\uffff]|\n\n| {2,}\n|\w+:\S|$)/),
+		match: anyScopeRegex(
+			/^[\s\S]+?(?=[^0-9A-Za-z\s\u00c0-\uffff]|\n\n| {2,}\n|\w+:\S|$)/
+		),
 		parse(capture, parse, state) {
 			return {
 				type: "text",
@@ -405,6 +418,16 @@ const rules = {
 		},
 		html(node, output, state) {
 			return output(node.content, state);
+		},
+	},
+	spoiler: {
+		order: 0,
+		match: (source) => /^\|\|([\s\S]+?)\|\|/.exec(source),
+		parse: function (capture, parse, state) {
+			return {
+				type: "spoiler",
+				content: parse(capture[1], state),
+			};
 		},
 	},
 };

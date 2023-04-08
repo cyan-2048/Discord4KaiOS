@@ -1,9 +1,10 @@
 import { observeElement } from "@/lib/shared";
 import parse from "@lib/discord-markdown";
-import { h, Fragment, Component } from "preact";
+import { h, Fragment, Component, ComponentChildren } from "preact";
 import { CSSProperties, memo } from "preact/compat";
 import { MutableRef, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import Mentions from "./Mentions";
+import clx from "obj-str";
 
 interface Props {
 	text: string;
@@ -59,6 +60,18 @@ function EmojiElement({
 	);
 }
 
+function Spoiler({ children }: { children: ComponentChildren }) {
+	// const [active, setActive] = useState(false);
+	return (
+		<span
+			// onClick={() => setActive(!active)}
+			class={clx({ spoiler: 1, active: true })}
+		>
+			{children}
+		</span>
+	);
+}
+
 function MarkdownNode({
 	type,
 	content,
@@ -94,6 +107,12 @@ function MarkdownNode({
 		return h(type, null, <MarkdownContent content={content} reference={ref} />);
 	} else if (["@everyone", "@here"].includes(type)) {
 		return <span class="mentions">{type}</span>;
+	} else if (type == "spoiler") {
+		return (
+			<Spoiler>
+				<MarkdownContent content={content} reference={ref} />
+			</Spoiler>
+		);
 	} else if (type === "text") {
 		return <>{content}</>;
 	} else if (/^(@|#)/.test(type)) {

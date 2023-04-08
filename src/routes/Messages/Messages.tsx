@@ -160,6 +160,7 @@ const Message = memo(function Message({
 	// const [focused, setFocused] = useState(false);
 	const messageEl = useRef<HTMLDivElement>(null);
 	const messageProps = useReadable(message.props);
+	const deleted = useReadable(message.deleted);
 
 	return (
 		<div
@@ -170,7 +171,7 @@ const Message = memo(function Message({
 			ref={messageEl}
 			data-focusable=""
 			tabIndex={0}
-			class={clx({ Message: 1, mention: message.wouldPing() })}
+			class={clx({ Message: 1, mention: message.wouldPing(), deleted })}
 			key={message.id}
 		>
 			{(messageProps.referenced_message || messageProps.interaction) && (
@@ -206,6 +207,8 @@ export default memo(function Messages({
 }) {
 	const handler = currentChannel.value?.messages;
 	if (!handler) return;
+
+	//handler.removeMessages = false;
 
 	const chatboxEl = useRef<HTMLDivElement>(null);
 
