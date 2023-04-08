@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		"allowJs": true,
-		"lib": ["dom", "es6", "ES2016"],
+		"lib": ["dom", "es6", "ES2016", "ES2019"],
 		"jsx": "react",
 		"jsxFactory": "h",
 		"jsxFragmentFactory": "Fragment",

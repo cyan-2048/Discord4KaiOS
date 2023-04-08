@@ -96,10 +96,7 @@ function MarkdownNode({
 		return <span class="mentions">{type}</span>;
 	} else if (type === "text") {
 		return <>{content}</>;
-	} else if (
-		// TODO: Mentions component
-		/^(@|#)/.test(type)
-	) {
+	} else if (/^(@|#)/.test(type)) {
 		return <Mentions type={type.slice(1)} id={id} {...ref} />;
 	} else if (content) {
 		return <MarkdownContent content={content} reference={ref} />;

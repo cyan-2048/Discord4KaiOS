@@ -243,3 +243,8 @@ export function stringifyDate(_date: Date) {
 export function useDestroy(func: () => void) {
 	useMount(() => func);
 }
+
+export function setMapAndReturn<K, V>(map: Map<K, V>, key: K, value: V) {
+	map.set(key, value);
+	return value;
+}

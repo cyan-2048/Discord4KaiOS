@@ -70,7 +70,8 @@
 		&::after {
 			content: attr(data-name);
 			background-image: var(--image);
-			box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.8), inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
+			box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.8),
+				inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
 		}
 	}
 	&:focus,
@@ -97,6 +98,131 @@
 		.image::after,
 		.image::before {
 			border-radius: 7px !important;
+		}
+	}
+}
+
+.ServerFolder {
+	position: relative;
+	margin-bottom: 8px;
+	border-radius: 5px;
+
+	&.open {
+		box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6),
+			0 0 2px 2px rgba(0, 0, 0, 0.4), inset 0 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+	}
+
+	&:not(.open) {
+		box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.8),
+			inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
+		&.unread {
+			.hover::after {
+				opacity: 1;
+			}
+		}
+
+		width: 48px;
+		height: 48px;
+		position: relative;
+
+		> * {
+			display: none;
+			pointer-events: none;
+
+			&:nth-child(-n + 5):not(.hover) {
+				display: inline-block;
+				transform: scale(0.37);
+				height: 17.76px;
+				width: 17.76px;
+			}
+		}
+
+		display: grid;
+		--t: 18px 18px;
+		grid-template-rows: var(--t);
+		grid-template-columns: var(--t);
+		grid-gap: 2px;
+
+		/*.hover::after {
+				transition: height 0.3s ease, opacity 0.3s ease;
+			}*/
+
+		&:focus {
+			.hover::after {
+				opacity: 1;
+				height: 25px;
+			}
+		}
+
+		@include linearGradient(5%, var(--gradient-color, rgba(36, 36, 38, 0.8)));
+	}
+
+	.folder-toggle {
+		width: 48px;
+		height: 48px;
+		position: relative;
+		margin-bottom: 8px;
+
+		border-radius: 5px;
+		box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6),
+			inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
+
+		//background-color: rgba(67, 69, 74);
+
+		/*.hover::after {
+				transition: height 0.3s ease, opacity 0.3s ease;
+			}*/
+
+		@include linearGradient(5%, rgb(36, 36, 38));
+
+		&:focus {
+			@include linearGradient(5%, rgba(32, 42, 65));
+			.hover::after {
+				opacity: 1;
+				height: 25px;
+			}
+		}
+
+		&::after {
+			content: "";
+			width: 100%;
+			height: 100%;
+			position: absolute;
+			top: 0;
+			left: 0;
+			background-image: url(/css/folder.png);
+			background-size: cover;
+
+			image-rendering: pixelated;
+			image-rendering: optimizeSpeed;
+		}
+	}
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+
+	> .hover,
+	.folder-toggle .hover {
+		position: absolute;
+		height: 100%;
+		width: 10px;
+		left: -17px;
+		display: grid;
+		align-items: center;
+
+		&::after {
+			content: "";
+			@include linearGradient(10%, rgba(234, 234, 234));
+			background-color: rgba(155, 155, 155);
+			border: 1px solid black;
+			box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.3), inset 0 0 0 1px white;
+
+			width: 10px;
+			border-radius: 80px;
+			display: block;
+			height: 10px;
+			opacity: 0;
 		}
 	}
 }

@@ -4,6 +4,7 @@ import "./style.scss";
 import { currentChannel } from "@lib/shared";
 import {
 	scrollToBottom,
+	setMapAndReturn,
 	sleep,
 	stringifyDate,
 	useDestroy,
@@ -56,11 +57,6 @@ function decideMessageSeparator(
 			message.referenced_message ||
 			message.interaction
 	);
-}
-
-function setMapAndReturn<K, V>(map: Map<K, V>, key: K, value: V) {
-	map.set(key, value);
-	return value;
 }
 
 const MessageSeparator = memo(function MessageSeparator({

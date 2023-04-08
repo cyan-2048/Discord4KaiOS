@@ -2,20 +2,30 @@ import "./style.scss";
 import "./Server.scss";
 import "./Channel.scss";
 
-import { centerScroll, ifPropsChange, sleep, useMemoryState, useMount, useMountDebug, useReadable, useSpatialNav, useStateMutable } from "@/lib/utils";
+import {
+	centerScroll,
+	decimal2rgb,
+	sleep,
+	useMemoryState,
+	useMount,
+	useMountDebug,
+	useReadable,
+	useSpatialNav,
+} from "@/lib/utils";
 import { currentChannel, discordInstance, RouteProps, sn } from "@lib/shared";
 
 import { Guild } from "discord/Guilds";
-import { RawGuild, ReadState } from "discord/libs/types";
+import { GuildFolder, RawGuild, ReadState } from "discord/libs/types";
 import { GuildChannel } from "discord/GuildChannels";
 
 import clx from "obj-str";
-import { Fragment, h } from "preact";
+import { ComponentChildren, Fragment, h } from "preact";
 import { route } from "preact-router";
 import {
 	useCallback,
 	useEffect,
 	useMemo,
+	useReducer,
 	useRef,
 	useState,
 } from "preact/hooks";
@@ -161,11 +171,16 @@ const Channel = memo(function Channel({
 		<main
 			data-focusable=""
 			tabIndex={0}
-			id={`channel${channel.id}`}
-			class={`Channel ${muted && mentions == 0 ? "muted" : ""} ${
-				(unread && !muted) || mentions > 0 ? "unread" : ""
-			} ${_class}`}
+			id={`ch${channel.id}`}
+			class={
+				clx({
+					Channel: 1,
+					muted: muted && mentions == 0,
+					unread: (unread && !muted) || mentions > 0,
+				}) + (_class ? " " + _class : "")
+			}
 			onFocus={async (e) => {
+				if (e.target !== e.currentTarget) return;
 				await centerScroll(e.target as HTMLElement);
 			}}
 			onClick={async () => {
@@ -192,9 +207,13 @@ const Channel = memo(function Channel({
 	);
 });
 
-function ServerFolder({ guildID, ...props }: any) {
-	return <div>ServerFolder</div>;
-}
+const ServerMentions = memo(function ({
+	children,
+}: {
+	children: ComponentChildren;
+}) {
+	return <div class="ServerMentions">{children}</div>;
+});
 
 const shorten = (e: string) =>
 	e
@@ -203,19 +222,119 @@ const shorten = (e: string) =>
 		.join("")
 		.slice(0, 3) || "";
 
+const ServerFolder = memo(function ServerFolder({ servers, props }: UIFolder) {
+	const [open, setOpen] = useState(false);
+
+	const mentionsArr = useRef<number[]>([]);
+	const unreadsArr = useRef<boolean[]>([]);
+
+	const [mentions, updateMentions] = useReducer(
+		(state, [index, value]: [number, number]) => {
+			const arr = mentionsArr.current;
+			arr[index] = value;
+			return arr.reduce((a, b) => a + b, 0);
+		},
+		0
+	);
+
+	const [unread, updateUnreads] = useReducer(
+		(state, [index, value]: [number, boolean]) => {
+			const arr = unreadsArr.current;
+			arr[index] = value;
+			return arr.some((a) => a);
+		},
+		false
+	);
+
+	const toggleEl = useRef<HTMLDivElement>(null);
+	const mainEl = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (open) {
+			toggleEl.current?.focus();
+		} else {
+			mainEl.current?.focus();
+		}
+	}, [open]);
+
+	const toggleOpenKeydown = useCallback(
+		(e: KeyboardEvent) => {
+			if (e.target === e.currentTarget && e.key === "Enter") setOpen(!open);
+		},
+		[open]
+	);
+
+	return (
+		<main
+			ref={mainEl}
+			tabIndex={0}
+			style={
+				!open
+					? `background-color: rgba(${
+							props.color ? decimal2rgb(props.color, true) : [88, 101, 242]
+					  },0.3)`
+					: null
+			}
+			data-name={props.name}
+			data-focusable={open ? null : ""}
+			data-folder=""
+			class={clx({ ServerFolder: 1, open, unread })}
+			//onClick={() => setOpen(!open)}
+			onKeyDown={toggleOpenKeydown}
+		>
+			<div class="hover" />
+			{open && (
+				<div
+					ref={toggleEl}
+					onKeyDown={toggleOpenKeydown}
+					tabIndex={0}
+					data-focusable=""
+					class="folder-toggle"
+				>
+					<div class="hover" />
+				</div>
+			)}
+			{servers.map((server, i) => (
+				<Server
+					focusable={open}
+					guild={server}
+					selected={guildID.value === server.id}
+					setMention={useCallback((val) => updateMentions([i, val]), [i])}
+					setUnread={useCallback((val) => updateUnreads([i, val]), [i])}
+				/>
+			))}
+			{mentions > 0 && !open && <ServerMentions>{mentions}</ServerMentions>}
+		</main>
+	);
+});
+
 const Server = memo(function Server({
 	focusable = true,
 	guild,
 	selected,
+	setMention,
+	setUnread,
 }: {
 	focusable?: boolean;
 	selected?: boolean;
 	guild: Guild;
+	setMention?: (mentions: number) => void;
+	setUnread?: (unread: boolean) => void;
 }) {
 	const props: RawGuild = useReadable(guild.props);
 
-	const [mentions, setMentions] = useMemoryState("mentions-" + props.id, 0);
-	const [unread, setUnread] = useMemoryState("unread-" + props.id, false);
+	const [mentions, _setMentions] = useMemoryState("mentions-" + props.id, 0);
+	const [unread, _setUnreads] = useMemoryState("unread-" + props.id, false);
+
+	function setMentions(arg: number) {
+		_setMentions(arg);
+		setMention?.(arg);
+	}
+
+	function setUnreads(arg: boolean) {
+		_setUnreads(arg);
+		setUnread?.(arg);
+	}
 
 	useMount(() => {
 		const guildChannels = get(guild.channels.siftedChannels);
@@ -232,7 +351,7 @@ const Server = memo(function Server({
 				setMentions(_mentions);
 
 				if (_mentions) {
-					setUnread(true);
+					setUnreads(true);
 					return;
 				}
 
@@ -241,21 +360,18 @@ const Server = memo(function Server({
 				for (let i = 0; i < _channels.length; i++) {
 					const _channel = _channels[i];
 					if (get(_channel.unread)) {
-						setUnread(true);
+						setUnreads(true);
 						return;
 					}
 				}
 
-				setUnread(false);
+				setUnreads(false);
 			})
 		);
 		return () => unsubs.forEach((a) => a());
 	});
 
-	const animated = useMemo(
-		() => Boolean(props.icon?.startsWith("a_")),
-		[props.icon]
-	);
+	const animated = Boolean(props.icon?.startsWith("a_"));
 
 	const [focused, setFocused] = useState(false);
 
@@ -279,17 +395,19 @@ const Server = memo(function Server({
 
 	return (
 		<main
-			data-mentions={mentions}
+			key={guild.id}
 			onClick={() => {
 				route("/channels/" + guild.id);
 			}}
 			ref={mainEl}
-			onFocus={() => {
+			onFocus={(e) => {
+				if (e.target !== e.currentTarget) return;
 				setFocused(true);
 				centerEl();
 			}}
 			onBlur={() => setFocused(false)}
 			onKeyDown={(e) => {
+				if (e.target !== e.currentTarget) return;
 				if (["Enter", "SoftRight", "ArrowRight"].includes(e.key)) {
 					route("/channels/" + guild.id);
 					pageState.value = 1;
@@ -297,7 +415,7 @@ const Server = memo(function Server({
 			}}
 			data-focusable={focusable ? "" : null}
 			class={clx({ Server: 1, selected, unread, focused })}
-			tabIndex={0}
+			tabIndex={focusable ? 0 : null}
 		>
 			{focusable && <div class="hover" />}
 			{props.icon ? (
@@ -313,9 +431,7 @@ const Server = memo(function Server({
 				<div class="image" data-name={shorten(props.name)} />
 			)}
 
-			{mentions > 0 && focusable && (
-				<div class="ServerMentions">{mentions}</div>
-			)}
+			{mentions > 0 && focusable && <ServerMentions>{mentions}</ServerMentions>}
 		</main>
 	);
 });
@@ -396,6 +512,7 @@ const DMasGuild = memo(
 				onFocus={() => setFocused(true)}
 				onBlur={() => setFocused(false)}
 				onKeyDown={(e) => {
+					if (e.target !== e.currentTarget) return;
 					if (["Enter", "SoftRight", "ArrowRight"].includes(e.key)) {
 						route("/channels/@me");
 						noChannelsFound();
@@ -413,6 +530,12 @@ const DMasGuild = memo(
 	}
 );
 
+interface UIFolder {
+	type: "folder";
+	servers: Guild[];
+	props: GuildFolder;
+}
+
 export default function Channels({
 	channelID,
 	guildID: _guildID,
@@ -428,10 +551,48 @@ export default function Channels({
 
 	const channelsEl = useRef<HTMLDivElement>(null);
 
+	const [guildsCache, setGuildCache] = useState<(UIFolder | Guild)[]>(null);
+
+	useEffect(() => {
+		const servers: (UIFolder | Guild)[] = [];
+		const serverFolders = discord.gateway.user_settings.guild_folders;
+		const arrangment = serverFolders.map((a) => a.guild_ids).flat();
+
+		const indexer = ({ id }: Guild) => arrangment.indexOf(id);
+
+		[...guilds]
+			.sort((a, b) => indexer(a) - indexer(b))
+			.forEach((a) => {
+				const folder = serverFolders.find(
+					(e) => e.id && e.guild_ids?.includes(a.id)
+				);
+				if (folder) {
+					const found = servers.find(
+						(a: UIFolder) => a.type === "folder" && a.props.id === folder.id
+					) as UIFolder;
+					found
+						? found.servers.push(a)
+						: servers.push({
+								type: "folder",
+								servers: [a],
+								props: folder,
+						  });
+				} else servers.push(a);
+			});
+
+		setGuildCache(servers);
+	}, [guilds]);
+
 	const guildsList = useMemo(
 		() =>
-			guilds.map((a) => <Server selected={guildID.value === a.id} guild={a} />),
-		[guilds, guildID.value]
+			guildsCache?.map((a) =>
+				a instanceof Guild ? (
+					<Server selected={guildID.value === a.id} guild={a} />
+				) : (
+					<ServerFolder {...a} />
+				)
+			),
+		[guildsCache, guildID.value]
 	);
 
 	useEffect(() => {
