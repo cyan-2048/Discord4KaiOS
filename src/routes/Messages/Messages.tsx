@@ -6,6 +6,7 @@ import {
 	scrollToBottom,
 	sleep,
 	stringifyDate,
+	useDestroy,
 	useMount,
 	useReadable,
 } from "@lib/utils";
@@ -207,28 +208,32 @@ export default memo(function Messages({
 	hidden: boolean;
 	channelID: string;
 }) {
-	const messageHandler = currentChannel.value?.messages;
-	if (!messageHandler) return;
+	const handler = currentChannel.value?.messages;
+	if (!handler) return;
 
 	const chatboxEl = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		// scroll chatbox to bottom
 		sleep(20).then(() => scrollToBottom(chatboxEl.current));
-	}, [messageHandler]);
+	}, [handler]);
 
-	const messagesElementsCached = useRef(new Map<string, JSX.Element>());
+	const cachedMessages = useRef(new Map<string, JSX.Element>());
 
-	const messages = useReadable(messageHandler.state);
+	const messages = useReadable(handler.state);
+
+	useDestroy(() => {
+		cachedMessages.current.clear();
+	});
 
 	return (
 		<main class="Messages" style={{ visibility: hidden ? "hidden" : null }}>
 			<div ref={chatboxEl} class="chatbox">
 				{messages.map(
 					(message, index, arr) =>
-						messagesElementsCached.current.get(message.id) ||
+						cachedMessages.current.get(message.id) ||
 						setMapAndReturn(
-							messagesElementsCached.current,
+							cachedMessages.current,
 							message.id,
 							handleActionMessage(message) || (
 								<Message

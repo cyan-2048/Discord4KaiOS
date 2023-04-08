@@ -26,7 +26,7 @@
 		@include linearGradient(40%, hsl(240, 3.7%, 10.6%), !important);
 		background-color: hsl(225, 8%, 19.6%) !important;
 
-		.__separator {
+		.separator {
 			white-space: nowrap;
 			overflow: hidden;
 			text-overflow: ellipsis;

@@ -239,3 +239,7 @@ export function stringifyDate(_date: Date) {
 
 	return date.toLocaleDateString();
 }
+
+export function useDestroy(func: () => void) {
+	useMount(() => func);
+}

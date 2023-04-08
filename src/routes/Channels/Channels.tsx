@@ -73,9 +73,9 @@ const ChannelIcons = {
 	),
 };
 
-const ChannelSeparator = (props) => (
-	<div class="__separator">{props.children}</div>
-);
+const ChannelSeparator = memo((props) => (
+	<div class="separator">{props.children}</div>
+));
 
 function _Channel({
 	avatar,
