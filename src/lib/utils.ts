@@ -6,10 +6,25 @@ import { EffectCallback, MutableRef, StateUpdater, useEffect, useLayoutEffect, u
 import scrollIntoView from "scroll-into-view";
 import { Readable, Writable, get } from "discord";
 import { sn } from "./shared";
+import { Fragment, h, render } from "preact";
+import { unmountComponentAtNode } from "preact/compat";
 
-export async function centerScroll(el: Element, sync = false, opts: object = {}) {
+export async function centerScroll(
+	el: Element,
+	sync = false,
+	opts: object = {}
+) {
 	return new Promise((res) => {
-		scrollIntoView(el, { time: sync ? 0 : 200, align: { left: 0 }, ease: (e: number) => e, ...opts }, (type) => res(type === "complete"));
+		scrollIntoView(
+			el,
+			{
+				time: sync ? 0 : 200,
+				align: { left: 0 },
+				ease: (e: number) => e,
+				...opts,
+			},
+			(type) => res(type === "complete")
+		);
 	});
 }
 
@@ -24,7 +39,9 @@ async function verifyDomainSSL(url) {
 	return new Promise((resolve, reject) => {
 		if (u.protocol === "http:") return resolve(url);
 		// @ts-ignore
-		const conn = navigator.mozTCPSocket?.open(u.host, 443, { useSecureTransport: true });
+		const conn = navigator.mozTCPSocket?.open(u.host, 443, {
+			useSecureTransport: true,
+		});
 		if (!conn) return resolve(url);
 		conn.onopen = () => {
 			conn.close();
@@ -32,7 +49,11 @@ async function verifyDomainSSL(url) {
 			resolve(url);
 		};
 		conn.onerror = (err: Error) => {
-			reject(err.name === "SecurityError" && err.message === "SecurityCertificate" ? InternetResults.EXPIRED_CERTS : InternetResults.NO_INTERNET);
+			reject(
+				err.name === "SecurityError" && err.message === "SecurityCertificate"
+					? InternetResults.EXPIRED_CERTS
+					: InternetResults.NO_INTERNET
+			);
 		};
 	});
 }
@@ -45,7 +66,9 @@ export async function testInternet() {
 
 		const res = await fetch(statusURL);
 		const { status } = await res.json();
-		const index = ["none", "minor", "major", "critical"].indexOf(status.indicator);
+		const index = ["none", "minor", "major", "critical"].indexOf(
+			status.indicator
+		);
 		if (index > 1) return InternetResults.NO_INTERNET;
 	} catch (e) {
 		return typeof e === "number" ? e : InternetResults.NO_INTERNET;
@@ -60,7 +83,10 @@ export function useMountDebug(name: string) {
 	});
 }
 
-export function useInputValue(inputEl: MutableRef<HTMLInputElement | HTMLTextAreaElement>, stateFunc: Function | typeof useState = useState): [string, (value: string) => void] {
+export function useInputValue(
+	inputEl: MutableRef<HTMLInputElement | HTMLTextAreaElement>,
+	stateFunc: Function | typeof useState = useState
+): [string, (value: string) => void] {
 	const [value, setValue] = stateFunc("");
 
 	useEffect(() => {
@@ -83,7 +109,10 @@ export function useInputValue(inputEl: MutableRef<HTMLInputElement | HTMLTextAre
 
 const memoryState = new Map<any, any>();
 
-export function useMemoryState<T>(key: any, initialState: T): [T, StateUpdater<T>] {
+export function useMemoryState<T>(
+	key: any,
+	initialState: T
+): [T, StateUpdater<T>] {
 	const [state, setState] = useState<T>(() => {
 		const hasMemoryValue = memoryState.has(key);
 		if (hasMemoryValue) {
@@ -101,10 +130,11 @@ export function useMemoryState<T>(key: any, initialState: T): [T, StateUpdater<T
 	return [state, onChange];
 }
 
+/**
+ * @returns a useMemoryState function that is bound to a key, basically it returns a function similar to useState
+ */
 export function bindedMemoryState<T>(key: any) {
-	return (value: any) => {
-		return useMemoryState<T>(key, value);
-	};
+	return (value: any) => useMemoryState<T>(key, value);
 }
 
 export function toggleCursor(value: boolean): boolean {
@@ -114,27 +144,30 @@ export function toggleCursor(value: boolean): boolean {
 
 /**
  * it's like `onMount` but for hooks
- * @param fn {EffectCallback}
- * @returns {void}
  */
 export function useMount(fn: EffectCallback) {
 	useEffect(fn, []);
 }
 
-export function delayedCallback(callback: Function, delay: number = 100): () => void {
+export function delayedCallback(
+	callback: Function,
+	delay: number = 100
+): () => void {
 	const timeout = setTimeout(callback, delay);
 	return () => clearTimeout(timeout);
 }
 
 export { debounce } from "ts-debounce";
 
+/**
+ * simple string to hash function
+ */
 export function hash(text: string) {
 	// @ts-ignore
-	return btoa(fastHashCode(text, { forcePositive: true }));
+	return fastHashCode(text, { forcePositive: true }).toString(36);
 }
 
 // stolen code: https://www.npmjs.com/package/react-use-svelte-store
-
 export type Setter<T> = (v: T) => void;
 export type UpdateFn<T> = (v: T) => T;
 export type Updater<T> = (u: UpdateFn<T>) => void;
@@ -144,10 +177,14 @@ export type Updater<T> = (u: UpdateFn<T>) => void;
  * fuck you React for making me do this
  */
 export function useStateMutable<T>(initialState: T): [T, StateUpdater<T>] {
+	// should i rename this to useMutableState?
 	const [state, setState] = useState([initialState]);
 	return [state[0], (newState: T) => setState([newState])];
 }
 
+/**
+ * use svelte readables on preact hooks
+ */
 export function useReadable<T>(store: Readable<T>): T {
 	const [value, set] = useStateMutable(get(store));
 
@@ -156,11 +193,17 @@ export function useReadable<T>(store: Readable<T>): T {
 	return value;
 }
 
+/**
+ * use svelte writables on preact hooks
+ */
 export function useWritable<T>(store: Writable<T>): [T, Setter<T>, Updater<T>] {
 	const value = useReadable(store);
 	return [value, store.set, store.update];
 }
 
+/**
+ * returns a function similar to this.forceUpdate()
+ */
 export function useForceUpdate(): () => void {
 	// @ts-ignore
 	return useReducer((x) => x + 1, 0)[1];
@@ -186,15 +229,6 @@ export function useSpatialNav(...options: SpatialNavigationOptions[]) {
 	});
 }
 
-/**
- * only use with React.memo(), only re-render when the given props changed
- */
-export function ifPropsChange(...props: string[]) {
-	return (prevProps: any, nextProps: any) => {
-		return props.some((prop) => prevProps[prop] !== nextProps[prop]);
-	};
-}
-
 export function scrollToBottom(el?: HTMLElement) {
 	if (!el) return;
 	return (el.scrollTop = el.scrollHeight);
@@ -218,6 +252,9 @@ export function decimal2rgb(ns: number, arr: boolean = false) {
 	return arr ? [r, g, b] : { r, g, b };
 }
 
+/**
+ * creates a string from a date object, this seems to be what discord does
+ */
 export function stringifyDate(_date: Date) {
 	const date = new Date(_date),
 		date_string = date.toDateString(),
@@ -240,11 +277,62 @@ export function stringifyDate(_date: Date) {
 	return date.toLocaleDateString();
 }
 
+/**
+ * similar to svelte's onDestroy
+ */
 export function useDestroy(func: () => void) {
 	useMount(() => func);
 }
 
+/**
+ * sets a value in a map and returns it
+ */
 export function setMapAndReturn<K, V>(map: Map<K, V>, key: K, value: V) {
 	map.set(key, value);
 	return value;
+}
+
+// this might be useless lmao
+export function JSXasElement(element: h.JSX.Element) {
+	const el = document.createElement("main");
+	const rendered = render(h(Fragment, null, element), el);
+	return {
+		dom: el.children,
+		rendered,
+		unmount: () => unmountComponentAtNode(el),
+	};
+}
+
+export function getJSXByClassName(
+	className: string,
+	jsxElement: h.JSX.Element
+) {
+	const matching = [];
+
+	const props = jsxElement.props;
+
+	// Check if the element itself has a className prop
+	if (props?.className || props?.class) {
+		// Check if the className prop matches the specified class name
+		const classNames = (props.className || props.class).split(/\s/);
+		if (classNames.includes(className)) {
+			// Add the matching element to the array
+			matching.push(jsxElement);
+		}
+	}
+
+	// If the element has children, recursively search them for matching elements
+	if (props?.children) {
+		const childElements = Array.isArray(props.children)
+			? props.children
+			: [props.children];
+		for (let i = 0; i < childElements.length; i++) {
+			const matchingChildren = getJSXByClassName(className, childElements[i]);
+			if (matchingChildren.length > 0) {
+				matching.push(...matchingChildren);
+			}
+		}
+	}
+
+	return matching;
 }

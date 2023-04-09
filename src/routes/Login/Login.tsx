@@ -1,23 +1,31 @@
-import { bindedMemoryState, useMount, sleep, toggleCursor, useInputValue, useMemoryState, hash } from "@lib/utils";
-import Button, { DeleteSymbol } from "@components/Button";
+import {
+	bindedMemoryState,
+	useMount,
+	sleep,
+	useInputValue,
+	useMemoryState,
+	hash,
+	useSpatialNav,
+} from "@lib/utils";
+import Button from "@components/Button";
 import { ComponentProps, Fragment, h } from "preact";
 import { route } from "preact-router";
-import { MutableRef, useMemo, useRef, useState } from "preact/hooks";
+import { MutableRef, useRef, useState } from "preact/hooks";
 import "./style.scss";
-import { discordInstance, loadDiscord, setToken, sn } from "@lib/shared";
+import { discordInstance, loadDiscord, setToken } from "@lib/shared";
 import MFA from "discord/MFA";
 
 const symbol0 = Symbol(),
 	symbol1 = Symbol(),
 	symbol2 = Symbol(),
-	symbol3 = Symbol(),
-	symbol4 = Symbol(),
-	symbol5 = Symbol(),
-	symbol6 = Symbol(),
-	symbol7 = Symbol(),
-	symbol8 = Symbol(),
-	symbol9 = Symbol(),
-	symbol10 = Symbol();
+	symbol3 = Symbol();
+// symbol4 = Symbol(),
+// symbol5 = Symbol(),
+// symbol6 = Symbol(),
+// symbol7 = Symbol(),
+// symbol8 = Symbol(),
+// symbol9 = Symbol(),
+// symbol10 = Symbol();
 
 const RequiredField = () => (
 	<>
@@ -27,7 +35,9 @@ const RequiredField = () => (
 );
 
 async function testToken(authorization: string) {
-	const settings = await discordInstance.peek().xhr("users/@me", { method: "get", headers: { authorization } });
+	const settings = await discordInstance
+		.peek()
+		.xhr("users/@me", { method: "get", headers: { authorization } });
 	if (settings.code === 0) throw settings;
 	return settings;
 }
@@ -62,8 +72,14 @@ function Home({ setPage }: LoginPagesProps) {
 		password: null,
 	});
 
-	const [emailValue, setEmail] = useInputValue(emailEl, bindedMemoryState(symbol0));
-	const [passwordValue, setPassword] = useInputValue(passwordEl, bindedMemoryState(symbol2));
+	const [emailValue, setEmail] = useInputValue(
+		emailEl,
+		bindedMemoryState(symbol0)
+	);
+	const [passwordValue, setPassword] = useInputValue(
+		passwordEl,
+		bindedMemoryState(symbol2)
+	);
 
 	useFocus(emailEl);
 
@@ -111,7 +127,10 @@ function todo() {
 function Token({ setPage }: LoginPagesProps) {
 	const tokenEl = useRef<HTMLInputElement>(null);
 
-	const [tokenValue, setToken] = useInputValue(tokenEl, bindedMemoryState(symbol3));
+	const [tokenValue, setToken] = useInputValue(
+		tokenEl,
+		bindedMemoryState(symbol3)
+	);
 	const [tokenState, setTokenState] = useState<null | true>(null);
 
 	useFocus(tokenEl);
@@ -165,7 +184,12 @@ function MFAuth({ setPage }: LoginPagesProps) {
 				{label}
 				{required === false ? <i> - Invalid two-factor auth ticket</i> : null}
 			</Separator>
-			<input tabIndex={0} ref={codeEl} placeholder="Authentication code" type="tel" />
+			<input
+				tabIndex={0}
+				ref={codeEl}
+				placeholder="Authentication code"
+				type="tel"
+			/>
 			<Button
 				onClick={async () => {
 					const len = auth.length;
@@ -184,18 +208,15 @@ function MFAuth({ setPage }: LoginPagesProps) {
 	);
 }
 
-const sectionID = hash(Math.random().toString().slice(3));
+const sectionID = hash(Math.random().toString());
 
 export default function Login(props: any) {
 	const [page, setPage] = useMemoryState(symbol1, 0);
 
-	useMount(() => {
-		sn.add(sectionID, {
-			selector: ".Login [tabindex]",
-			restrict: "self-only",
-		});
-
-		return () => sn.remove(sectionID);
+	useSpatialNav({
+		selector: ".Login [tabindex]",
+		restrict: "self-only",
+		id: sectionID,
 	});
 
 	return (

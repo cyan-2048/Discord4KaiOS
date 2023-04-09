@@ -8,25 +8,15 @@ import {
 	sleep,
 	stringifyDate,
 	useDestroy,
-	useMount,
 	useReadable,
 } from "@lib/utils";
-import { ChannelBase } from "discord/GuildChannels";
 import DiscordMessage, { RawMessage } from "discord/Message";
-import { get } from "discord/main";
-import { ComponentChildren, Fragment, JSX, h } from "preact";
-import {
-	memo,
-	useEffect,
-	useLayoutEffect,
-	useRef,
-	useState,
-} from "preact/compat";
+import { ComponentChildren, JSX, h } from "preact";
+import { memo, useEffect, useRef } from "preact/compat";
 import clx from "obj-str";
 import Mentions from "@/components/Mentions";
 import { Guild } from "discord/Guilds";
 import { User } from "discord/libs/types";
-import { GuildMember } from "discord/GuildMembers";
 import handleActionMessage from "@/components/ActionMessages";
 
 function timeDif(...args: Date[]) {
@@ -147,6 +137,38 @@ const MessageReference = memo(function MessageReference({
 		</div>
 	);
 });
+
+/**
+ * will return true if the emoji should be big or not
+ * @param content the messageContent
+ */
+function testEmojiFont(content: RawMessage["content"]) {
+	if (content === "") return false;
+
+	function testString(string: string) {
+		const filtered = Array.from(string).filter((a) => a !== " " && a !== "\n");
+
+		// assume everything is emoji
+		// if exceeds max then it is false
+		if (filtered.length > 27) return false;
+
+		// TODO: create a better emoji detection system
+		/*
+		return (
+			filtered.every((a) => EmojiDict.search(a)) ||
+			(string.includes("️") && EmojiDict.search(string))
+		);
+		*/
+	}
+	// const clone = element.cloneNode(true);
+	//clone.querySelectorAll(".emoji").forEach((a) => {
+	//	try {
+	//		a.parentNode.replaceChild(document.createTextNode("💀"), a);
+	//	} catch (e) {}
+	//});
+	//
+	//testString(clone.innerText) && element.classList.add("emoji-big");
+}
 
 const Message = memo(function Message({
 	message,

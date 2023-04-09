@@ -13,7 +13,7 @@ import "core-js/actual/string/match-all";
 import { Fragment, h, render } from "preact";
 
 import "./assets/global.scss";
-import "@lib/focusin.min.js";
+// import "@lib/focusin.min.js";
 
 import { useMount, useMountDebug } from "./lib/utils";
 import { appReady, loadDiscord, sn } from "./lib/shared";

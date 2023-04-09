@@ -17,6 +17,7 @@
 		"discord-api-types": "^0.37.18",
 		"esbuild": "^0.15.10",
 		"esbuild-sass-plugin": "^2.6.0",
+		"htm": "^3.1.1",
 		"postcss": "^8.4.21",
 		"postcss-color-hsl": "^2.0.0",
 		"postcss-modules": "^6.0.0",

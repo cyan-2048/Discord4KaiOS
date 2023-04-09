@@ -5,6 +5,7 @@ import "./Channel.scss";
 import {
 	centerScroll,
 	decimal2rgb,
+	hash,
 	sleep,
 	useMemoryState,
 	useMount,
@@ -257,12 +258,10 @@ const ServerFolder = memo(function ServerFolder({ servers, props }: UIFolder) {
 		}
 	}, [open]);
 
-	const toggleOpenKeydown = useCallback(
-		(e: KeyboardEvent) => {
-			if (e.target === e.currentTarget && e.key === "Enter") setOpen(!open);
-		},
-		[open]
-	);
+	const toggleOpenKeydown = useCallback((e: KeyboardEvent) => {
+		if (e.target === e.currentTarget && e.key === "Enter")
+			setOpen((open) => !open);
+	}, []);
 
 	return (
 		<main
@@ -490,8 +489,8 @@ function ServerChannelList({ guilds }: { guilds: Guild[] }) {
 	return <>{channels}</>;
 }
 
-var channelsSN = "channels" + Math.random().toString().slice(3);
-var serversSN = "servers" + Math.random().toString().slice(3);
+var channelsSN = "channels" + hash(Math.random().toString());
+var serversSN = "servers" + hash(Math.random().toString());
 
 function safeGetReadable<T>(r?: Readable<T>) {
 	return r ? get(r) : undefined;
