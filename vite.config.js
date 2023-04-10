@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import preact from "@preact/preset-vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-import vitePluginRequire from "vite-plugin-require";
 
 export default defineConfig({
 	server: {
@@ -15,5 +14,5 @@ export default defineConfig({
 			react: "preact/compat",
 		},
 	},
-	plugins: [tsconfigPaths(), preact(), vitePluginRequire()],
+	plugins: [tsconfigPaths(), preact()],
 });

@@ -28,6 +28,7 @@
 	},
 	"dependencies": {
 		"@ungap/event-target": "^0.2.3",
+		"char-regex": "^2.0.1",
 		"emojibase": "^6.1.0",
 		"emojibase-data": "^7.0.1",
 		"fast-hash-code": "^2.1.0",

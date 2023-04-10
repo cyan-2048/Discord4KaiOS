@@ -9,11 +9,7 @@ import { sn } from "./shared";
 import { Fragment, h, render } from "preact";
 import { unmountComponentAtNode } from "preact/compat";
 
-export async function centerScroll(
-	el: Element,
-	sync = false,
-	opts: object = {}
-) {
+export async function centerScroll(el: Element, sync = false, opts: object = {}) {
 	return new Promise((res) => {
 		scrollIntoView(
 			el,
@@ -49,11 +45,7 @@ async function verifyDomainSSL(url) {
 			resolve(url);
 		};
 		conn.onerror = (err: Error) => {
-			reject(
-				err.name === "SecurityError" && err.message === "SecurityCertificate"
-					? InternetResults.EXPIRED_CERTS
-					: InternetResults.NO_INTERNET
-			);
+			reject(err.name === "SecurityError" && err.message === "SecurityCertificate" ? InternetResults.EXPIRED_CERTS : InternetResults.NO_INTERNET);
 		};
 	});
 }
@@ -66,9 +58,7 @@ export async function testInternet() {
 
 		const res = await fetch(statusURL);
 		const { status } = await res.json();
-		const index = ["none", "minor", "major", "critical"].indexOf(
-			status.indicator
-		);
+		const index = ["none", "minor", "major", "critical"].indexOf(status.indicator);
 		if (index > 1) return InternetResults.NO_INTERNET;
 	} catch (e) {
 		return typeof e === "number" ? e : InternetResults.NO_INTERNET;
@@ -83,10 +73,7 @@ export function useMountDebug(name: string) {
 	});
 }
 
-export function useInputValue(
-	inputEl: MutableRef<HTMLInputElement | HTMLTextAreaElement>,
-	stateFunc: Function | typeof useState = useState
-): [string, (value: string) => void] {
+export function useInputValue(inputEl: MutableRef<HTMLInputElement | HTMLTextAreaElement>, stateFunc: Function | typeof useState = useState): [string, (value: string) => void] {
 	const [value, setValue] = stateFunc("");
 
 	useEffect(() => {
@@ -109,10 +96,7 @@ export function useInputValue(
 
 const memoryState = new Map<any, any>();
 
-export function useMemoryState<T>(
-	key: any,
-	initialState: T
-): [T, StateUpdater<T>] {
+export function useMemoryState<T>(key: any, initialState: T): [T, StateUpdater<T>] {
 	const [state, setState] = useState<T>(() => {
 		const hasMemoryValue = memoryState.has(key);
 		if (hasMemoryValue) {
@@ -149,10 +133,7 @@ export function useMount(fn: EffectCallback) {
 	useEffect(fn, []);
 }
 
-export function delayedCallback(
-	callback: Function,
-	delay: number = 100
-): () => void {
+export function delayedCallback(callback: Function, delay: number = 100): () => void {
 	const timeout = setTimeout(callback, delay);
 	return () => clearTimeout(timeout);
 }
@@ -240,10 +221,7 @@ export function scrollToBottom(el?: HTMLElement) {
  * @param arr should it return rgb in array form
  * @returns
  */
-export function decimal2rgb(
-	ns: number,
-	arr: false
-): { r: number; g: number; b: number };
+export function decimal2rgb(ns: number, arr: false): { r: number; g: number; b: number };
 export function decimal2rgb(ns: number, arr: true): number[];
 export function decimal2rgb(ns: number, arr: boolean = false) {
 	let r = Math.floor(ns / (256 * 256)),
@@ -293,7 +271,7 @@ export function setMapAndReturn<K, V>(map: Map<K, V>, key: K, value: V) {
 }
 
 // this might be useless lmao
-export function JSXasElement(element: h.JSX.Element) {
+function JSXasElement(element: h.JSX.Element) {
 	const el = document.createElement("main");
 	const rendered = render(h(Fragment, null, element), el);
 	return {
@@ -303,10 +281,7 @@ export function JSXasElement(element: h.JSX.Element) {
 	};
 }
 
-export function getJSXByClassName(
-	className: string,
-	jsxElement: h.JSX.Element
-) {
+function getJSXByClassName(className: string, jsxElement: h.JSX.Element) {
 	const matching = [];
 
 	const props = jsxElement.props;
@@ -323,9 +298,7 @@ export function getJSXByClassName(
 
 	// If the element has children, recursively search them for matching elements
 	if (props?.children) {
-		const childElements = Array.isArray(props.children)
-			? props.children
-			: [props.children];
+		const childElements = Array.isArray(props.children) ? props.children : [props.children];
 		for (let i = 0; i < childElements.length; i++) {
 			const matchingChildren = getJSXByClassName(className, childElements[i]);
 			if (matchingChildren.length > 0) {
