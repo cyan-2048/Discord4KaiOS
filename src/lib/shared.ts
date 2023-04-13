@@ -4,7 +4,7 @@ import { useEffect, useState } from "preact/hooks";
 import spatial_navigation from "./spatial_navigation";
 import Discord, { readable } from "discord";
 import { route } from "preact-router";
-import { InternetResults, sleep, testInternet } from "./utils";
+import { InternetResults, preloadImages, sleep, testInternet } from "./utils";
 import { Guild } from "discord/Guilds";
 import { ChannelBase } from "discord/GuildChannels";
 
@@ -73,9 +73,7 @@ export async function loadDiscord() {
 	const internetConnection = await testInternet();
 	if (internetConnection !== InternetResults.OK) {
 		alert(
-			internetConnection === InternetResults.EXPIRED_CERTS
-				? "You have expired certificate problem thing, go to the KaiStore to get the update."
-				: "You don't have internet go away"
+			internetConnection === InternetResults.EXPIRED_CERTS ? "You have expired certificate problem thing, go to the KaiStore to get the update." : "You don't have internet go away"
 		);
 		return window.close();
 	}
@@ -91,8 +89,18 @@ export async function loadDiscord() {
 
 	await discord.login(token);
 
-	guilds.value = discord.gateway.guilds.getAll();
-	console.log(guilds.peek());
+	const __guilds = (guilds.value = discord.gateway.guilds.getAll());
+
+	console.log("PRELOADING IMAGES");
+	const toPreload: string[] = [];
+	__guilds.forEach((a) => {
+		const { icon, id } = a.rawGuild;
+		// https://cdn.discordapp.com/icons/${guild.id}/${props.icon}.${animated && focused ? "gif" : "png"}?size=48
+		icon?.startsWith("a_") && toPreload.push(`https://cdn.discordapp.com/icons/${id}/${icon}.gif?size=48`);
+	});
+	preloadImages(toPreload);
+
+	console.log(__guilds);
 
 	appReady.value = true;
 

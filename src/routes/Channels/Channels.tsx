@@ -516,7 +516,10 @@ export default function Channels({ channelID, guildID: _guildID, hidden, ...prop
 			</div>
 			<div
 				onKeyDown={(e) => {
-					if (e.key == "ArrowLeft") {
+					if (["ArrowLeft", "SoftLeft", "Backspace"].includes(e.key)) {
+						e.stopImmediatePropagation();
+						e.stopPropagation();
+						e.preventDefault();
 						pageState.value = 0;
 					}
 				}}

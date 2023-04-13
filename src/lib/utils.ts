@@ -309,3 +309,15 @@ function getJSXByClassName(className: string, jsxElement: h.JSX.Element) {
 
 	return matching;
 }
+
+const preloadImage = (src: string) =>
+	new Promise((resolve) => {
+		const image = new Image();
+		image.onload = resolve;
+		image.onerror = resolve;
+		image.src = src;
+	});
+
+export function preloadImages(images: string[]) {
+	return Promise.all(images.map((a) => preloadImage(a)));
+}
