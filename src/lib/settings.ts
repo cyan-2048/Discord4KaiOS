@@ -3,16 +3,16 @@ import { useState, useEffect } from "preact/hooks";
 import { useWritable } from "./utils";
 
 interface KeyBinds {
-	[key: KeyboardEvent["key"]]:
-		| "edit"
-		| "jump"
-		| "reply"
-		| "react"
-		| "pin"
-		| "delete";
+	[key: KeyboardEvent["key"]]: "edit" | "jump" | "reply" | "react" | "pin" | "delete";
 }
 
-interface Settings {
+interface Json {
+	[x: string]: string | number | boolean | Date | Json | JsonArray;
+}
+
+interface JsonArray extends Array<string | number | boolean | Date | Json | JsonArray> {}
+
+interface Settings extends Json {
 	custom_rpc: boolean;
 	prompt_delete: boolean;
 	smooth_scroll: boolean;
@@ -40,29 +40,6 @@ const defaultSettings: Settings = {
 	},
 };
 
-function validateSettings(
-	partialSettings: Partial<Settings>
-): Partial<Settings> {
-	const validatedSettings = {} as Partial<Settings>;
-	for (const key in partialSettings) {
-		const defaultValue = defaultSettings[key];
-		const inputValue = partialSettings[key];
-		if (Array.isArray(defaultValue)) {
-			validatedSettings[key] = Array.isArray(inputValue)
-				? inputValue
-				: defaultValue;
-		} else if (typeof defaultValue === "object" && defaultValue !== null) {
-			validatedSettings[key] = validateSettings(
-				inputValue as Partial<typeof defaultValue>
-			);
-		} else {
-			validatedSettings[key] =
-				typeof inputValue === typeof defaultValue ? inputValue : defaultValue;
-		}
-	}
-	return validatedSettings;
-}
-
 const settingsPrefix = "d4k-settings-";
 
 function loadSettings(): Settings {
@@ -75,32 +52,28 @@ function loadSettings(): Settings {
 		}
 	}
 
-	return { ...defaultSettings, ...validateSettings(loadedSettings) };
+	return { ...defaultSettings, ...loadedSettings };
 }
 
 const loadedSettings = loadSettings();
 const settingsWriteable = writable(loadedSettings);
 
-export default function useSettings(): [
-	Settings,
-	(settings: Partial<Settings>) => void
-] {
-	const [settings, setSettings, updateSettings] =
-		useWritable(settingsWriteable);
-
-	function saveSettings(partialSettings: Partial<Settings>): void {
-		let updateOccured = false;
-		const updatedSettings = validateSettings(partialSettings);
-		for (const key in updatedSettings) {
-			if (!updateOccured) updateOccured = true;
-			const storageKey = settingsPrefix + key;
-			const value = JSON.stringify(updatedSettings[key]);
-			localStorage.setItem(storageKey, value);
-		}
-
-		updateOccured &&
-			updateSettings((settings) => ({ ...settings, ...updatedSettings }));
+export function saveSettings(partialSettings: Partial<Settings>): void {
+	let updateOccured = false;
+	const updatedSettings = partialSettings;
+	for (const key in updatedSettings) {
+		if (!(key in defaultSettings)) continue;
+		if (!updateOccured) updateOccured = true;
+		const storageKey = settingsPrefix + key;
+		const value = JSON.stringify(updatedSettings[key]);
+		localStorage.setItem(storageKey, value);
 	}
+
+	updateOccured && settingsWriteable.update((settings) => ({ ...settings, ...updatedSettings }));
+}
+
+export default function useSettings(): [Settings, (settings: Partial<Settings>) => void] {
+	const [settings, setSettings, updateSettings] = useWritable(settingsWriteable);
 
 	return [settings, saveSettings];
 }

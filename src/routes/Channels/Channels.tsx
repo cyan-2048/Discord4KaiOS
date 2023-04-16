@@ -97,17 +97,56 @@ interface ServerChannelProps {
 	class?: string;
 }
 
+class AsyncCallbackRegistry {
+	private asyncFunc?: () => Promise<any>;
+
+	register<T = any>(func: () => Promise<T>, callback: (result: T) => void) {
+		this.asyncFunc = func;
+		func().then((a) => {
+			if (this.asyncFunc === func) callback(a);
+		});
+	}
+}
+
+const switchingChannels = new AsyncCallbackRegistry();
+
+function safeUseReadable(readable?: Readable<any>) {
+	const [state, setState] = useState([]);
+
+	useEffect(() => {
+		if (!readable) return setState([]);
+		setState([get(readable)]);
+		return readable.subscribe((a) => setState([a]));
+	}, [readable]);
+
+	return state[0];
+}
+
 /* For Channels in Servers aka not DMS */
 const Channel = memo(function Channel({ channel, class: _class, ..._props }: ServerChannelProps) {
 	const props = useReadable(channel.props);
 
-	const readState = channel.readState && useReadable(channel.readState);
-	const unread = Boolean(channel.unread && useReadable(channel.unread));
+	const readState = safeUseReadable(channel.readState);
+	const unread = safeUseReadable(channel.unread);
 	const muted = channel.isMuted();
 
 	const mentions = readState?.mention_count || 0;
 
 	const ch_type = props.type === 5 ? "announce" : channel.isPrivate() ? "limited" : "text";
+
+	const switchChannel = useCallback(() => {
+		switchingChannels.register(
+			async () => {
+				// @ts-ignore: idc
+				if (channel.messages.messages.length < 15) await channel.messages.loadMessages();
+			},
+			() => {
+				route(`/channels/${guildID.peek()}/${channel.id}`);
+				channel.messages.ack();
+				currentChannel.value = channel;
+			}
+		);
+	}, [channel]);
 
 	return (
 		<main
@@ -125,13 +164,10 @@ const Channel = memo(function Channel({ channel, class: _class, ..._props }: Ser
 				if (e.target !== e.currentTarget) return;
 				await centerScroll(e.target as HTMLElement);
 			}}
-			onClick={async () => {
-				// @ts-ignore: idc
-				if (channel.messages.messages.length < 15) await channel.messages.loadMessages();
-				route(`/channels/${guildID.peek()}/${channel.id}`);
-				channel.messages.ack();
-				currentChannel.value = channel;
+			onKeyDown={(e) => {
+				if (e.key === "Enter") switchChannel();
 			}}
+			onClick={switchChannel}
 			{..._props}
 		>
 			<div class="bar" />
@@ -250,13 +286,34 @@ const Server = memo(function Server({
 		setUnread?.(arg);
 	}
 
-	useMount(() => {
-		const guildChannels = get(guild.channels.siftedChannels);
-		const states = new Set<ReadState>();
-		const _channels = guildChannels.filter((a) => a.readState && !a.isMuted());
-		const readStates = _channels.map((a) => a.readState);
-		const unsubs: (() => void)[] = readStates.map((a) =>
-			a.subscribe((val: ReadState) => {
+	const guildChannels = useReadable(guild.channels.siftedChannels);
+
+	useEffect(() => {
+		const _channels = siftTheSiftedChannelsBruh(guildChannels).filter((a) => a.readState && !a.isMuted() && [5, 0].includes(a.type));
+
+		const unreads: boolean[] = [];
+		const mentions: number[] = [];
+
+		const unsubs = _channels.map((a, i) => {
+			const unsub1 = a.unread.subscribe((val: boolean) => {
+				unreads[i] = val;
+				setUnreads(unreads.some((a) => a));
+			});
+
+			const unsub2 = a.readState.subscribe((val: ReadState) => {
+				mentions[i] = val.mention_count;
+				setMentions(mentions.reduce((a, b) => a + b, 0));
+			});
+
+			return () => {
+				unsub1();
+				unsub2();
+			};
+		});
+
+		/*
+		const unsubs: (() => void)[] = _channels.map((a) =>
+			a.readState.subscribe((val: ReadState) => {
 				states.add(val);
 				// @ts-ignore
 				const _mentions = [...states].map((a: ReadState) => a.mention_count).reduce((a, b) => a + b, 0);
@@ -267,11 +324,12 @@ const Server = memo(function Server({
 					return;
 				}
 
-				if (guild.isMuted()) return;
+				if (guild.isMuted()) return setUnreads(false);
 
 				for (let i = 0; i < _channels.length; i++) {
 					const _channel = _channels[i];
-					if (get(_channel.unread)) {
+					// (unread && !muted) || mentions > 0,
+					if (!_channel.isMuted() && get(_channel.unread)) {
 						setUnreads(true);
 						return;
 					}
@@ -280,8 +338,9 @@ const Server = memo(function Server({
 				setUnreads(false);
 			})
 		);
+		*/
 		return () => unsubs.forEach((a) => a());
-	});
+	}, [guildChannels]);
 
 	const animated = Boolean(props.icon?.startsWith("a_"));
 
@@ -355,36 +414,39 @@ async function noChannelsFound() {
 	console.log("TODO Modals", "no channels found");
 }
 
+function siftTheSiftedChannelsBruh(arr?: GuildChannel[]) {
+	return arr
+		?.filter((a) => {
+			if (a.type === 0 || a.type == 5) {
+				const perms = a.roleAccess();
+				return perms.read;
+			}
+			return true;
+		})
+		.filter((a, i, arr) => {
+			if (a.type == 4) {
+				const next = arr[i + 1];
+				if (!next || next.type == 4) return false;
+			}
+			return true;
+		});
+}
+
 function ServerChannelList({ guilds }: { guilds: Guild[] }) {
 	useMountDebug("ServerChannelList");
 
 	const channels = useMemo(
 		() =>
-			safeGetReadable(guilds.find((a) => a.id == guildID.peek())?.channels.siftedChannels)
-				?.filter((a) => {
-					if (a.type === 0 || a.type == 5) {
-						const perms = a.roleAccess();
-						return perms.read;
-					}
-					return true;
-				})
-				.filter((a, i, arr) => {
-					if (a.type == 4) {
-						const next = arr[i + 1];
-						if (!next || next.type == 4) return false;
-					}
-					return true;
-				})
-				.map((a, i) => {
-					if ([5, 0].includes(a.type)) {
-						return <Channel channel={a} />;
-					} else if (a.type == 4) {
-						return <ChannelSeparator>{a.name}</ChannelSeparator>;
-					} else {
-						console.log(a);
-						return <div>{a.name}</div>;
-					}
-				}),
+			siftTheSiftedChannelsBruh(safeGetReadable(guilds.find((a) => a.id == guildID.peek())?.channels.siftedChannels))?.map((a, i) => {
+				if ([5, 0].includes(a.type)) {
+					return <Channel channel={a} />;
+				} else if (a.type == 4) {
+					return <ChannelSeparator>{a.name}</ChannelSeparator>;
+				} else {
+					console.log(a);
+					return <div>{a.name}</div>;
+				}
+			}),
 		[guildID.value]
 	);
 

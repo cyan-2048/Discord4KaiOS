@@ -8,6 +8,7 @@ window.__workerSrc = "/worker.js";
 
 import "core-js/actual/array/flat";
 import "core-js/actual/array/find-last";
+import "core-js/actual/array/to-sorted";
 import "core-js/actual/string/match-all";
 
 import { Fragment, h, render } from "preact";
@@ -92,12 +93,8 @@ function App() {
 				<NullComponent path="/channels/:guildID/"></NullComponent>
 				<NullComponent path="/channels/:guildID/:channelID"></NullComponent>
 			</Router>
-			{channelsMounted && (
-				<Channels hidden={channelsHidden} guildID={guildID}></Channels>
-			)}
-			{messagesMounted && (
-				<Messages hidden={messagesHidden} channelID={channelID}></Messages>
-			)}
+			{channelsMounted && <Channels hidden={channelsHidden} guildID={guildID}></Channels>}
+			{messagesMounted && <Messages hidden={messagesHidden} channelID={channelID}></Messages>}
 		</>
 	) : (
 		<Loading />
