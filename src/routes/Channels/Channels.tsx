@@ -382,6 +382,7 @@ const Server = memo(function Server({
 				if (["Enter", "SoftRight", "ArrowRight"].includes(e.key)) {
 					route("/channels/" + guild.id);
 					pageState.value = 1;
+					guild.lazy();
 				}
 			}}
 			data-focusable={focusable ? "" : null}
