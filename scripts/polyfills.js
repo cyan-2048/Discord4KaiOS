@@ -104,9 +104,7 @@ if (typeof PromiseRejectionEvent === "undefined") {
 	function docFragger(args) {
 		const docFrag = document.createDocumentFragment();
 
-		args.forEach((argItem) =>
-			docFrag.appendChild(argItem instanceof Node ? argItem : document.createTextNode(String(argItem)))
-		);
+		args.forEach((argItem) => docFrag.appendChild(argItem instanceof Node ? argItem : document.createTextNode(String(argItem))));
 
 		return docFrag;
 	}
@@ -141,3 +139,11 @@ if (typeof PromiseRejectionEvent === "undefined") {
 		}
 	});
 })([Element.prototype, Document.prototype, DocumentFragment.prototype]);
+
+// toFix that weird is=undefined attribute that happens because KaiOS tries to do webcomponents but fails miserably
+const createElOriginal = Document.prototype.createElement;
+
+Document.prototype.createElement = function (type) {
+	console.log(type);
+	return createElOriginal.call(this, type);
+};

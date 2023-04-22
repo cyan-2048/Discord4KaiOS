@@ -2,11 +2,11 @@ import { Guild } from "discord/Guilds";
 import "./assets/actions.scss";
 
 import Message from "discord/Message";
-import { User } from "discord/libs/types";
-import { h } from "preact";
-import { Fragment, memo } from "preact/compat";
+import { User } from "discord/types";
+import { h, Fragment } from "preact";
+import { memo } from "preact/compat";
 import Mentions from "./Mentions";
-import { stringifyDate, useMount } from "@/lib/utils";
+import { stringifyDate } from "@utils";
 
 interface ActionMessageBaseProps {
 	icon?: h.JSX.Element | string;
@@ -17,14 +17,7 @@ interface ActionMessageBaseProps {
 	guildInstance?: Guild;
 }
 
-function ActionMessageBase({
-	icon,
-	before,
-	after,
-	iconColor = null,
-	user,
-	guildInstance,
-}: ActionMessageBaseProps) {
+function ActionMessageBase({ icon, before, after, iconColor = null, user, guildInstance }: ActionMessageBaseProps) {
 	return (
 		<main tabIndex={0} data-focusable="" className="ActionMessageBase">
 			<div class="icon" style={{ color: iconColor }}>
@@ -32,14 +25,7 @@ function ActionMessageBase({
 			</div>
 			<div>
 				{before}
-				<Mentions
-					type="user"
-					username={user.username}
-					guildInstance={guildInstance}
-					id={user.id}
-					prefix={false}
-					mentions={false}
-				></Mentions>
+				<Mentions type="user" username={user.username} guildInstance={guildInstance} id={user.id} prefix={false} mentions={false}></Mentions>
 				{after}
 			</div>
 		</main>
@@ -66,11 +52,7 @@ function getGreeting(snowflake: number) {
 	return greetings[snowflake % greetings.length];
 }
 
-const ActionMessages = memo(function ActionMessages({
-	children: _,
-}: {
-	children: Message;
-}) {
+const ActionMessages = memo(function ActionMessages({ children: _ }: { children: Message }) {
 	const msg = _.rawMessage;
 	// @ts-ignore
 	const snowflake = new Date(msg.timestamp) * 1;
@@ -80,12 +62,7 @@ const ActionMessages = memo(function ActionMessages({
 			return (
 				<ActionMessageBase
 					icon={
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 24 24"
-						>
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
 							<path
 								fill="currentColor"
 								d="M22 12L12.101 2.10101L10.686 3.51401L12.101 4.92901L7.15096 9.87801V9.88001L5.73596 8.46501L4.32196 9.88001L8.56496 14.122L2.90796 19.778L4.32196 21.192L9.97896 15.536L14.222 19.778L15.636 18.364L14.222 16.95L19.171 12H19.172L20.586 13.414L22 12Z"
@@ -101,12 +78,7 @@ const ActionMessages = memo(function ActionMessages({
 			return (
 				<ActionMessageBase
 					icon={
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 32 32"
-						>
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 32 32">
 							<path
 								fill="currentColor"
 								fillRule="evenodd"
@@ -153,10 +125,7 @@ const ActionMessages = memo(function ActionMessages({
 						<svg height="18" width="18" xmlns="http://www.w3.org/2000/svg">
 							<g fill="none" fill-rule="evenodd">
 								<path d="m18 0h-18v18h18z" />
-								<path
-									d="m0 8h14.2l-3.6-3.6 1.4-1.4 6 6-6 6-1.4-1.4 3.6-3.6h-14.2"
-									fill="#3ba55c"
-								/>
+								<path d="m0 8h14.2l-3.6-3.6 1.4-1.4 6 6-6 6-1.4-1.4 3.6-3.6h-14.2" fill="#3ba55c" />
 							</g>
 						</svg>
 					}
@@ -172,7 +141,5 @@ const ActionMessages = memo(function ActionMessages({
 });
 
 export default function handleActionMessage(message: Message) {
-	return [6, 7, 8, 3].includes(message.rawMessage.type) ? (
-		<ActionMessages>{message}</ActionMessages>
-	) : null;
+	return [6, 7, 8, 3].includes(message.rawMessage.type) ? <ActionMessages>{message}</ActionMessages> : null;
 }

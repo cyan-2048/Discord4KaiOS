@@ -1,20 +1,19 @@
 import { Markdown } from "@components/Markdown";
 import "./style.scss";
 
-import { currentChannel } from "@lib/shared";
-import { scrollToBottom, setMapAndReturn, sleep, stringifyDate, useDestroy, useReadable } from "@lib/utils";
+import { currentChannel } from "@shared";
+import { scrollToBottom, setMapAndReturn, sleep, stringifyDate, clx } from "@utils";
+import { useDestroy, useReadable, useState, useEffect, useRef, useRefFunctional } from "@hooks";
+
 import DiscordMessage, { RawMessage } from "discord/Message";
-import { ComponentChildren, JSX, h } from "preact";
-import { memo, useEffect, useMemo, useRef } from "preact/compat";
-import clx from "obj-str";
-import Mentions from "@/components/Mentions";
+import { ComponentChildren, Fragment, JSX, h } from "preact";
+import { memo, useCallback, useLayoutEffect } from "preact/compat";
+
+import Mentions from "@components/Mentions";
 import { Guild } from "discord/Guilds";
-import { User } from "discord/libs/types";
-import handleActionMessage from "@/components/ActionMessages";
-import charRegex from "char-regex";
-import { get } from "discord/main";
-import { MutableRef, useState } from "preact/hooks";
-import parse from "@/lib/discord-markdown";
+import { User } from "discord/types";
+import handleActionMessage from "@components/ActionMessages";
+import Button from "@/components/Button";
 
 function timeDif(...args: Date[]) {
 	const [dt2, dt1] = args.map((a) => +new Date(a));
@@ -59,9 +58,22 @@ const MessageSeparator = memo(function MessageSeparator({ children: { rawMessage
 	);
 });
 
-const MessageContent = memo(function MessageContent({ children: message, setJumbo }: { children: DiscordMessage; setJumbo: (a: boolean) => void }) {
+const MessageContent = memo(function MessageContent({
+	edited = false,
+	children: message,
+	setJumbo,
+}: {
+	edited?: boolean;
+	children: DiscordMessage;
+	setJumbo: (a: boolean) => void;
+}) {
 	const content = useReadable(message.content);
-	return <Markdown setJumbo={setJumbo} reference={{ guildInstance: message.guildInstance }} text={content} embed={!!message.rawMessage.author.bot}></Markdown>;
+	return (
+		<>
+			<Markdown setJumbo={setJumbo} reference={{ guildInstance: message.guildInstance }} text={content} embed={!!message.rawMessage.author.bot}></Markdown>
+			{}
+		</>
+	);
 });
 
 const MessageReference = memo(function MessageReference({
@@ -90,7 +102,7 @@ const MessageReference = memo(function MessageReference({
 	);
 });
 
-const Message = memo(function Message({ message, separate, children }: { message: DiscordMessage; children?: ComponentChildren; separate: boolean }) {
+function Message({ message, separate }: { message: DiscordMessage; children?: ComponentChildren; separate: boolean }) {
 	// const [focused, setFocused] = useState(false);
 	const messageEl = useRef<HTMLDivElement>(null);
 	const messageProps = useReadable(message.props);
@@ -108,7 +120,6 @@ const Message = memo(function Message({ message, separate, children }: { message
 			data-focusable=""
 			tabIndex={0}
 			class={clx({ Message: 1, mention: message.wouldPing(), deleted })}
-			key={message.id}
 		>
 			{(messageProps.referenced_message || messageProps.interaction) && (
 				<MessageReference
@@ -121,13 +132,15 @@ const Message = memo(function Message({ message, separate, children }: { message
 				></MessageReference>
 			)}
 			{separate && <MessageSeparator>{message}</MessageSeparator>}
-			{children}
-			<div class={clx({ content: 1, edited: messageProps.edited_timestamp, "emoji-big": emojiBig })}>
+
+			<div class={clx({ content: 1, "emoji-big": emojiBig, edited: messageProps.edited_timestamp })}>
 				<MessageContent setJumbo={setJumbo}>{message}</MessageContent>
 			</div>
 		</div>
 	);
-});
+}
+
+const cachedMessages = new Map<string, JSX.Element>();
 
 export default memo(function Messages({ hidden, channelID }: { hidden: boolean; channelID: string }) {
 	const handler = currentChannel.value?.messages;
@@ -135,33 +148,43 @@ export default memo(function Messages({ hidden, channelID }: { hidden: boolean; 
 
 	//handler.removeMessages = false;
 
-	const chatboxEl = useRef<HTMLDivElement>(null);
+	const [chatboxEl, $, chatboxElRef] = useRefFunctional<HTMLDivElement>(null);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		// scroll chatbox to bottom
-		sleep(20).then(() => scrollToBottom(chatboxEl.current));
+		sleep(20).then(() => scrollToBottom(chatboxEl()));
 	}, [handler]);
-
-	const cachedMessages = useRef(new Map<string, JSX.Element>());
 
 	const messages = useReadable(handler.state);
 
 	useDestroy(() => {
-		cachedMessages.current.clear();
+		cachedMessages.clear();
 	});
 
 	return (
 		<main class="Messages" style={{ visibility: hidden ? "hidden" : null }}>
-			<div ref={chatboxEl} class="chatbox">
-				{messages.map(
-					(message, index, arr) =>
-						cachedMessages.current.get(message.id) ||
+			<div ref={chatboxElRef} class="chatbox">
+				<Button
+					onClick={useCallback(async () => {
+						await handler.loadMessages(4);
+					}, [handler])}
+				>
+					Load More
+				</Button>
+				{messages.map((message, index, arr) => {
+					return (
+						cachedMessages.get(message.id) ||
 						setMapAndReturn(
-							cachedMessages.current,
+							cachedMessages,
 							message.id,
-							handleActionMessage(message) || <Message separate={decideMessageSeparator(index, message.rawMessage, arr[index - 1]?.rawMessage)} message={message}></Message>
+							handleActionMessage(message) || (
+								<Fragment key={"msg" + message.id}>
+									<Message separate={decideMessageSeparator(index, message.rawMessage, arr[index - 1]?.rawMessage)} message={message}></Message>
+								</Fragment>
+							)
 						)
-				)}
+					);
+				})}
 			</div>
 		</main>
 	);

@@ -1,9 +1,9 @@
-import { discordInstance } from "@/lib/shared";
+import { discordInstance } from "@shared";
 import { Guild } from "discord/Guilds";
-import { memo, useEffect, useState } from "preact/compat";
-import clx from "obj-str";
+import { memo, useEffect, useLayoutEffect, useState } from "preact/compat";
+
 import { Fragment, h } from "preact";
-import { decimal2rgb } from "@lib/utils";
+import { decimal2rgb, clx } from "@utils";
 import { GuildMember } from "discord/GuildMembers";
 
 interface MentionsProps {
@@ -23,22 +23,12 @@ function getGateway() {
 	return discordInstance.peek().gateway;
 }
 
-async function getProfile(
-	id: string,
-	prefix: boolean,
-	setText: (text: string) => void,
-	setStyle: (style: h.JSX.CSSProperties | null) => void,
-	guildInstance?: Guild
-) {
-	const profile =
-		guildInstance?.members.get(id) || getGateway().users_cache.get(id);
+async function getProfile(id: string, prefix: boolean, setText: (text: string) => void, setStyle: (style: h.JSX.CSSProperties | null) => void, guildInstance?: Guild) {
+	const profile = guildInstance?.members.get(id) || getGateway().users_cache.get(id);
 
 	function setter(profile: any) {
 		const raw = profile.rawProfile || profile;
-		setText(
-			prefi("@", prefix) +
-				(raw.nick || raw.user?.username || raw.username || "")
-		);
+		setText(prefi("@", prefix) + (raw.nick || raw.user?.username || raw.username || ""));
 
 		if (profile instanceof GuildMember) {
 			const color = profile.getColor();
@@ -56,29 +46,19 @@ async function getProfile(
 	if (guildInstance && !profile?.rawProfile) {
 		const lazy = await guildInstance.members.lazy(id);
 		const color = lazy.getColor();
-		console.log(
-			"LAZY %c" + (lazy.rawProfile.nick || lazy.rawProfile.user?.username),
-			`color:${color ? `rgb(${color})` : "white"};`
-		);
+		console.log("LAZY %c" + (lazy.rawProfile.nick || lazy.rawProfile.user?.username), `color:${color ? `rgb(${color})` : "white"};`);
 		if (lazy) setter(lazy);
 	}
 }
 
-export default memo(function Mentions({
-	type,
-	id,
-	guildInstance,
-	prefix = true,
-	mentions = true,
-	username = "loading...",
-}: MentionsProps) {
+export default memo(function Mentions({ type, id, guildInstance, prefix = true, mentions = true, username = "loading..." }: MentionsProps) {
 	const discordGateway = getGateway();
 	const me = id === discordGateway.user?.id;
 
 	const [text, setText] = useState("");
 	const [style, setStyle] = useState<h.JSX.CSSProperties | null>(null);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (type === "role") {
 			const role = guildInstance?.rawGuild.roles?.find((e) => e.id === id);
 			if (role && role.color > 0) {

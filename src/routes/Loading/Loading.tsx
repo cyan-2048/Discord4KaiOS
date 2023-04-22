@@ -1,7 +1,6 @@
-import { useMountDebug } from "@/lib/utils";
+import { useMountDebug, useEffect, useState } from "@hooks";
 import { Markdown } from "@components/Markdown";
 import { h, Fragment } from "preact";
-import { useEffect, useState } from "preact/hooks";
 import "./style.scss";
 
 const getRandomText = randomNoRepeats([

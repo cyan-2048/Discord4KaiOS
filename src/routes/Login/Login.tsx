@@ -1,18 +1,11 @@
-import {
-	bindedMemoryState,
-	useMount,
-	sleep,
-	useInputValue,
-	useMemoryState,
-	hash,
-	useSpatialNav,
-} from "@lib/utils";
+import { sleep, hash } from "@utils";
+import { MutableRef, useRef, useState, useInputValue, useMemoryState, bindedMemoryState, useMount, useSpatialNav } from "@hooks";
+
 import Button from "@components/Button";
 import { ComponentProps, Fragment, h } from "preact";
 import { route } from "preact-router";
-import { MutableRef, useRef, useState } from "preact/hooks";
 import "./style.scss";
-import { discordInstance, loadDiscord, setToken } from "@lib/shared";
+import { discordInstance, loadDiscord, setToken } from "@shared";
 import MFA from "discord/MFA";
 
 const symbol0 = Symbol(),
@@ -35,9 +28,7 @@ const RequiredField = () => (
 );
 
 async function testToken(authorization: string) {
-	const settings = await discordInstance
-		.peek()
-		.xhr("users/@me", { method: "get", headers: { authorization } });
+	const settings = await discordInstance.peek().xhr("users/@me", { method: "get", headers: { authorization } });
 	if (settings.code === 0) throw settings;
 	return settings;
 }
@@ -72,14 +63,8 @@ function Home({ setPage }: LoginPagesProps) {
 		password: null,
 	});
 
-	const [emailValue, setEmail] = useInputValue(
-		emailEl,
-		bindedMemoryState(symbol0)
-	);
-	const [passwordValue, setPassword] = useInputValue(
-		passwordEl,
-		bindedMemoryState(symbol2)
-	);
+	const [emailValue, setEmail] = useInputValue(emailEl, bindedMemoryState(symbol0));
+	const [passwordValue, setPassword] = useInputValue(passwordEl, bindedMemoryState(symbol2));
 
 	useFocus(emailEl);
 
@@ -127,10 +112,7 @@ function todo() {
 function Token({ setPage }: LoginPagesProps) {
 	const tokenEl = useRef<HTMLInputElement>(null);
 
-	const [tokenValue, setToken] = useInputValue(
-		tokenEl,
-		bindedMemoryState(symbol3)
-	);
+	const [tokenValue, setToken] = useInputValue(tokenEl, bindedMemoryState(symbol3));
 	const [tokenState, setTokenState] = useState<null | true>(null);
 
 	useFocus(tokenEl);
@@ -184,12 +166,7 @@ function MFAuth({ setPage }: LoginPagesProps) {
 				{label}
 				{required === false ? <i> - Invalid two-factor auth ticket</i> : null}
 			</Separator>
-			<input
-				tabIndex={0}
-				ref={codeEl}
-				placeholder="Authentication code"
-				type="tel"
-			/>
+			<input tabIndex={0} ref={codeEl} placeholder="Authentication code" type="tel" />
 			<Button
 				onClick={async () => {
 					const len = auth.length;

@@ -100,8 +100,8 @@
 
 		&.emoji-big .emoji,
 		&.emoji-big .emoji::before {
-			width: 32px !important;
-			height: 32px !important;
+			scale: unset !important;
+			top: unset !important;
 		}
 
 		&.emoji-big {
@@ -218,8 +218,8 @@
 
 	.emoji {
 		position: relative;
-		width: 16px;
-		height: 16px;
+		width: 1em;
+		height: 1em;
 		display: inline-block;
 
 		span {
@@ -231,8 +231,10 @@
 			content: "";
 			position: absolute;
 			background-image: var(--emoji_url);
-			width: 16px;
-			height: 16px;
+			width: 1em;
+			height: 1em;
+			top: 1.5px;
+			scale: 1.23;
 			background-position: center;
 			background-repeat: no-repeat;
 			background-attachment: local;

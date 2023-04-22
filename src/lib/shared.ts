@@ -1,5 +1,4 @@
 import { signal } from "@preact/signals";
-import { useEffect, useState } from "preact/hooks";
 
 import spatial_navigation from "./spatial_navigation";
 import Discord, { readable } from "discord";

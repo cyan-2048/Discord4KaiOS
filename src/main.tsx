@@ -16,29 +16,37 @@ import { Fragment, h, render } from "preact";
 import "./assets/global.scss";
 // import "@lib/focusin.min.js";
 
-import { useMount, useMountDebug } from "./lib/utils";
+import { useCallback, useInputValue, useMount, useMountDebug, useRef, useState } from "@hooks";
 import { appReady, loadDiscord, sn } from "./lib/shared";
 sn.init();
 
 import { Router } from "preact-router";
-import Match from "preact-router/match";
+
 import Loading from "@routes/Loading";
 import Login from "@routes/Login";
 import Channels from "@routes/Channels";
 import Button from "@components/Button";
-import { useState } from "preact/hooks";
 import Messages from "@routes/Messages";
+import { Markdown } from "./components/Markdown";
 
 function TestRoute(props: any) {
 	useMountDebug("TestRoute");
 
+	const textarea = useRef<HTMLTextAreaElement>(null);
+
+	const [text] = useInputValue(textarea);
+
 	return (
 		<>
-			<div>Test Route</div>
+			<div>Test Routec {Math.random()}</div>
+			<div>
+				<Markdown text={text}></Markdown>
+			</div>
+			<textarea ref={textarea} cols={30} rows={10}></textarea>
 			<Button
-				onClick={() => {
+				onClick={useCallback(() => {
 					history.back();
-				}}
+				}, [])}
 			>
 				Go Back
 			</Button>

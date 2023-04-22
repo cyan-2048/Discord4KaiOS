@@ -2,21 +2,20 @@ import "./style.scss";
 import "./Server.scss";
 import "./Channel.scss";
 
-import { centerScroll, decimal2rgb, hash, sleep, useMemoryState, useMount, useMountDebug, useReadable, useSpatialNav } from "@/lib/utils";
-import { currentChannel, discordInstance, RouteProps, sn } from "@lib/shared";
+import { centerScroll, decimal2rgb, hash, sleep, clx } from "@utils";
+import { useMemoryState, useMount, useMountDebug, useReadable, useSpatialNav, useCallback, useEffect, useMemo, useReducer, useRef, useState } from "@hooks";
+import { currentChannel, discordInstance, RouteProps, sn } from "@shared";
 
 import { Guild } from "discord/Guilds";
-import { GuildFolder, RawGuild, ReadState } from "discord/libs/types";
+import { GuildFolder, RawGuild, ReadState } from "discord/types";
 import { GuildChannel } from "discord/GuildChannels";
 
-import clx from "obj-str";
-import { ComponentChildren, Fragment, h } from "preact";
+import { ComponentChildren, Fragment, createContext, h } from "preact";
 import { route } from "preact-router";
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "preact/hooks";
 import { get, Readable } from "discord";
-import Button from "@/components/Button";
-import { signal } from "@preact/signals";
-import { memo } from "preact/compat";
+import Button from "@components/Button";
+import { computed, signal, useComputed, useSignal } from "@preact/signals";
+import { memo, useLayoutEffect } from "preact/compat";
 
 const ChannelIcons = {
 	text: (
@@ -95,6 +94,8 @@ interface ServerChannelProps {
 	onFocus?: (e: FocusEvent) => void;
 	onBlur?: () => void;
 	class?: string;
+	focused?: boolean;
+	index?: number;
 }
 
 class AsyncCallbackRegistry {
@@ -121,66 +122,6 @@ function safeUseReadable(readable?: Readable<any>) {
 
 	return state[0];
 }
-
-/* For Channels in Servers aka not DMS */
-const Channel = memo(function Channel({ channel, class: _class, ..._props }: ServerChannelProps) {
-	const props = useReadable(channel.props);
-
-	const readState = safeUseReadable(channel.readState);
-	const unread = safeUseReadable(channel.unread);
-	const muted = channel.isMuted();
-
-	const mentions = readState?.mention_count || 0;
-
-	const ch_type = props.type === 5 ? "announce" : channel.isPrivate() ? "limited" : "text";
-
-	const switchChannel = useCallback(() => {
-		switchingChannels.register(
-			async () => {
-				// @ts-ignore: idc
-				if (channel.messages.messages.length < 15) await channel.messages.loadMessages();
-			},
-			() => {
-				route(`/channels/${guildID.peek()}/${channel.id}`);
-				channel.messages.ack();
-				currentChannel.value = channel;
-			}
-		);
-	}, [channel]);
-
-	return (
-		<main
-			data-focusable=""
-			tabIndex={0}
-			id={`ch${channel.id}`}
-			class={
-				clx({
-					Channel: 1,
-					muted: muted && mentions == 0,
-					unread: (unread && !muted) || mentions > 0,
-				}) + (_class ? " " + _class : "")
-			}
-			onFocus={async (e) => {
-				if (e.target !== e.currentTarget) return;
-				await centerScroll(e.target as HTMLElement);
-			}}
-			onKeyDown={(e) => {
-				if (e.key === "Enter") switchChannel();
-			}}
-			onClick={switchChannel}
-			{..._props}
-		>
-			<div class="bar" />
-			{ChannelIcons[ch_type as keyof typeof ChannelIcons]}
-			{mentions > 0 && (
-				<div class="mentions">
-					<div class={String(mentions).length > 2 ? "flow" : ""}>{mentions}</div>
-				</div>
-			)}
-			<div class="text">{props.name}</div>
-		</main>
-	);
-});
 
 const ServerMentions = memo(function ({ children }: { children: ComponentChildren }) {
 	return <div class="ServerMentions">{children}</div>;
@@ -381,6 +322,7 @@ const Server = memo(function Server({
 				if (e.target !== e.currentTarget) return;
 				if (["Enter", "SoftRight", "ArrowRight"].includes(e.key)) {
 					route("/channels/" + guild.id);
+					focusedChannel.value = 0;
 					pageState.value = 1;
 					guild.lazy();
 				}
@@ -433,29 +375,94 @@ function siftTheSiftedChannelsBruh(arr?: GuildChannel[]) {
 		});
 }
 
+/* For Channels in Servers aka not DMS */
+const Channel = memo(({ channel, class: _class, index, focused = false, ..._props }: ServerChannelProps) => {
+	const props = useReadable(channel.props);
+
+	const readState = safeUseReadable(channel.readState);
+	const unread = safeUseReadable(channel.unread);
+	const muted = channel.isMuted();
+
+	const mentions = readState?.mention_count || 0;
+
+	const ch_type = props.type === 5 ? "announce" : channel.isPrivate() ? "limited" : "text";
+
+	const switchChannel = useCallback(() => {
+		switchingChannels.register(
+			async () => {
+				// @ts-ignore: idc
+				if (channel.messages.messages.length < 15) await channel.messages.loadMessages();
+			},
+			() => {
+				route(`/channels/${guildID.peek()}/${channel.id}`);
+				channel.messages.ack();
+				currentChannel.value = channel;
+			}
+		);
+	}, [channel]);
+
+	return (
+		<main
+			data-focusable=""
+			tabIndex={0}
+			id={`ch${channel.id}`}
+			class={
+				clx({
+					Channel: 1,
+					muted: muted && mentions == 0,
+					unread: (unread && !muted) || mentions > 0,
+					focused: useComputed(() => index === focusedChannel.value).value,
+				}) + (_class ? " " + _class : "")
+			}
+			onFocus={async (e) => {
+				if (e.target !== e.currentTarget) return;
+				focusedChannel.value = index;
+				await centerScroll(e.target as HTMLElement);
+			}}
+			onKeyDown={(e) => {
+				if (e.key === "Enter") switchChannel();
+			}}
+			onClick={switchChannel}
+			{..._props}
+		>
+			<div class="bar" />
+			{ChannelIcons[ch_type as keyof typeof ChannelIcons]}
+			{mentions > 0 && (
+				<div class="mentions">
+					<div class={String(mentions).length > 2 ? "flow" : ""}>{mentions}</div>
+				</div>
+			)}
+			<div class="text">{props.name}</div>
+		</main>
+	);
+});
+
+const focusedChannel = signal(0);
+
 function ServerChannelList({ guilds }: { guilds: Guild[] }) {
 	useMountDebug("ServerChannelList");
 
-	const channels = useMemo(
-		() =>
-			siftTheSiftedChannelsBruh(safeGetReadable(guilds.find((a) => a.id == guildID.peek())?.channels.siftedChannels))?.map((a, i) => {
-				if ([5, 0].includes(a.type)) {
-					return <Channel channel={a} />;
-				} else if (a.type == 4) {
-					return <ChannelSeparator>{a.name}</ChannelSeparator>;
-				} else {
-					console.log(a);
-					return <div>{a.name}</div>;
-				}
-			}),
-		[guildID.value]
-	);
+	const channels = useMemo(() => {
+		focusedChannel.value = 0;
+		let index = 0;
 
-	useEffect(() => {
-		if (channels && !channels.length) {
+		const _channels = siftTheSiftedChannelsBruh(safeGetReadable(guilds.find((a) => a.id == guildID.peek())?.channels.siftedChannels))?.map((a, i) => {
+			if ([5, 0].includes(a.type)) {
+				return <Channel index={index++} channel={a} />;
+			} else if (a.type == 4) {
+				return <ChannelSeparator>{a.name}</ChannelSeparator>;
+			} else {
+				console.log(a);
+				return <div>{a.name}</div>;
+			}
+		});
+
+		if (!_channels?.length) {
 			noChannelsFound();
 		}
-	}, [channels]);
+
+		return _channels || [];
+	}, [guildID.value]);
 
 	return <>{channels}</>;
 }
@@ -543,10 +550,6 @@ export default function Channels({ channelID, guildID: _guildID, hidden, ...prop
 	}, [guilds]);
 
 	useEffect(() => {
-		channelsEl.current.querySelector(".focused")?.classList.remove("focused");
-	}, [_guildID]);
-
-	useEffect(() => {
 		guildID.value = _guildID;
 	}, [channelID, _guildID]);
 
@@ -566,7 +569,10 @@ export default function Channels({ channelID, guildID: _guildID, hidden, ...prop
 	);
 
 	useEffect(() => {
-		!hidden && sleep(50).then(() => sn.focus(pageState.value ? channelsSN : serversSN));
+		!hidden &&
+			sleep(50).then(() => {
+				sn.focus(pageState.value ? channelsSN : serversSN);
+			});
 	}, [pageState.value, hidden]);
 
 	return (
@@ -586,17 +592,17 @@ export default function Channels({ channelID, guildID: _guildID, hidden, ...prop
 						pageState.value = 0;
 					}
 				}}
-				onFocus={(e) => {
-					const el = e.target as HTMLElement;
-					centerScroll(el);
-					el.classList.add("focused");
-				}}
-				onBlur={(e) => {
-					const el = e.target as HTMLElement;
-					if (pageState.value == 1 && !hidden) {
-						el.classList.remove("focused");
-					}
-				}}
+				// onFocus={(e) => {
+				// 	const el = e.target as HTMLElement;
+				// 	centerScroll(el);
+				// 	el.classList.add("focused");
+				// }}
+				// onBlur={(e) => {
+				// 	const el = e.target as HTMLElement;
+				// 	if (pageState.value == 1 && !hidden) {
+				// 		el.classList.remove("focused");
+				// 	}
+				// }}
 				ref={channelsEl}
 				class="channels"
 			>

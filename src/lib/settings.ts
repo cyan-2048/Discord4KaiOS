@@ -1,6 +1,5 @@
-import { writable } from "discord/main";
-import { useState, useEffect } from "preact/hooks";
-import { useWritable } from "./utils";
+import { writable } from "discord";
+import { useWritable } from "@hooks";
 
 interface KeyBinds {
 	[key: KeyboardEvent["key"]]: "edit" | "jump" | "reply" | "react" | "pin" | "delete";

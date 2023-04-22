@@ -1,10 +1,11 @@
-import { observeElement } from "@/lib/shared";
+import { observeElement } from "@shared";
 import parse from "@lib/discord-markdown";
-import { h, Fragment, ComponentChildren } from "preact";
+import { h, Fragment, ComponentChildren, createContext } from "preact";
 import { CSSProperties, memo } from "preact/compat";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "@hooks";
+
+import { clx } from "@utils";
 import Mentions from "./Mentions";
-import clx from "obj-str";
 import charRegex from "char-regex";
 
 export const CHAR_REGEX = charRegex();
@@ -40,7 +41,13 @@ interface MarkdownNodeProps {
 	name?: string;
 	animated?: boolean;
 	reference?: any;
+	level?: number;
+	ordered?: boolean;
+	start: number;
+	items: MarkdownNodeProps[][];
 }
+
+const Reference = createContext(null);
 
 function EmojiElement({ name, id, animated }: { id: string; animated: boolean; name: string }) {
 	const [inView, setState] = useState(false);
@@ -55,15 +62,7 @@ function EmojiElement({ name, id, animated }: { id: string; animated: boolean; n
 	const url = `url('https://cdn.discordapp.com/emojis/${id}.${animated && inView ? "gif" : "png"}?size=32')`;
 
 	return (
-		<div
-			ref={emojiRef}
-			class="emoji"
-			style={
-				{
-					"--emoji_url": url,
-				} as CSSProperties
-			}
-		>
+		<div ref={emojiRef} class="emoji" style={{ "--emoji_url": url }}>
 			<span>{name}</span>
 		</div>
 	);
@@ -81,48 +80,62 @@ function Spoiler({ children }: { children: ComponentChildren }) {
 	);
 }
 
-function MarkdownNode({ type, content, target, id, name, animated, reference: ref }: MarkdownNodeProps) {
-	if (type == "codeBlock") {
-		return (
-			<pre>
-				<code>{content}</code>
-			</pre>
-		);
-	} else if (type == "blockquote") {
-		return (
-			<blockquote>
-				<MarkdownContent content={content} reference={ref} />
-			</blockquote>
-		);
-	} else if (type == "link") {
-		return (
-			<a href={target}>
-				<MarkdownContent content={content} />
-			</a>
-		);
-	} else if (type == ":emoji:") {
-		return <EmojiElement id={id} name={name} animated={animated}></EmojiElement>;
-	} else if (["em", "strong", "u", "del", "code"].includes(type)) {
-		return h(type, null, <MarkdownContent content={content} reference={ref} />);
+function MarkdownNode({ type, content, target, id, name, animated, level, ordered, items, start }: MarkdownNodeProps) {
+	switch (type) {
+		case "text":
+			return <Fragment>{content}</Fragment>;
+		case "codeBlock":
+			return (
+				<pre>
+					<code>{content}</code>
+				</pre>
+			);
+		case "blockquote":
+			return (
+				<blockquote>
+					<MarkdownContent content={content} />
+				</blockquote>
+			);
+		case "link":
+			return (
+				<a href={target}>
+					<MarkdownContent content={content} />
+				</a>
+			);
+		case ":emoji:":
+			return <EmojiElement id={id} name={name} animated={animated}></EmojiElement>;
+		case "spoiler":
+			return (
+				<Spoiler>
+					<MarkdownContent content={content} />
+				</Spoiler>
+			);
+		case "list":
+			return h(ordered ? "ol" : "ul", {
+				start,
+				children: items.map((item, i) => (
+					<li>
+						<MarkdownContent content={item} />
+					</li>
+				)),
+			});
+	}
+
+	if (["em", "strong", "u", "del", "code"].includes(type)) {
+		return h(type, null, <MarkdownContent content={content} />);
+	} else if (type == "heading") {
+		return h(`h${level}`, null, <MarkdownContent content={content} />);
 	} else if (["@everyone", "@here"].includes(type)) {
 		return <span class="mentions">{type}</span>;
-	} else if (type == "spoiler") {
-		return (
-			<Spoiler>
-				<MarkdownContent content={content} reference={ref} />
-			</Spoiler>
-		);
-	} else if (type === "text") {
-		return <>{content}</>;
 	} else if (/^(@|#)/.test(type)) {
-		return <Mentions type={type.slice(1)} id={id} {...ref} />;
+		return <Reference.Consumer>{(ref) => <Mentions type={type.slice(1)} id={id} {...ref} />}</Reference.Consumer>;
 	} else if (content) {
-		return <MarkdownContent content={content} reference={ref} />;
+		return <MarkdownContent content={content} />;
 	}
 }
 
-const MarkdownContent = memo(function MarkdownContent({ content = [], reference }: { content: string | MarkdownNodeProps[]; reference?: any }) {
-	return <>{typeof content === "string" ? content : content.map((node) => MarkdownNode({ ...node, reference }))}</>;
+const MarkdownContent = memo(function MarkdownContent({ content = [] }: { content: string | MarkdownNodeProps[] }) {
+	return <>{typeof content === "string" ? content : content.map((node) => <MarkdownNode {...node}></MarkdownNode>)}</>;
 });
 
 export const Markdown = memo(function Markdown({ text = "", setJumbo, ...props }: Partial<MarkdownProps> = {}) {
@@ -144,7 +157,7 @@ export const Markdown = memo(function Markdown({ text = "", setJumbo, ...props }
 
 		const filtered = string.match(CHAR_REGEX)?.filter((a) => a != " " && a != "\n");
 
-		if (!filtered) return setJumbo(false);
+		if (!filtered?.length) return setJumbo(false);
 
 		// assume everything is emoji
 		// if exceeds max then it is false
@@ -154,5 +167,9 @@ export const Markdown = memo(function Markdown({ text = "", setJumbo, ...props }
 		return setJumbo(filtered.every((a) => a === "💀" || EMOJI_REGEX.test(a)));
 	}, [tree]);
 
-	return <MarkdownContent content={tree} reference={props.reference || null} />;
+	return (
+		<Reference.Provider value={props.reference || null}>
+			<MarkdownContent content={tree} />
+		</Reference.Provider>
+	);
 });

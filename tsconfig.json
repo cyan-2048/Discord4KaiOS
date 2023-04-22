@@ -11,6 +11,11 @@
 			"@components/*": ["src/components/*"],
 			"@routes/*": ["src/routes/*"],
 			"@lib/*": ["src/lib/*"],
+			"@utils": ["src/lib/utils"],
+			"@hooks": ["src/lib/hooks"],
+			"@settings": ["src/lib/settings"],
+			"@shared": ["src/lib/shared"],
+			"discord/types": ["backend/src/libs/types"],
 			"discord": ["backend"],
 			"discord/*": ["backend/src/*"],
 			"react": ["./node_modules/preact/compat/"]
