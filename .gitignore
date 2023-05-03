@@ -1,7 +1,2 @@
-/node_modules/
-/public/build/
-dev/
-dist/
-private/
-
-.DS_Store
+node_modules
+dist

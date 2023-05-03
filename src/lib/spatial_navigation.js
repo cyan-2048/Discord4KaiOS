@@ -287,11 +287,7 @@ export default (function () {
 					},
 					{
 						group: groups[0].concat(groups[6]),
-						distance: [
-							distanceFunction.nearHorizonIsBetter,
-							distanceFunction.rightIsBetter,
-							distanceFunction.nearTargetTopIsBetter,
-						],
+						distance: [distanceFunction.nearHorizonIsBetter, distanceFunction.rightIsBetter, distanceFunction.nearTargetTopIsBetter],
 					},
 				];
 				break;
@@ -307,11 +303,7 @@ export default (function () {
 					},
 					{
 						group: groups[2].concat(groups[8]),
-						distance: [
-							distanceFunction.nearHorizonIsBetter,
-							distanceFunction.leftIsBetter,
-							distanceFunction.nearTargetTopIsBetter,
-						],
+						distance: [distanceFunction.nearHorizonIsBetter, distanceFunction.leftIsBetter, distanceFunction.nearTargetTopIsBetter],
 					},
 				];
 				break;
@@ -327,11 +319,7 @@ export default (function () {
 					},
 					{
 						group: groups[0].concat(groups[2]),
-						distance: [
-							distanceFunction.nearPlumbLineIsBetter,
-							distanceFunction.bottomIsBetter,
-							distanceFunction.nearTargetLeftIsBetter,
-						],
+						distance: [distanceFunction.nearPlumbLineIsBetter, distanceFunction.bottomIsBetter, distanceFunction.nearTargetLeftIsBetter],
 					},
 				];
 				break;
@@ -347,11 +335,7 @@ export default (function () {
 					},
 					{
 						group: groups[6].concat(groups[8]),
-						distance: [
-							distanceFunction.nearPlumbLineIsBetter,
-							distanceFunction.topIsBetter,
-							distanceFunction.nearTargetLeftIsBetter,
-						],
+						distance: [distanceFunction.nearPlumbLineIsBetter, distanceFunction.topIsBetter, distanceFunction.nearTargetLeftIsBetter],
 					},
 				];
 				break;
@@ -369,12 +353,7 @@ export default (function () {
 		}
 
 		var dest = null;
-		if (
-			config.rememberSource &&
-			config.previous &&
-			config.previous.destination === target &&
-			config.previous.reverse === direction
-		) {
+		if (config.rememberSource && config.previous && config.previous.destination === target && config.previous.reverse === direction) {
 			for (var j = 0; j < destGroup.length; j++) {
 				if (destGroup[j].element === config.previous.target) {
 					dest = destGroup[j].element;
@@ -710,20 +689,10 @@ export default (function () {
 		if (config.restrict == "self-only" || config.restrict == "self-first") {
 			var currentSectionNavigableElements = sectionNavigableElements[currentSectionId];
 
-			next = navigate(
-				currentFocusedElement,
-				direction,
-				exclude(currentSectionNavigableElements, currentFocusedElement),
-				config
-			);
+			next = navigate(currentFocusedElement, direction, exclude(currentSectionNavigableElements, currentFocusedElement), config);
 
 			if (!next && config.restrict == "self-first") {
-				next = navigate(
-					currentFocusedElement,
-					direction,
-					exclude(allNavigableElements, currentSectionNavigableElements),
-					config
-				);
+				next = navigate(currentFocusedElement, direction, exclude(allNavigableElements, currentSectionNavigableElements), config);
 			}
 		} else {
 			next = navigate(currentFocusedElement, direction, exclude(allNavigableElements, currentFocusedElement), config);
@@ -870,14 +839,7 @@ export default (function () {
 
 	function onBlur(evt) {
 		var target = evt.target;
-		if (
-			target !== window &&
-			target !== document &&
-			!_pause &&
-			_sectionCount &&
-			!_duringFocusChange &&
-			getSectionId(target)
-		) {
+		if (target !== window && target !== document && !_pause && _sectionCount && !_duringFocusChange && getSectionId(target)) {
 			var unfocusProperties = {
 				native: true,
 			};
@@ -897,7 +859,7 @@ export default (function () {
 	/* Public Function */
 	/*******************/
 	var SpatialNavigation = {
-		init: function () {
+		init() {
 			if (!_ready) {
 				window.addEventListener("keydown", onKeyDown);
 				window.addEventListener("keyup", onKeyUp);
@@ -907,7 +869,7 @@ export default (function () {
 			}
 		},
 
-		uninit: function () {
+		uninit() {
 			window.removeEventListener("blur", onBlur, true);
 			window.removeEventListener("focus", onFocus, true);
 			window.removeEventListener("keyup", onKeyUp);
@@ -917,7 +879,7 @@ export default (function () {
 			_ready = false;
 		},
 
-		clear: function () {
+		clear() {
 			_sections = {};
 			_sectionCount = 0;
 			_defaultSectionId = "";
@@ -927,7 +889,7 @@ export default (function () {
 
 		// set(<config>);
 		// set(<sectionId>, <config>);
-		set: function () {
+		set() {
 			var sectionId, config;
 
 			if (typeof arguments[0] === "object") {
@@ -960,7 +922,7 @@ export default (function () {
 
 		// add(<config>);
 		// add(<sectionId>, <config>);
-		add: function () {
+		add() {
 			var sectionId;
 			var config = {};
 
@@ -987,7 +949,7 @@ export default (function () {
 			return sectionId;
 		},
 
-		remove: function (sectionId) {
+		remove(sectionId) {
 			if (!sectionId || typeof sectionId !== "string") {
 				throw new Error('Please assign the "sectionId"!');
 			}
@@ -1003,7 +965,7 @@ export default (function () {
 			return false;
 		},
 
-		disable: function (sectionId) {
+		disable(sectionId) {
 			if (_sections[sectionId]) {
 				_sections[sectionId].disabled = true;
 				return true;
@@ -1011,7 +973,7 @@ export default (function () {
 			return false;
 		},
 
-		enable: function (sectionId) {
+		enable(sectionId) {
 			if (_sections[sectionId]) {
 				_sections[sectionId].disabled = false;
 				return true;
@@ -1021,11 +983,11 @@ export default (function () {
 
 		_sections,
 
-		pause: function () {
+		pause() {
 			_pause = true;
 		},
 
-		resume: function () {
+		resume() {
 			_pause = false;
 		},
 
@@ -1033,7 +995,7 @@ export default (function () {
 		// focus(<sectionId>, [silent])
 		// focus(<extSelector>, [silent])
 		// Note: "silent" is optional and default to false
-		focus: function (elem, silent) {
+		focus(elem, silent) {
 			var result = false;
 
 			if (silent === undefined && typeof elem === "boolean") {
@@ -1073,7 +1035,7 @@ export default (function () {
 
 		// move(<direction>)
 		// move(<direction>, <selector>)
-		move: function (direction, selector) {
+		move(direction, selector) {
 			direction = direction.toLowerCase();
 			if (!REVERSE[direction]) {
 				return false;
@@ -1104,10 +1066,9 @@ export default (function () {
 
 		// makeFocusable()
 		// makeFocusable(<sectionId>)
-		makeFocusable: function (sectionId) {
+		makeFocusable(sectionId) {
 			var doMakeFocusable = function (section) {
-				var tabIndexIgnoreList =
-					section.tabIndexIgnoreList !== undefined ? section.tabIndexIgnoreList : GlobalConfig.tabIndexIgnoreList;
+				var tabIndexIgnoreList = section.tabIndexIgnoreList !== undefined ? section.tabIndexIgnoreList : GlobalConfig.tabIndexIgnoreList;
 				parseSelector(section.selector).forEach(function (elem) {
 					if (!matchSelector(elem, tabIndexIgnoreList)) {
 						if (!elem.getAttribute("tabindex")) {
@@ -1130,7 +1091,7 @@ export default (function () {
 			}
 		},
 
-		setDefaultSection: function (sectionId) {
+		setDefaultSection(sectionId) {
 			if (!sectionId) {
 				_defaultSectionId = "";
 			} else if (!_sections[sectionId]) {

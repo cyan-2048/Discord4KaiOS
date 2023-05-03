@@ -1,0 +1,31 @@
+{
+	"compilerOptions": {
+		// "strict": true,
+		"target": "es6",
+		"module": "ESNext",
+		"moduleResolution": "node",
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"jsx": "preserve",
+		"jsxImportSource": "solid-js",
+		"types": ["vite/client"],
+		"noEmit": true,
+		"isolatedModules": true,
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"],
+			"@components/*": ["src/components/*"],
+			"@routes/*": ["src/routes/*"],
+			"@lib/*": ["src/lib/*"],
+			"@utils": ["src/lib/utils"],
+			"@hooks": ["src/lib/hooks"],
+			"@settings": ["src/lib/settings"],
+			"@shared": ["src/lib/shared"],
+			"discord/types": ["backend/src/libs/types"],
+			"discord": ["backend"],
+			"discord/*": ["backend/src/*"],
+			"react": ["./node_modules/preact/compat/"]
+		},
+		"outDir": "./dist"
+	}
+}

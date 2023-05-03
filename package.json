@@ -1,40 +1,35 @@
 {
-	"name": "svelte-app",
+	"name": "vite-template-solid",
 	"version": "1.0.0",
+	"description": "",
 	"private": true,
 	"scripts": {
+		"start": "vite",
 		"dev": "vite",
-		"build": "./scripts/esbuild.mjs",
-		"build:v3": "kaios=3 ./scripts/esbuild.mjs",
-		"quick:v3": "kaios=3 quick=true rollup -c",
-		"debug": "debug=true ./scripts/esbuild.mjs"
+		"build": "vite build",
+		"serve": "vite preview"
 	},
 	"devDependencies": {
-		"@sveltejs/vite-plugin-svelte": "1.0.1",
-		"autoprefixer": "^10.4.8",
 		"core-js": "^3.24.0",
-		"discord-api-types": "^0.37.18",
-		"esbuild": "^0.15.10",
-		"esbuild-svelte": "^0.7.1",
-		"postcss": "^8.4.16",
-		"postcss-color-hsl": "^2.0.0",
-		"sass": "^1.54.0",
-		"svelte": "^3.49.0",
-		"svelte-preprocess": "^4.10.7",
-		"vite": "^3.0.2"
+		"sass": "^1.62.1",
+		"typescript": "^4.9.5",
+		"vite": "^4.1.1",
+		"vite-plugin-solid": "^2.5.0",
+		"vite-tsconfig-paths": "^4.2.0"
 	},
 	"dependencies": {
 		"@ungap/event-target": "^0.2.3",
+		"char-regex": "^2.0.1",
 		"emojibase": "^6.1.0",
 		"emojibase-data": "^7.0.1",
+		"fast-hash-code": "^2.1.0",
 		"fastest-levenshtein": "^1.0.16",
-		"fuzzysort": "^2.0.4",
-		"jsqr": "^1.4.0",
+		"jsqr-es6": "1.4.0-1",
 		"localforage": "^1.10.0",
 		"lottie-web": "^5.9.6",
+		"obj-str": "^1.1.0",
 		"scroll-into-view": "^1.16.2",
-		"svelte-routing": "github:cyan-2048/svelte-routing",
-		"svelte-zoom": "github:cyan-2048/svelte-zoom",
-		"discord": "file:./backend/"
+		"solid-js": "^1.6.10",
+		"ts-debounce": "^4.0.0"
 	}
 }
