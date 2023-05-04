@@ -1,0 +1,8 @@
+{
+    "editor.inlineSuggest.enabled": true,
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "prettier.useTabs": true,
+    "prettier.printWidth": 120
+}
