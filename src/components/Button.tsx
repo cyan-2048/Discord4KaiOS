@@ -5,7 +5,7 @@ import style from "./Button.module.scss";
 import { createSignal, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 
-interface ButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "onClick" | "onError"> {
+export interface ButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "onClick" | "onError"> {
 	onError?: (err: any) => any;
 	onSuccess?: (result: any) => any;
 	onClick?: (...args: any[]) => any;
@@ -14,12 +14,12 @@ interface ButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, 
 export const DeleteSymbol = Symbol("delete");
 
 export default function Button(props: ButtonProps) {
-	const [, __props] = splitProps(props, ["onError", "onSuccess", "onClick", "children"]);
+	const [, __props] = splitProps(props, ["onError", "onSuccess", "onClick", "children", "class"]);
 	const [state, setState] = createSignal<boolean | null>(false);
 
 	return (
 		<button
-			class={style.Button}
+			class={`${style.Button}${props.class ? " " + props.class : ""}`}
 			tabIndex={0}
 			data-focusable=""
 			{...__props}

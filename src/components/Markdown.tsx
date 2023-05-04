@@ -4,7 +4,17 @@ import Mentions from "./Mentions";
 
 import charRegex from "char-regex";
 import { Dynamic } from "solid-js/web";
-import { Context, For, createContext, createEffect, createMemo, createSignal, onMount, splitProps, useContext } from "solid-js";
+import {
+	Context,
+	For,
+	createContext,
+	createMemo,
+	createRenderEffect,
+	createSignal,
+	onMount,
+	splitProps,
+	useContext,
+} from "solid-js";
 import type { JSX } from "solid-js";
 
 export const CHAR_REGEX = charRegex();
@@ -84,57 +94,74 @@ function Consume<T = any>(props: { children: (ref: any) => any; context: Context
 	return props.children(ref);
 }
 
-function MarkdownNode({ type, content, target, id, name, animated }: MarkdownNodeProps) {
-	if (type == "codeBlock") {
+function MarkdownNode(props: MarkdownNodeProps) {
+	if (props.type == "codeBlock") {
 		return (
 			<pre>
-				<code>{content as string}</code>
+				<code>{props.content as string}</code>
 			</pre>
 		);
-	} else if (type == "blockquote") {
+	} else if (props.type == "blockquote") {
 		return (
 			<blockquote>
-				<MarkdownContent content={content} />
+				<MarkdownContent content={props.content} />
 			</blockquote>
 		);
-	} else if (type == "link") {
+	} else if (props.type == "link") {
 		return (
-			<a href={target}>
-				<MarkdownContent content={content} />
+			<a href={props.target}>
+				<MarkdownContent content={props.content} />
 			</a>
 		);
-	} else if (type == ":emoji:") {
-		return <EmojiElement id={id} name={name} animated={animated}></EmojiElement>;
-	} else if (["em", "strong", "u", "del", "code"].includes(type)) {
+	} else if (props.type == ":emoji:") {
+		return <EmojiElement id={props.id} name={props.name} animated={props.animated}></EmojiElement>;
+	} else if (["em", "strong", "u", "del", "code"].includes(props.type)) {
 		return (
-			<Dynamic component={type}>
-				<MarkdownContent content={content} />
+			<Dynamic component={props.type}>
+				<MarkdownContent content={props.content} />
 			</Dynamic>
 		);
-	} else if (["@everyone", "@here"].includes(type)) {
-		return <span class="mentions">{type}</span>;
-	} else if (type == "spoiler") {
+	} else if (["@everyone", "@here"].includes(props.type)) {
+		return <span class="mentions">{props.type}</span>;
+	} else if (props.type == "spoiler") {
 		return (
 			<Spoiler>
-				<MarkdownContent content={content} />
+				<MarkdownContent content={props.content} />
 			</Spoiler>
 		);
-	} else if (type === "text") {
-		return <>{content}</>;
-	} else if (/^(@|#)/.test(type)) {
-		return <Consume context={Reference}>{(ref) => <Mentions type={type.slice(1)} id={id} {...ref} />}</Consume>;
-	} else if (content) {
-		return <MarkdownContent content={content} />;
+	} else if (props.type === "text") {
+		return <>{props.content}</>;
+	} else if (/^(@|#)/.test(props.type)) {
+		return (
+			<Reference.Consumer>{(ref) => <Mentions type={props.type.slice(1)} id={props.id} {...ref} />}</Reference.Consumer>
+		);
+	} else if (props.content) {
+		return <MarkdownContent content={props.content} />;
 	}
 }
 
 function MarkdownContent(props: { content: string | MarkdownNodeProps[] }) {
 	return (
-		<>{typeof props.content === "string" ? props.content : <For each={props.content}>{(node) => MarkdownNode(node)}</For>}</>
+		<>
+			{typeof props.content === "string" ? (
+				props.content
+			) : (
+				<For each={props.content}>{(node) => <MarkdownNode {...node} />}</For>
+			)}
+		</>
 	);
 }
 
-const Reference = createContext(null);
+interface ContextWithConsumer<T> extends Context<T> {
+	Consumer: (props: { children: (ref: T) => any }) => any;
+}
+
+const Reference = createContext(null) as ContextWithConsumer<any>;
+
+Reference.Consumer = function (props: { children: (ref: any) => any }) {
+	const ref = useContext(this);
+	return props.children(ref);
+}.bind(Reference);
 
 function Markdown(props: Partial<MarkdownProps>) {
 	const [local, __props] = splitProps(props, ["text", "setJumbo"]);
@@ -143,7 +170,7 @@ function Markdown(props: Partial<MarkdownProps>) {
 		return props.text ? parse(props.text, __props) : [];
 	});
 
-	createEffect(() => {
+	createRenderEffect(() => {
 		const setJumbo = props.setJumbo;
 		if (!setJumbo) return;
 

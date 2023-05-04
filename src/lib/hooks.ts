@@ -3,7 +3,7 @@
 // import { Readable, get, Writable } from "discord/main";
 // import { useEffect, EffectCallback, MutableRef, StateUpdater, useState, useRef, useCallback } from "preact/hooks";
 import { sn } from "./shared";
-import { onCleanup, onMount } from "solid-js";
+import { createRenderEffect, createSignal, onCleanup, onMount } from "solid-js";
 
 export function useMountDebug(name: string) {
 	useMount(() => {
@@ -58,4 +58,27 @@ export function useSpatialNav(...options: SpatialNavigationOptions[]) {
  */
 export function useDestroy(func: () => void) {
 	onCleanup(func);
+}
+
+export function inputValue(e: null): null;
+export function inputValue(
+	el: HTMLInputElement | HTMLTextAreaElement,
+	value?: () => [() => string, (v: string) => void]
+) {
+	if (el === null) return null;
+	const [field, setField] = value();
+
+	createRenderEffect(() => (el.value = field()));
+
+	// @ts-ignore
+	el.addEventListener("input", (e) => setField(e.target.value));
+}
+
+declare module "solid-js" {
+	namespace JSX {
+		interface Directives {
+			inputValue: [() => any, (v: any) => any];
+			focusElement: any;
+		}
+	}
 }

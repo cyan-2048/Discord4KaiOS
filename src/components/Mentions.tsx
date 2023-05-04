@@ -1,7 +1,7 @@
 import { discordInstance } from "@shared";
 import { Guild } from "discord/Guilds";
-import { JSX, createEffect } from "solid-js";
-import { decimal2rgb, clx } from "@utils";
+import { JSX, createRenderEffect } from "solid-js";
+import { decimal2rgb } from "@utils";
 import { GuildMember } from "discord/GuildMembers";
 import { createSignal, mergeProps } from "solid-js";
 
@@ -70,7 +70,7 @@ function Mentions(props: MentionsProps) {
 	const [text, setText] = createSignal("");
 	const [style, setStyle] = createSignal<JSX.CSSProperties | null>(null);
 
-	createEffect(() => {
+	createRenderEffect(() => {
 		const type = props.type,
 			id = props.id;
 		if (type === "role") {

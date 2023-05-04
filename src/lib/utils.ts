@@ -1,7 +1,9 @@
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+import { Readable, Writable, get } from "discord/main";
 import fastHashCode from "fast-hash-code";
 import scrollIntoView from "scroll-into-view";
+import { createSignal, onMount } from "solid-js";
 // import { Fragment, h, render } from "preact";
 // import { unmountComponentAtNode } from "preact/compat";
 
@@ -41,7 +43,11 @@ async function verifyDomainSSL(url) {
 			resolve(url);
 		};
 		conn.onerror = (err: Error) => {
-			reject(err.name === "SecurityError" && err.message === "SecurityCertificate" ? InternetResults.EXPIRED_CERTS : InternetResults.NO_INTERNET);
+			reject(
+				err.name === "SecurityError" && err.message === "SecurityCertificate"
+					? InternetResults.EXPIRED_CERTS
+					: InternetResults.NO_INTERNET
+			);
 		};
 	});
 }
@@ -146,11 +152,25 @@ export function preloadImages(images: string[]) {
 	return Promise.all(images.map((a) => preloadImage(a)));
 }
 
-export { default as clx } from "obj-str";
-
 export function shallowCompare<T = Record<any, unknown>>(newObj: T, prevObj: T) {
 	for (const key in newObj) {
 		if (newObj[key] !== prevObj[key]) return true;
 	}
 	return false;
+}
+
+export function useReadable<T>(readable: Readable<T>) {
+	const [state, setState] = createSignal(get(readable));
+
+	onMount(() => {
+		const unsubscribe = readable.subscribe(setState);
+		return unsubscribe;
+	});
+
+	return state;
+}
+
+export function useWritable<T>(writable: Writable<T>) {
+	const state = useReadable(writable);
+	return [state, writable.set, writable.update] as const;
 }

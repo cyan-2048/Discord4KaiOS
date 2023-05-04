@@ -1,6 +1,7 @@
-import { useMountDebug } from "@hooks";
+import { useMount, useMountDebug } from "@hooks";
 import { Markdown } from "@components/Markdown";
-import "./style.scss";
+import style from "./Loading.module.scss";
+import { createSignal, onMount } from "solid-js";
 
 const getRandomText = randomNoRepeats([
 	"Quickly edit your last sent message! Type 's/[what to replace]/[what to replace with]'.",
@@ -31,9 +32,9 @@ function randomNoRepeats(array: any[]) {
 export default function Loading(props: any) {
 	useMountDebug("LoadingScreen");
 
-	const [text, setText] = useState(getRandomText());
+	const [text, setText] = createSignal(getRandomText());
 
-	useEffect(() => {
+	useMount(() => {
 		const interval = setInterval(() => {
 			setText(getRandomText());
 		}, 4000);
@@ -42,10 +43,10 @@ export default function Loading(props: any) {
 	});
 
 	return (
-		<div class="Loading">
-			<img src="/css/loading.png" />
-			<div id="dyk">DID YOU KNOW</div>
-			<div id="fact">{typeof text == "string" ? <Markdown text={text} /> : <>{text}</>}</div>
+		<div class={style.Loading}>
+			<img class={style.img} src="/css/loading.png" />
+			<div class={style.dyk}>DID YOU KNOW</div>
+			<div class={style.fact}>{typeof text() == "string" ? <Markdown text={text()} /> : text()}</div>
 		</div>
 	);
 }

@@ -1,28 +1,71 @@
 /* @refresh reload */
 import { render } from "solid-js/web";
+import "./assets/global.scss";
+
+import "core-js/actual/array/flat";
+import "core-js/actual/array/find-last";
+import "core-js/actual/array/to-sorted";
+import "core-js/actual/string/match-all";
+
 import Button from "@components/Button";
 import { createSignal } from "solid-js";
 import { sleep } from "@utils";
 import { Markdown } from "./components/Markdown";
 
-function App() {
+import { sn } from "@shared";
+import { Route, Router, Routes, hashIntegration, useLocation, useParams } from "@solidjs/router";
+import { useMountDebug } from "./lib/hooks";
+import Login from "./routes/Login";
+
+sn.init();
+
+function NullComponent() {
+	return <></>;
+}
+
+/*
+
+*/
+
+function TestRoute() {
+	const e = useParams();
+
+	if (import.meta.env.DEV) useMountDebug("TestRoute");
+
 	const [count, setCount] = createSignal(0);
 	const [text, setText] = createSignal("Button");
 
 	return (
-		<div>
+		<>
 			<h1>Welcome</h1>
-			<textarea value={text()} onInput={(e) => setText(e.target.value)} />
+			<div>
+				<Markdown text={text()} />
+				{JSON.stringify(e)}
+			</div>
+			<div>
+				<textarea value={text()} onInput={(e) => setText(e.target.value)} />
+			</div>
 			<Button
 				onClick={async () => {
-					//await sleep(500);
+					//await sleep(400);
 					setCount((count) => count + 1);
 				}}
 			>
 				<Markdown text={text()} />
-				{" " + count()}
+				{count()}
 			</Button>
-		</div>
+		</>
+	);
+}
+
+function App() {
+	return (
+		<Router source={hashIntegration()}>
+			<Routes>
+				<Route path="/test/:customparam?" component={TestRoute} />
+				<Route path="/login" component={Login} />
+			</Routes>
+		</Router>
 	);
 }
 
@@ -46,4 +89,10 @@ if (import.meta.env.DEV) {
 
 	document.addEventListener("keyup", softkey, true);
 	document.addEventListener("keydown", softkey, true);
+
+	Promise.all([import("solid-js"), import("solid-js/web"), import("@utils"), import("@solidjs/router")]).then(
+		([solidjs, solidjs_web, utils, router]) => {
+			Object.assign(window, utils, { utils, solidjs, solidjs_web, router });
+		}
+	);
 }
