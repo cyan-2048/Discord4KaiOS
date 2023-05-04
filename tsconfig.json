@@ -2,6 +2,7 @@
 	"compilerOptions": {
 		// "strict": true,
 		"target": "es6",
+		"lib": ["DOM","ES6", "ES2016", "ES2017"],
 		"module": "ESNext",
 		"moduleResolution": "node",
 		"allowSyntheticDefaultImports": true,
