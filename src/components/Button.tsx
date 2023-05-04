@@ -2,7 +2,7 @@ import { delayedCallback, shallowCompare } from "@utils";
 
 import style from "./Button.module.scss";
 
-import { createSignal } from "solid-js";
+import { createSignal, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 
 interface ButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "onClick" | "onError"> {
@@ -13,7 +13,8 @@ interface ButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, 
 
 export const DeleteSymbol = Symbol("delete");
 
-export default function Button({ onError, onSuccess, onClick, ...props }: ButtonProps) {
+export default function Button(props: ButtonProps) {
+	const [, __props] = splitProps(props, ["onError", "onSuccess", "onClick", "children"]);
 	const [state, setState] = createSignal<boolean | null>(false);
 
 	return (
@@ -21,7 +22,7 @@ export default function Button({ onError, onSuccess, onClick, ...props }: Button
 			class={style.Button}
 			tabIndex={0}
 			data-focusable=""
-			{...props}
+			{...__props}
 			onClick={async (...args) => {
 				if (state() === true) return;
 
@@ -29,11 +30,11 @@ export default function Button({ onError, onSuccess, onClick, ...props }: Button
 
 				let result: any;
 				try {
-					result = await onClick?.apply(undefined, args);
-					onSuccess?.(result);
+					result = await props.onClick?.apply(undefined, args);
+					props.onSuccess?.(result);
 				} catch (e) {
 					console.error(e);
-					onError?.(e);
+					props.onError?.(e);
 				}
 
 				cancel();

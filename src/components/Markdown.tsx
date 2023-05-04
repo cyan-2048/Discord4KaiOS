@@ -4,7 +4,7 @@ import Mentions from "./Mentions";
 
 import charRegex from "char-regex";
 import { Dynamic } from "solid-js/web";
-import { createSignal, onMount } from "solid-js";
+import { Context, For, createContext, createEffect, createMemo, createSignal, onMount, splitProps, useContext } from "solid-js";
 import type { JSX } from "solid-js";
 
 export const CHAR_REGEX = charRegex();
@@ -50,8 +50,7 @@ function EmojiElement({ name, id, animated }: { id: string; animated: boolean; n
 		if (animated) {
 			return observeElement(emojiRef).subscribe((val) => setState(val));
 		}
-	})
-
+	});
 
 	const url = `url('https://cdn.discordapp.com/emojis/${id}.${animated && inView ? "gif" : "png"}?size=32')`;
 
@@ -59,11 +58,9 @@ function EmojiElement({ name, id, animated }: { id: string; animated: boolean; n
 		<div
 			ref={emojiRef}
 			class="emoji"
-			style={
-				{
-					"--emoji_url": url,
-				}
-			}
+			style={{
+				"--emoji_url": url,
+			}}
 		>
 			<span>{name}</span>
 		</div>
@@ -75,14 +72,19 @@ function Spoiler({ children }) {
 	return (
 		<span
 			// onClick={() => setActive(!active)}
-			classList={({ spoiler: true, active: true })}
+			classList={{ spoiler: true, active: true }}
 		>
 			{children}
 		</span>
 	);
 }
 
-function MarkdownNode({ type, content, target, id, name, animated, reference: ref }: MarkdownNodeProps) {
+function Consume<T = any>(props: { children: (ref: any) => any; context: Context<T> }) {
+	const ref = useContext(props.context);
+	return props.children(ref);
+}
+
+function MarkdownNode({ type, content, target, id, name, animated }: MarkdownNodeProps) {
 	if (type == "codeBlock") {
 		return (
 			<pre>
@@ -92,7 +94,7 @@ function MarkdownNode({ type, content, target, id, name, animated, reference: re
 	} else if (type == "blockquote") {
 		return (
 			<blockquote>
-				<MarkdownContent content={content} reference={ref} />
+				<MarkdownContent content={content} />
 			</blockquote>
 		);
 	} else if (type == "link") {
@@ -104,41 +106,54 @@ function MarkdownNode({ type, content, target, id, name, animated, reference: re
 	} else if (type == ":emoji:") {
 		return <EmojiElement id={id} name={name} animated={animated}></EmojiElement>;
 	} else if (["em", "strong", "u", "del", "code"].includes(type)) {
-		return <Dynamic component={type}><MarkdownContent content={content} reference={ref} /></Dynamic>
+		return (
+			<Dynamic component={type}>
+				<MarkdownContent content={content} />
+			</Dynamic>
+		);
 	} else if (["@everyone", "@here"].includes(type)) {
 		return <span class="mentions">{type}</span>;
 	} else if (type == "spoiler") {
 		return (
 			<Spoiler>
-				<MarkdownContent content={content} reference={ref} />
+				<MarkdownContent content={content} />
 			</Spoiler>
 		);
 	} else if (type === "text") {
 		return <>{content}</>;
 	} else if (/^(@|#)/.test(type)) {
-		return <Mentions type={type.slice(1)} id={id} {...ref} />;
+		return <Consume context={Reference}>{(ref) => <Mentions type={type.slice(1)} id={id} {...ref} />}</Consume>;
 	} else if (content) {
-		return <MarkdownContent content={content} reference={ref} />;
+		return <MarkdownContent content={content} />;
 	}
 }
 
-function MarkdownContent({ content = [], reference }: { content: string | MarkdownNodeProps[]; reference?: any }) {
-	return <>{typeof content === "string" ? content : content.map((node) => MarkdownNode({ ...node, reference }))}</>;
-};
+function MarkdownContent(props: { content: string | MarkdownNodeProps[] }) {
+	return (
+		<>{typeof props.content === "string" ? props.content : <For each={props.content}>{(node) => MarkdownNode(node)}</For>}</>
+	);
+}
 
-function Markdown({ text = "", setJumbo, ...props }: Partial<MarkdownProps> = {}) {
-	const tree: MarkdownNodeProps[] = useMemo(() => (text ? parse(text, props) : []), [text, props]);
+const Reference = createContext(null);
 
-	useLayoutEffect(() => {
+function Markdown(props: Partial<MarkdownProps>) {
+	const [local, __props] = splitProps(props, ["text", "setJumbo"]);
+
+	const tree: () => MarkdownNodeProps[] = createMemo(() => {
+		return props.text ? parse(props.text, __props) : [];
+	});
+
+	createEffect(() => {
+		const setJumbo = props.setJumbo;
 		if (!setJumbo) return;
 
 		// default to false;
 		setJumbo(false);
 
 		// fail early
-		if (!text) return;
+		if (!props.text) return;
 
-		const string = recursive(tree);
+		const string = recursive(tree());
 
 		// fail early again
 		if (!string.length) return setJumbo(false);
@@ -153,9 +168,13 @@ function Markdown({ text = "", setJumbo, ...props }: Partial<MarkdownProps> = {}
 
 		// TODO: create a better emoji detection system
 		return setJumbo(filtered.every((a) => a === "💀" || EMOJI_REGEX.test(a)));
-	}, [tree]);
+	});
 
-	return <MarkdownContent content={tree} reference={props.reference || null} />;
+	return (
+		<Reference.Provider value={props.reference || null}>
+			<MarkdownContent content={tree()} />
+		</Reference.Provider>
+	);
 }
 
-export {Markdown}
+export { Markdown };

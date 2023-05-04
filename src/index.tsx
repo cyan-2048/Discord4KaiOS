@@ -3,20 +3,24 @@ import { render } from "solid-js/web";
 import Button from "@components/Button";
 import { createSignal } from "solid-js";
 import { sleep } from "@utils";
+import { Markdown } from "./components/Markdown";
 
 function App() {
 	const [count, setCount] = createSignal(0);
+	const [text, setText] = createSignal("Button");
 
 	return (
 		<div>
 			<h1>Welcome</h1>
+			<textarea value={text()} onInput={(e) => setText(e.target.value)} />
 			<Button
 				onClick={async () => {
-					await sleep(500);
+					//await sleep(500);
 					setCount((count) => count + 1);
 				}}
 			>
-				Button {count()}
+				<Markdown text={text()} />
+				{" " + count()}
 			</Button>
 		</div>
 	);
