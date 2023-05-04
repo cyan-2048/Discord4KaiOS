@@ -1,11 +1,11 @@
-import { signal } from "@preact/signals";
-
 import spatial_navigation from "./spatial_navigation";
 import Discord, { readable } from "discord";
-import { route } from "preact-router";
+
 import { InternetResults, preloadImages, sleep, testInternet } from "./utils";
 import { Guild } from "discord/Guilds";
 import { ChannelBase } from "discord/GuildChannels";
+import { createSignal } from "solid-js";
+import { useNavigate } from "@solidjs/router";
 
 const observed_elements = new WeakMap();
 
@@ -45,29 +45,32 @@ export function getToken(): string | null {
 
 export function setToken(token: string): void {
 	localStorage.setItem("token", token);
-	if (!appReady.peek()) appReady.value = true;
+	if (!appReady()) setAppReady(true);
 }
 
 export const sn = spatial_navigation;
 
-export const appReady = signal(false);
-export const discordInstance = signal(new Discord(true));
-export const guilds = signal<Guild[]>([]);
-export const currentChannel = signal<ChannelBase | null>(null);
+ const [appReady, setAppReady] = createSignal(false);
+ const [discordInstance, setDiscordInstance] = createSignal(new Discord(true));
+ const [guilds, setGuilds] = createSignal<Guild[]>([]);
+ const [currentChannel, setCurrentChannel] = createSignal<ChannelBase | null>(null);
+
+ export {appReady, discordInstance, guilds, currentChannel}
 
 export async function loadDiscord() {
+	const route = useNavigate()
 	await sleep(100);
 
-	appReady.value = false;
+	setAppReady(false);
 
-	let discord = discordInstance.peek();
+	let discord = discordInstance();
 	await discord.gateway.close();
 	discord = new Discord(true);
-	discordInstance.value = discord;
+	setDiscordInstance(discord)
 
-	console.log(discordInstance.peek());
+	console.log(discordInstance());
 
-	route("/", true);
+	route("/", {replace:true});
 
 	const internetConnection = await testInternet();
 	if (internetConnection !== InternetResults.OK) {
@@ -80,15 +83,17 @@ export async function loadDiscord() {
 	const token = getToken();
 
 	if (!token) {
-		appReady.value = true;
+		setAppReady(true);
 		await sleep(100);
-		route("/login", true);
+		route("/login", {replace: true});
 		return;
 	}
 
 	await discord.login(token);
 
-	const __guilds = (guilds.value = discord.gateway.guilds.getAll());
+	const __guilds = (discord.gateway.guilds.getAll());
+
+	setGuilds(__guilds)
 
 	console.log("PRELOADING IMAGES");
 	const toPreload: string[] = [];
@@ -101,7 +106,7 @@ export async function loadDiscord() {
 
 	console.log(__guilds);
 
-	appReady.value = true;
+	setAppReady(true);
 
 	await sleep(10);
 	route("/channels/@me/");

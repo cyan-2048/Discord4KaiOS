@@ -18,6 +18,7 @@
 		"vite-tsconfig-paths": "^4.2.0"
 	},
 	"dependencies": {
+		"@solidjs/router": "^0.8.2",
 		"@ungap/event-target": "^0.2.3",
 		"char-regex": "^2.0.1",
 		"emojibase": "^6.1.0",
