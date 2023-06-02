@@ -30,7 +30,7 @@ async function verifyDomainSSL(url) {
 	const u = new URL(url);
 	return new Promise((resolve, reject) => {
 		if (u.protocol === "http:") return resolve(url);
-		// @ts-ignore
+		// @ts-ignore kaios things
 		const conn = navigator.mozTCPSocket?.open(u.host, 443, {
 			useSecureTransport: true,
 		});
@@ -73,12 +73,11 @@ export { debounce } from "ts-debounce";
  * simple string to hash function
  */
 export function hash(text: string) {
-	// @ts-ignore
 	return fastHashCode(text, { forcePositive: true }).toString(36);
 }
 
 export function toggleCursor(value: boolean): boolean {
-	// @ts-ignore
+	// @ts-ignore kaios
 	return (navigator.spatialNavigationEnabled = value);
 }
 
@@ -188,3 +187,10 @@ export function preloadImages(images: string[]) {
 }
 
 export { default as clx } from "obj-str";
+
+export function shallowCompare<T = Record<any, unknown>>(newObj: T, prevObj: T) {
+	for (const key in newObj) {
+		if (newObj[key] !== prevObj[key]) return true;
+	}
+	return false;
+}

@@ -70,8 +70,7 @@
 		&::after {
 			content: attr(data-name);
 			background-image: var(--image);
-			box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.8),
-				inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
+			box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.8), inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
 		}
 	}
 	&:focus,
@@ -108,13 +107,11 @@
 	border-radius: 5px;
 
 	&.open {
-		box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6),
-			0 0 2px 2px rgba(0, 0, 0, 0.4), inset 0 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+		box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6), 0 0 2px 2px rgba(0, 0, 0, 0.4), inset 0 0 1px 2px rgba(0, 0, 0, 0.8) !important;
 	}
 
 	&:not(.open) {
-		box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.8),
-			inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
+		box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.8), inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
 		&.unread {
 			.hover::after {
 				opacity: 1;
@@ -164,8 +161,7 @@
 		margin-bottom: 8px;
 
 		border-radius: 5px;
-		box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6),
-			inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
+		box-shadow: inset 0 0 0 1px rgba(230, 230, 230, 0.6), inset 0 0 0 2px rgba(0, 0, 0, 0.6) !important;
 
 		//background-color: rgba(67, 69, 74);
 
@@ -225,4 +221,24 @@
 			opacity: 0;
 		}
 	}
+}
+
+.ServerMentions {
+	display: block !important;
+	position: absolute;
+	border-radius: 20px;
+	color: white;
+	height: 19px;
+	min-width: 19px;
+	font-size: 13px;
+	text-align: center;
+	line-height: 16px;
+	font-weight: 600;
+	padding: 0 4px;
+	bottom: 0;
+	right: 0;
+	background: linear-gradient(0deg, transparent 22%, rgba(217, 79, 77) 100%) !important;
+	border: 1px solid rgba(230, 230, 230, 0.6);
+	box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.5);
+	background-color: rgba(158, 58, 56) !important;
 }

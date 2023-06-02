@@ -1,4 +1,4 @@
-@use "../../assets/shared" as *;
+@use "../assets/shared" as *;
 
 .ActionMessageBase {
 	display: flex;
@@ -20,7 +20,7 @@
 		}
 	}
 
-  .call_text {
+	.call_text {
 		white-space: pre;
 		color: rgb(150, 152, 157);
 	}
@@ -31,7 +31,7 @@
 		line-height: 1;
 	}
 
-  .join_text {
+	.join_text {
 		color: rgb(150, 152, 157);
 	}
 

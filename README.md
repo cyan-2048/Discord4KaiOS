@@ -1,28 +1,9 @@
-[![Discord server](https://invidget.switchblade.xyz/W9DF2q3Vv2)](https://discord.gg/W9DF2q3Vv2)
+# kaios-preact-starter
 
-the end goal here is to have a usable discord client for KaiOS, I have no plans on fully replicating a discord client.
+a sveltejs template for KaiOS that just works!!
 
-### Development and testing
+## Additional Notes (pretty much how this template works)
 
-`npm run dev` builds the app in watch mode and serves the site. Great for testing the app in a desktop browser. CORS may or may not work properly on non-KaiOS devices, please use a browser extension.
-
-### Deploying to a device
-
-1. Connect your device to your computer and make sure it appears in WebIDE.
-2. `npm install` install dependencies, run it when package.json is modified or if you are building for the first time.
-3. `npm run build`
-4. In WebIDE, load the `/dist` folder as a packaged app.
-
-### Credit
-
-(stuff mentioned here are libraries where the code was modified)
-
-- [luke-chang/js-spatial-navigation](https://github.com/luke-chang/js-spatial-navigation) MPLv2
-- [garredow/kaios-lib](https://github.com/garredow/kaios-lib/blob/main/src/modules/qrCode.ts) MIT
-- [smoothscroll-polyfill](https://www.npmjs.com/package/smoothscroll-polyfill) MIT
-- [ustccjw/unhandled-rejection-polyfill](https://github.com/ustccjw/unhandled-rejection-polyfill) MIT
-- [SkeuoCord](https://github.com/Marda33/SkeuoCord) (I asked for permission)
-
-### Special Thanks!
-
-- [Zero Tsus](https://github.com/LolloDev5123)
+- KaiOS v2.5 is "partial es6" because of this, transpilers like babel will assume it is es5 which makes the code really bulky, thankfully this template uses esbuild to transpile.
+- "partial es6" refers to KaiOS not supporting literally two es6 features (es modules and `for (const`).
+- because we are not using babel, all polyfills will have to be manually added to the project, this template has core-js and a [polyfills.js](./scripts/polyfills.js) file.

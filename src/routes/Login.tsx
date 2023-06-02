@@ -1,10 +1,10 @@
 import { sleep, hash } from "@utils";
-import { MutableRef, useRef, useState, useInputValue, useMemoryState, bindedMemoryState, useMount, useSpatialNav } from "@hooks";
+import { MutableRef, useRef, useState, useInputValue, useMemoryState, bindedMemoryState, useMount, useSpatialNav, Ref } from "@hooks";
 
 import Button from "@components/Button";
-import { ComponentProps, Fragment, h } from "preact";
+import { ComponentProps, ComponentType, Fragment, FunctionComponent, h } from "preact";
 import { route } from "preact-router";
-import "./style.scss";
+import styles from "./Login.module.scss";
 import { discordInstance, loadDiscord, setToken } from "@shared";
 import MFA from "discord/MFA";
 
@@ -33,13 +33,13 @@ async function testToken(authorization: string) {
 	return settings;
 }
 
-interface SeparatorProps extends ComponentProps<"div"> {
+interface SeparatorProps extends ComponentProps<FunctionComponent<{ children: any }>> {
 	required?: true | null;
 }
 
 function Separator({ children, required, ...props }: SeparatorProps) {
 	return (
-		<div class="separator" style={{ color: required && "red" }} {...props}>
+		<div class={styles.separator} style={{ color: required && "red" }} {...props}>
 			{children}
 			{required && <RequiredField />}
 		</div>
@@ -75,6 +75,7 @@ function Home({ setPage }: LoginPagesProps) {
 			<Separator required={valueStates.password}>PASSWORD</Separator>
 			<input tabIndex={0} ref={passwordEl} type="password" />
 			<Button
+				class={styles.Button}
 				onClick={async () => {
 					const emLen = emailValue.length,
 						pwLen = passwordValue.length;
@@ -100,7 +101,9 @@ function Home({ setPage }: LoginPagesProps) {
 			>
 				Login
 			</Button>
-			<Button onClick={() => setPage(1)}>Login with Token</Button>
+			<Button class={styles.Button} onClick={() => setPage(1)}>
+				Login with Token
+			</Button>
 		</>
 	);
 }
@@ -122,6 +125,7 @@ function Token({ setPage }: LoginPagesProps) {
 			<Separator required={tokenState}>TOKEN</Separator>
 			<input tabIndex={0} type="password" ref={tokenEl} />
 			<Button
+				class={styles.Button}
 				onClick={async () => {
 					const len = tokenValue.length;
 					setTokenState(!len || null);
@@ -132,9 +136,15 @@ function Token({ setPage }: LoginPagesProps) {
 			>
 				Login
 			</Button>
-			<Button onClick={todo}>Use token.txt file</Button>
-			<Button onClick={todo}>Scan QR that contains token</Button>
-			<Button onClick={() => setPage(0)}>Go Back</Button>
+			<Button class={styles.Button} onClick={todo}>
+				Use token.txt file
+			</Button>
+			<Button class={styles.Button} onClick={todo}>
+				Scan QR that contains token
+			</Button>
+			<Button class={styles.Button} onClick={() => setPage(0)}>
+				Go Back
+			</Button>
 		</>
 	);
 }
@@ -142,7 +152,7 @@ function Token({ setPage }: LoginPagesProps) {
 /**
  * this is a custom hook, it will focus a selected element when the component is mounted
  */
-function useFocus(ref: MutableRef<HTMLElement>) {
+function useFocus<T extends HTMLElement>(ref: Ref<T>) {
 	useMount(() => {
 		ref.current?.focus();
 	});
@@ -168,6 +178,7 @@ function MFAuth({ setPage }: LoginPagesProps) {
 			</Separator>
 			<input tabIndex={0} ref={codeEl} placeholder="Authentication code" type="tel" />
 			<Button
+				class={styles.Button}
 				onClick={async () => {
 					const len = auth.length;
 					if (auth === "") setRequired(true);
@@ -180,7 +191,9 @@ function MFAuth({ setPage }: LoginPagesProps) {
 			>
 				Login
 			</Button>
-			<Button onClick={() => setPage(0)}>Go Back</Button>
+			<Button class={styles.Button} onClick={() => setPage(0)}>
+				Go Back
+			</Button>
 		</>
 	);
 }
@@ -191,13 +204,13 @@ export default function Login(props: any) {
 	const [page, setPage] = useMemoryState(symbol1, 0);
 
 	useSpatialNav({
-		selector: ".Login [tabindex]",
+		selector: `.${styles.Login} [tabindex]`,
 		restrict: "self-only",
 		id: sectionID,
 	});
 
 	return (
-		<main class="Login">
+		<main class={styles.Login}>
 			{page === 0 && <Home setPage={setPage}></Home>}
 			{page === 1 && <Token setPage={setPage}></Token>}
 			{page === 2 && <MFAuth setPage={setPage}></MFAuth>}

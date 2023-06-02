@@ -1,4 +1,4 @@
-@use "../../assets/shared" as *;
+@use "../assets/shared" as *;
 
 .Button {
 	@include linearGradient(10%, hsl(225, 32.7%, 42%));

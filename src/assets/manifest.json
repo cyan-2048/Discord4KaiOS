@@ -1,6 +1,6 @@
 {
 	"version": "2.0.8",
-	"name": "Sveltecord",
+	"name": "Discord4KaiOS",
 	"description": "Discord Client for KaiOS written in svelte.",
 	"launch_path": "/index.html",
 	"icons": {
@@ -26,9 +26,9 @@
 	"installs_allowed_from": ["*"],
 	"locales": {
 		"en-US": {
-			"name": "Sveltecord",
+			"name": "Discord4KaiOS",
 			"subtitle": "Discord Client for KaiOS",
-			"description": "Sveltecord is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Discord™, or any of its subsidiaries or its affiliates."
+			"description": "Discord4KaiOS is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Discord™, or any of its subsidiaries or its affiliates."
 		}
 	},
 	"default_locale": "en"

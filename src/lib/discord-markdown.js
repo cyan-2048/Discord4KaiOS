@@ -420,7 +420,7 @@ const rules = {
 
 			if (isStartOfLineCapture) {
 				source = isStartOfLineCapture[1] + source;
-				console.log(source);
+				// console.log(source);
 				return /^(#{1,3})\s+([^\n]+)/.exec(source);
 			} else {
 				return null;

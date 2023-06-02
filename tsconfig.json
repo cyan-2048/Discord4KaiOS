@@ -1,10 +1,22 @@
 {
 	"compilerOptions": {
-		"allowJs": true,
-		"lib": ["dom", "es6", "ES2016", "ES2019"],
-		"jsx": "react",
-		"jsxFactory": "h",
-		"jsxFragmentFactory": "Fragment",
+		"target": "ES6",
+		"useDefineForClassFields": true,
+		"module": "ESNext",
+		"lib": ["ES2020", "DOM", "DOM.Iterable"],
+		"skipLibCheck": true,
+
+		/* Bundler mode */
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"noEmit": true,
+		"jsx": "react-jsx",
+		"jsxImportSource": "preact",
+
+		"types": ["vite/client"],
+
 		"baseUrl": ".",
 		"paths": {
 			"@/*": ["src/*"],
@@ -19,8 +31,8 @@
 			"discord": ["backend"],
 			"discord/*": ["backend/src/*"],
 			"react": ["./node_modules/preact/compat/"]
-		},
-		"outDir": "./dist"
+		}
 	},
-	"include": ["src/**/*", "scripts/worker.js"]
+	"include": ["src"],
+	"references": [{ "path": "./tsconfig.node.json" }]
 }

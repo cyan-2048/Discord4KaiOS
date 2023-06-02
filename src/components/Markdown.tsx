@@ -1,12 +1,12 @@
 import { observeElement } from "@shared";
 import parse from "@lib/discord-markdown";
-import { h, Fragment, ComponentChildren, createContext } from "preact";
-import { CSSProperties, memo } from "preact/compat";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "@hooks";
+import { h, Fragment, ComponentChildren, createContext, Component } from "preact";
+import { PureComponent } from "preact/compat";
 
-import { clx } from "@utils";
+import { clx, shallowCompare } from "@utils";
 import Mentions from "./Mentions";
 import charRegex from "char-regex";
+import { Unsubscriber } from "discord/EventEmitter";
 
 export const CHAR_REGEX = charRegex();
 export const EMOJI_REGEX =
@@ -49,23 +49,30 @@ interface MarkdownNodeProps {
 
 const Reference = createContext(null);
 
-function EmojiElement({ name, id, animated }: { id: string; animated: boolean; name: string }) {
-	const [inView, setState] = useState(false);
-	const emojiRef = useRef<HTMLDivElement>(null);
+class EmojiElement extends Component<{ id: string; animated: boolean; name: string }> {
+	el: HTMLDivElement;
+	state = {
+		inView: false,
+	};
+	unsub?: Unsubscriber;
 
-	useEffect(() => {
-		if (animated) {
-			return observeElement(emojiRef.current).subscribe((val) => setState(val));
+	componentDidMount(): void {
+		if (this.props.animated) {
+			this.unsub = observeElement(this.el).subscribe((val) => this.setState({ inView: val }));
 		}
-	}, [animated]);
+	}
 
-	const url = `url('https://cdn.discordapp.com/emojis/${id}.${animated && inView ? "gif" : "png"}?size=32')`;
+	componentWillUnmount(): void {
+		this.unsub?.();
+	}
 
-	return (
-		<div ref={emojiRef} class="emoji" style={{ "--emoji_url": url }}>
-			<span>{name}</span>
-		</div>
-	);
+	render({ name, id, animated }, { inView }) {
+		return (
+			<div ref={(el) => (this.el = el)} class="emoji" style={{ "--emoji_url": `url('https://cdn.discordapp.com/emojis/${id}.${animated && inView ? "gif" : "png"}?size=32')` }}>
+				<span>:{name}:</span>
+			</div>
+		);
+	}
 }
 
 function Spoiler({ children }: { children: ComponentChildren }) {
@@ -134,14 +141,39 @@ function MarkdownNode({ type, content, target, id, name, animated, level, ordere
 	}
 }
 
-const MarkdownContent = memo(function MarkdownContent({ content = [] }: { content: string | MarkdownNodeProps[] }) {
-	return <>{typeof content === "string" ? content : content.map((node) => <MarkdownNode {...node}></MarkdownNode>)}</>;
-});
+class MarkdownContent extends PureComponent<{ content: string | MarkdownNodeProps[] }> {
+	render() {
+		const { content } = this.props;
+		return <>{typeof content === "string" ? content : content.map((node) => <MarkdownNode {...node}></MarkdownNode>)}</>;
+	}
+}
 
-export const Markdown = memo(function Markdown({ text = "", setJumbo, ...props }: Partial<MarkdownProps> = {}) {
-	const tree: MarkdownNodeProps[] = useMemo(() => (text ? parse(text, props) : []), [text, props]);
+export class Markdown extends Component<Partial<MarkdownProps>> {
+	tree: MarkdownNodeProps[] = [];
 
-	useLayoutEffect(() => {
+	constructor(props) {
+		super(props);
+
+		this.updateTree();
+		this.layoutEffect();
+	}
+
+	updateTree() {
+		const { text, setJumbo, reference, ...props } = this.props;
+		this.tree = text ? parse(text, props) : [];
+	}
+
+	shouldComponentUpdate({ text, setJumbo, reference, ...props }: Partial<MarkdownProps>): boolean {
+		if (this.props.text !== text || shallowCompare(props, this.props)) {
+			this.updateTree();
+			return true;
+		}
+		return false;
+	}
+
+	layoutEffect() {
+		const { setJumbo, text } = this.props;
+
 		if (!setJumbo) return;
 
 		// default to false;
@@ -150,7 +182,7 @@ export const Markdown = memo(function Markdown({ text = "", setJumbo, ...props }
 		// fail early
 		if (!text) return;
 
-		const string = recursive(tree);
+		const string = recursive(this.tree);
 
 		// fail early again
 		if (!string.length) return setJumbo(false);
@@ -165,11 +197,21 @@ export const Markdown = memo(function Markdown({ text = "", setJumbo, ...props }
 
 		// TODO: create a better emoji detection system
 		return setJumbo(filtered.every((a) => a === "💀" || EMOJI_REGEX.test(a)));
-	}, [tree]);
+	}
 
-	return (
-		<Reference.Provider value={props.reference || null}>
-			<MarkdownContent content={tree} />
-		</Reference.Provider>
-	);
-});
+	componentDidUpdate(): void {
+		this.layoutEffect();
+	}
+
+	componentWillUnmount(): void {
+		this.props.setJumbo?.(false);
+	}
+
+	render() {
+		return (
+			<Reference.Provider value={this.props.reference || null}>
+				<MarkdownContent content={this.tree} />
+			</Reference.Provider>
+		);
+	}
+}

@@ -27,7 +27,7 @@ const defaultSettings: Settings = {
 	smooth_scroll: true,
 	preserve_deleted: false,
 	fromToken: false,
-	// @ts-ignore
+	// @ts-ignore PRODUCTION
 	devmode: !PRODUCTION as boolean,
 	keybinds: {
 		"*": "edit",

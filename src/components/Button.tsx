@@ -1,7 +1,7 @@
-import { delayedCallback } from "@utils";
-import { h, Fragment } from "preact";
-import { forwardRef, HTMLAttributes, memo, useState } from "preact/compat";
-import "./assets/button.scss";
+import { delayedCallback, shallowCompare } from "@utils";
+import { h, Component } from "preact";
+import { HTMLAttributes } from "preact/compat";
+import styles from "./Button.module.scss";
 
 interface ButtonProps extends Omit<HTMLAttributes<HTMLButtonElement>, "onClick" | "onError"> {
 	onError?: (err: any) => any;
@@ -11,11 +11,14 @@ interface ButtonProps extends Omit<HTMLAttributes<HTMLButtonElement>, "onClick" 
 
 export const DeleteSymbol = Symbol("delete");
 
-export default memo(function Button({ onClick, onError, onSuccess, ...props }: ButtonProps, forwardTheRef) {
-	const [state, setState] = useState(false);
+export default class Button extends Component<ButtonProps, { _: boolean | null }> {
+	state = { _: false };
 
-	async function changeOfState(...args: any[]) {
-		if (state) return;
+	changeOfState = async (...args: any[]) => {
+		const { onSuccess, onError, onClick } = this.props;
+		const setState = (e: boolean | null) => this.setState({ _: e });
+
+		if (this.state._) return;
 
 		const cancel = delayedCallback(() => setState(true));
 
@@ -33,19 +36,23 @@ export default memo(function Button({ onClick, onError, onSuccess, ...props }: B
 		if (result === DeleteSymbol) {
 			setState(null);
 		} else setState(false);
+	};
+
+	shouldComponentUpdate({ onError, onSuccess, onClick, ...nextProps }, nextState) {
+		return shallowCompare(nextProps, this.props) || shallowCompare(nextState, this.state);
 	}
 
-	return state === null ? (
-		<></>
-	) : (
-		<button class="Button" tabIndex={0} data-focusable="" {...props} onClick={changeOfState} ref={forwardTheRef}>
-			{state ? (
-				<div class="dot-wrap">
-					<div class="dot-flashing" />
-				</div>
-			) : (
-				props.children
-			)}
-		</button>
-	);
-});
+	render({ class: _class, ...props }, { _ }) {
+		return (
+			<button class={`${styles.Button}${_class ? " " + _class : ""}`} tabIndex={0} data-focusable="" {...props} onClick={this.changeOfState}>
+				{_ ? (
+					<div class={styles["dot-wrap"]}>
+						<div class={styles["dot-flashing"]} />
+					</div>
+				) : (
+					props.children
+				)}
+			</button>
+		);
+	}
+}

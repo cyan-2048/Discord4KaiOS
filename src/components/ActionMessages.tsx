@@ -1,5 +1,5 @@
 import { Guild } from "discord/Guilds";
-import "./assets/actions.scss";
+import styles from "./ActionMessages.module.scss";
 
 import Message from "discord/Message";
 import { User } from "discord/types";
@@ -19,8 +19,8 @@ interface ActionMessageBaseProps {
 
 function ActionMessageBase({ icon, before, after, iconColor = null, user, guildInstance }: ActionMessageBaseProps) {
 	return (
-		<main tabIndex={0} data-focusable="" className="ActionMessageBase">
-			<div class="icon" style={{ color: iconColor }}>
+		<main tabIndex={0} data-focusable="" className={styles.ActionMessageBase}>
+			<div class={styles.icon} style={{ color: iconColor }}>
 				{icon}
 			</div>
 			<div>
@@ -54,8 +54,8 @@ function getGreeting(snowflake: number) {
 
 const ActionMessages = memo(function ActionMessages({ children: _ }: { children: Message }) {
 	const msg = _.rawMessage;
-	// @ts-ignore
-	const snowflake = new Date(msg.timestamp) * 1;
+
+	const snowflake = +new Date(msg.timestamp);
 
 	switch (msg.type) {
 		case 6:
@@ -111,8 +111,8 @@ const ActionMessages = memo(function ActionMessages({ children: _ }: { children:
 					guildInstance={_.guildInstance}
 					after={
 						<>
-							<span class="call_text">{" started a call."}</span>
-							<span class="call_date">{stringifyDate(msg.timestamp)}</span>
+							<span class={styles.call_text}>{" started a call."}</span>
+							<span class={styles.call_date}>{stringifyDate(msg.timestamp)}</span>
 						</>
 					}
 				/>
@@ -129,8 +129,8 @@ const ActionMessages = memo(function ActionMessages({ children: _ }: { children:
 							</g>
 						</svg>
 					}
-					before={<span class="join_text">{getGreeting(snowflake)[0]}</span>}
-					after={<span class="join_text">{getGreeting(snowflake)[1]}</span>}
+					before={<span class={styles.join_text}>{getGreeting(snowflake)[0]}</span>}
+					after={<span class={styles.join_text}>{getGreeting(snowflake)[1]}</span>}
 					user={msg.author}
 					guildInstance={_.guildInstance}
 				/>

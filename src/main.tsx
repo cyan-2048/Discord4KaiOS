@@ -1,20 +1,14 @@
 import "preact/debug";
 
-import { Gateway } from "discord/DiscordGateway";
-
-Gateway.workerSrc = "/worker.js";
-// @ts-ignore
-window.__workerSrc = "/worker.js";
-
 import "core-js/actual/array/flat";
 import "core-js/actual/array/find-last";
 import "core-js/actual/array/to-sorted";
 import "core-js/actual/string/match-all";
 
-import { Fragment, h, render } from "preact";
+import { ComponentChild, Fragment, JSX, RenderableProps, h, render } from "preact";
 
 import "./assets/global.scss";
-// import "@lib/focusin.min.js";
+import "@lib/focusin.min.js";
 
 import { useCallback, useInputValue, useMount, useMountDebug, useRef, useState } from "@hooks";
 import { appReady, loadDiscord, sn } from "./lib/shared";
@@ -28,6 +22,9 @@ import Channels from "@routes/Channels";
 import Button from "@components/Button";
 import Messages from "@routes/Messages";
 import { Markdown } from "./components/Markdown";
+import VirtualList from "./components/VirtualList";
+import { computed, signal, useComputed } from "@preact/signals";
+import { PureComponent, memo } from "preact/compat";
 
 function TestRoute(props: any) {
 	useMountDebug("TestRoute");
@@ -55,7 +52,7 @@ function TestRoute(props: any) {
 }
 
 function NullComponent(props: { path: string }) {
-	return <></>;
+	return null as JSX.Element;
 }
 
 function App() {
@@ -110,3 +107,66 @@ function App() {
 }
 
 render(<App />, document.body);
+
+/*/ Testing the virtuallist
+
+const focused = signal(0);
+
+function FocusedListItem(props) {
+	const focus = focused == props.i;
+	return <ListItem {...props} focused={focus}></ListItem>;
+}
+
+const ListItem = memo((props: any) => {
+	const el = useRef<HTMLDivElement>(null);
+
+	useMount(() => {
+		if (focused.peek() == props.i) {
+			el.current.focus();
+		}
+	});
+	return (
+		<div ref={el} tabIndex={props.i} style={{ color: props.focused ? "red" : null }}>
+			item {props.i} {Math.random()}
+			<style>{`*:focus { color: red }`}</style>
+		</div>
+	);
+});
+
+const listOfJSXElements = Array(100)
+	.fill(0)
+	.map((_, i) => (
+		<Fragment key={i}>
+			<ListItem i={i}></ListItem>
+		</Fragment>
+	));
+
+function VirtualListTest() {
+	const el = useRef<HTMLDivElement>(null);
+
+	return (
+		<div
+			ref={el}
+			onKeyDownCapture={({ key }) => {
+				if (key == "ArrowUp") {
+					focused.value--;
+				} else if (key == "ArrowDown") {
+					focused.value++;
+				}
+				// @ts-ignore
+				el.current.querySelector(`[tabindex="${focused.peek()}"]`)?.focus();
+			}}
+		>
+			<button onClick={() => focused.value--}>Prev</button>
+			<button onClick={() => focused.value++}>Next</button>
+			<VirtualList range={5} items={listOfJSXElements} focusedIndex={focused.value}></VirtualList>
+		</div>
+	);
+}
+
+render(<VirtualListTest />, document.body);
+
+*/
+if (import.meta.env.DEV) {
+	import("./dev");
+}

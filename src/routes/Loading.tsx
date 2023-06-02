@@ -1,7 +1,6 @@
 import { useMountDebug, useEffect, useState } from "@hooks";
 import { Markdown } from "@components/Markdown";
-import { h, Fragment } from "preact";
-import "./style.scss";
+import styles from "./Loading.module.scss";
 
 const getRandomText = randomNoRepeats([
 	"Quickly edit your last sent message! Type 's/[what to replace]/[what to replace with]'.",
@@ -43,10 +42,10 @@ export default function Loading(props: any) {
 	});
 
 	return (
-		<div class="Loading">
+		<div class={styles.Loading}>
 			<img src="/css/loading.png" />
-			<div id="dyk">DID YOU KNOW</div>
-			<div id="fact">{typeof text == "string" ? <Markdown text={text} /> : <>{text}</>}</div>
+			<div class={styles.dyk}>DID YOU KNOW</div>
+			<div class={styles.fact}>{typeof text == "string" ? <Markdown text={text} /> : <>{text}</>}</div>
 		</div>
 	);
 }

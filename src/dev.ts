@@ -1,5 +1,3 @@
-import "./main";
-
 import * as utils from "@utils";
 import * as shared from "@shared";
 import markdown from "@lib/discord-markdown";

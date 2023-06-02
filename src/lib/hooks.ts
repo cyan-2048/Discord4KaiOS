@@ -1,7 +1,7 @@
 export * from "preact/hooks";
 
 import { Readable, get, Writable } from "discord/main";
-import { useEffect, EffectCallback, MutableRef, StateUpdater, useState, useRef, useCallback } from "preact/hooks";
+import { useEffect, EffectCallback, MutableRef, StateUpdater, useState, useRef, useCallback, Ref } from "preact/hooks";
 import { sn } from "./shared";
 
 export function useMountDebug(name: string) {
@@ -11,7 +11,7 @@ export function useMountDebug(name: string) {
 	});
 }
 
-export function useInputValue(inputEl: MutableRef<HTMLInputElement | HTMLTextAreaElement>, stateFunc: Function | typeof useState = useState): [string, (value: string) => void] {
+export function useInputValue(inputEl: Ref<HTMLInputElement | HTMLTextAreaElement>, stateFunc: Function | typeof useState = useState): [string, (value: string) => void] {
 	const [value, setValue] = stateFunc("");
 
 	useEffect(() => {
@@ -75,7 +75,7 @@ export type Updater<T> = (u: UpdateFn<T>) => void;
  * This is like useState, but it doesn't compare the new state to the old state.
  * fuck you React for making me do this
  */
-export function useStateMutable<T>(initialState: T): [T, StateUpdater<T>] {
+export function useStateMutable<T>(initialState: T): [T, (newState: T) => void] {
 	// should i rename this to useMutableState?
 	const [state, setState] = useState([initialState]);
 	return [state[0], (newState: T) => setState([newState])];
@@ -104,7 +104,7 @@ export function useWritable<T>(store: Writable<T>): [T, Setter<T>, Updater<T>] {
  * returns a function similar to this.forceUpdate()
  */
 export function useForceUpdate(): () => void {
-	// @ts-ignore
+	// @ts-ignore idk
 	return useReducer((x) => x + 1, 0)[1];
 }
 
@@ -138,8 +138,8 @@ export function useDestroy(func: () => void) {
 /**
  * useRef but with useState-like behaviour, kinda a solid.js rip off
  */
-export function useRefFunctional<T = any>(value?: T | null): [() => T, StateUpdater<T>, MutableRef<T>] {
-	const ref = useRef<T>(value);
+export function useRefFunctional<T = any>(value?: T | null): [() => T | null | undefined, StateUpdater<T>, MutableRef<T | null | undefined>] {
+	const ref = useRef<T | null | undefined>(value);
 
 	return [
 		useCallback(() => ref.current, []),
@@ -148,4 +148,11 @@ export function useRefFunctional<T = any>(value?: T | null): [() => T, StateUpda
 		}, []),
 		ref,
 	];
+}
+
+export function bindToWindow<K extends keyof WindowEventMap>(evt: K, callback: (this: Window, ev: WindowEventMap[K]) => any) {
+	useEffect(() => {
+		window.addEventListener(evt, callback);
+		return () => window.removeEventListener(evt, callback);
+	}, [callback]);
 }

@@ -1,30 +1,13 @@
 {
-	"name": "preact-app",
-	"version": "1.0.0",
+	"name": "kaios-preact-starter",
 	"private": true,
+	"version": "0.0.0",
+	"type": "module",
 	"scripts": {
 		"dev": "vite",
-		"build": "./scripts/esbuild.mjs",
-		"build:v3": "kaios=3 ./scripts/esbuild.mjs",
-		"debug": "debug=true ./scripts/esbuild.mjs"
-	},
-	"devDependencies": {
-		"@preact/preset-vite": "^2.5.0",
-		"@preact/signals": "^1.1.3",
-		"autoprefixer": "^10.4.8",
-		"core-js": "^3.24.0",
-		"cssnano": "^5.1.15",
-		"discord-api-types": "^0.37.18",
-		"esbuild": "^0.15.10",
-		"esbuild-sass-plugin": "^2.6.0",
-		"htm": "^3.1.1",
-		"postcss": "^8.4.21",
-		"postcss-color-hsl": "^2.0.0",
-		"postcss-modules": "^6.0.0",
-		"preact-router": "^4.1.0",
-		"sass": "^1.54.0",
-		"vite": "^3.0.2",
-		"vite-tsconfig-paths": "^4.0.5"
+		"build": "vite build && npm run buildManifest",
+		"preview": "vite preview",
+		"buildManifest": "node ./scripts/manifest.js"
 	},
 	"dependencies": {
 		"@ungap/event-target": "^0.2.3",
@@ -37,10 +20,23 @@
 		"localforage": "^1.10.0",
 		"lottie-web": "^5.9.6",
 		"obj-str": "^1.1.0",
-		"preact": "^10.13.0",
+		"preact": "^10.13.1",
 		"react": "npm:@preact/compat@17.0.3",
 		"react-dom": "npm:@preact/compat@17.0.3",
+		"sass": "^1.62.1",
 		"scroll-into-view": "^1.16.2",
 		"ts-debounce": "^4.0.0"
+	},
+	"devDependencies": {
+		"@preact/preset-vite": "^2.5.0",
+		"@preact/signals": "^1.1.3",
+		"core-js": "^3.30.2",
+		"discord-api-types": "^0.37.18",
+		"htm": "^3.1.1",
+		"preact-router": "^4.1.0",
+		"string-hash": "^1.1.3",
+		"typescript": "^5.0.2",
+		"vite": "^4.3.2",
+		"vite-tsconfig-paths": "^4.0.5"
 	}
 }
