@@ -1,4 +1,4 @@
-Give me money so I can continue making this app
+# Give me money so I can continue making this app
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H2H7LIPNW)
 
 [![Discord server](https://invidget.switchblade.xyz/W9DF2q3Vv2)](https://discord.gg/W9DF2q3Vv2)
