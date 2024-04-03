@@ -1,3 +1,6 @@
+Give me money so I can continue making this app
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H2H7LIPNW)
+
 [![Discord server](https://invidget.switchblade.xyz/W9DF2q3Vv2)](https://discord.gg/W9DF2q3Vv2)
 
 the end goal here is to have a usable discord client for KaiOS 2.5.x, I have no plans on fully replicating a discord client.
