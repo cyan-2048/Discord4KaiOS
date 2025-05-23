@@ -38,5 +38,4 @@ builds
 *.module.scss.d.ts
 
 # ignore newer changes to .gitmodules
-.gitmodules
 discord
