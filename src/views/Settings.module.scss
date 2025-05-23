@@ -1,0 +1,195 @@
+.settings {
+	height: 100vh;
+	width: 100vw;
+
+	padding: 4px;
+
+	background-color: #313338;
+
+	:global(.light) & {
+		background-color: #ffffff;
+	}
+	overflow: auto;
+}
+
+._switch {
+	height: 24px;
+	width: 40px;
+	background-color: #80848e;
+	border-radius: 14px;
+
+	margin-left: 4px;
+
+	flex-shrink: 0;
+
+	transition: background-color 0.2s linear;
+
+	position: relative;
+
+	&::before,
+	&::after {
+		content: "";
+		display: block;
+		height: 20px;
+		width: 20px;
+		border-radius: 50%;
+		position: absolute;
+		top: 2px;
+
+		transform: translateX(2px);
+
+		transition: transform 0.2s linear, opacity 0.2s linear;
+	}
+
+	&::before {
+		background-image: url(../assets/SwitchedOff.svg);
+	}
+
+	&::after {
+		background-image: url(../assets/SwitchedOn.svg);
+		opacity: 0;
+	}
+
+	&.on {
+		background-color: #23a55a;
+
+		&::before,
+		&::after {
+			transform: translateX(18px);
+		}
+
+		&::after {
+			opacity: 1;
+		}
+	}
+}
+
+.toggle {
+	width: 100%;
+
+	padding: 6px 8px;
+	border-radius: 5px;
+
+	.control_wrap {
+		display: flex;
+		justify-content: space-between;
+		height: 24px;
+		width: 100%;
+		white-space: nowrap;
+		font-weight: 600;
+		font-size: 15px;
+		line-height: 24px;
+		overflow: hidden;
+
+		.text {
+			flex: 1;
+
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+	}
+
+	&:focus {
+		background-color: #3f4248;
+
+		:global(.light) & {
+			background-color: #d7d8dd;
+		}
+	}
+}
+
+.button_wrap {
+	width: 100%;
+	display: flex;
+
+	> * {
+		font-size: 13.333px;
+		margin: 5px 3px;
+		padding: 5px 7px;
+		width: 100%;
+		margin-bottom: 0;
+	}
+}
+
+.header {
+	font-size: 15px;
+	font-weight: 700;
+	text-align: center;
+	margin-bottom: 4px;
+}
+
+.content {
+	padding: 4px 6px;
+	font-size: 14px;
+
+	small {
+		color: #a3a6aa;
+	}
+}
+
+.icon {
+	img {
+		width: 60px;
+		height: 60px;
+	}
+
+	display: flex;
+	justify-content: center;
+	flex-direction: column;
+	align-items: center;
+
+	div {
+		font-size: 12px;
+		font-weight: 700;
+		margin: 3px;
+	}
+}
+
+.heading {
+	font-size: 15px;
+	font-weight: 600;
+	padding: 0 6px;
+}
+
+.user {
+	width: calc(100% - 8px);
+	margin: 2px 4px;
+	display: flex;
+	padding: 8px;
+	border-radius: 8px;
+
+	&:focus {
+		background-color: #393b41;
+		color: white
+	}
+
+	.avatar {
+		height: 32px;
+		width: 32px;
+		border-radius: 100%;
+		overflow: hidden;
+	}
+	.desc {
+		margin-left: 8px;
+		height: 32px;
+		display: flex;
+		flex-direction: column;
+
+		:first-child {
+			
+			font-weight: 500;
+			font-size: 14px;
+			height: 18px;
+			line-height: 14px;
+		}
+		:last-child {
+			font-size: 12px;
+			color: #a6abb1;
+			height: 16px;
+		}
+	}
+}
+
+.buttons {
+	margin-bottom: 5px;
+}

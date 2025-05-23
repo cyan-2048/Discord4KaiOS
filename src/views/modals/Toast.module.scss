@@ -1,0 +1,49 @@
+.toast {
+	position: fixed;
+	z-index: 99999;
+	background-color: #323232;
+	padding: 4px 8px;
+	border-radius: 16px;
+	font-size: 14px;
+	left: 50%;
+	transform: translateX(-50%);
+	bottom: 5vh;
+	max-width: 90vw;
+	line-height: 1.2;
+	width: -moz-max-content;
+	color: white;
+
+	:global(.light) & {
+		background-color: white;
+		color: black;
+	}
+	box-shadow: rgba(0, 0, 0, 0.1) 0px 3px 5px -1px, rgba(0, 0, 0, 0.04) 0px 6px 10px 0px,
+		rgba(0, 0, 0, 0.02) 0px 1px 18px 0px;
+}
+
+.hidden {
+	animation: hidden 0.2s ease-in-out forwards;
+	pointer-events: none;
+}
+
+@keyframes hidden {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes show {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.show {
+	animation: show 0.2s ease-in-out forwards;
+}

@@ -1,0 +1,566 @@
+.Message {
+	font-size: 14px;
+
+	width: 100vw;
+	overflow: hidden;
+
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+
+	:global(.light) & {
+		color: rgb(49, 51, 56);
+	}
+
+	&.mentioned {
+		background-color: #454037;
+
+		:global(.light) & {
+			background-color: #fef7ea;
+		}
+
+		&:focus {
+			background-color: #2d2b27;
+
+			:global(.light) & {
+				background-color: #fcefd6;
+			}
+		}
+	}
+
+	&.deleted {
+		background-color: #493337;
+
+		:global(.light) & {
+			background-color: #f9e1e1;
+		}
+	}
+
+	&:focus {
+		background-color: rgb(36, 38, 43);
+
+		:global(.light) & {
+			background-color: #e8e8ea;
+		}
+	}
+
+	.emoji {
+		position: relative;
+		width: 14px;
+		height: 14px;
+		display: inline-block;
+
+		text-align: center;
+		white-space: nowrap;
+
+		// span {
+		// 	font-size: 0;
+		// 	position: absolute;
+		// }
+
+		&::before {
+			content: "⬛️";
+			opacity: 0;
+			position: absolute;
+		}
+
+		&::after {
+			content: "";
+			top: 0;
+			left: -1px;
+			z-index: 99;
+			position: absolute;
+			background-image: var(--emoji_url);
+			width: 16px;
+			height: 16px;
+			background-size: 16px 16px;
+			background-position: center;
+			background-repeat: no-repeat;
+			background-attachment: local;
+			overflow: hidden;
+			background-size: contain;
+		}
+	}
+
+	.bigEmoji {
+		font-size: 32px;
+		line-height: 1;
+		padding-top: 1.5px;
+		padding-bottom: 1.5px;
+
+		.emoji,
+		.emoji::after {
+			width: 32px !important;
+			height: 32px !important;
+		}
+
+		.emoji::after {
+			top: 0;
+			left: 0;
+		}
+	}
+
+	.text {
+		width: 100%;
+		padding: 2px 5px 2px 34px;
+		white-space: pre-wrap;
+	}
+
+	.edited {
+		font-size: 9px;
+		margin-left: 3px;
+		color: #949ba4;
+
+		:global(.light) & {
+			color: #5c5e66;
+		}
+	}
+
+	.channelMentionIcon svg {
+		width: 1em;
+		height: 1em;
+		vertical-align: middle;
+		margin-bottom: 0.2em;
+		margin-right: 3.2px;
+	}
+
+	.chevron {
+		width: 0.5em;
+		height: 0.5em;
+		margin-left: 4px;
+		margin-right: 2px;
+		margin-bottom: 1px;
+	}
+}
+
+.Separator {
+	width: 100%;
+	font-size: 14.2px;
+	line-height: 1.2;
+	position: relative;
+
+	display: flex;
+	flex-direction: column;
+
+	.avatar_wrapper {
+		position: relative;
+		height: 0;
+
+		> img {
+			position: absolute;
+			left: 4.5px;
+			top: 2px;
+			width: 24px;
+			height: 24px;
+			border-radius: 100%;
+		}
+	}
+
+	.reply {
+		font-size: 9.6px;
+		height: 14px;
+		position: relative;
+		line-height: 14px;
+
+		.emoji {
+			width: 9px !important;
+			height: 9px !important;
+
+			&::after {
+				width: 11px !important;
+				height: 11px !important;
+			}
+		}
+
+		.label {
+			margin-right: 2px;
+			font-weight: 700;
+		}
+
+		.text {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			padding: unset;
+			white-space: nowrap;
+		}
+
+		.badge {
+			transform: scale(0.75);
+			position: absolute;
+			left: 18px;
+			top: -1px;
+		}
+
+		padding-left: 34px;
+		white-space: nowrap;
+	}
+
+	.name {
+		padding-left: 34px;
+		font-weight: 600;
+	}
+
+	.date {
+		white-space: nowrap;
+		color: #878d96;
+		font-size: 10px;
+		font-weight: 500;
+		padding: 3px 2px;
+		line-height: 0.9;
+		padding-left: 1px;
+		:global(.light) & {
+			color: #313338;
+		}
+	}
+}
+
+// for replying/editing
+.interaction {
+	font-size: 12px;
+	padding: 4px 8px;
+	width: 100vw;
+
+	color: #dcdddf;
+	background-color: #303136;
+
+	:global(.light) & {
+		color: #2e3337;
+		background-color: #f2f3f5;
+	}
+}
+
+.typing {
+	width: 100vw;
+	background-color: #2c2f32;
+	font-size: 11px;
+	line-height: 1.8;
+	white-space: pre-wrap;
+	word-break: break-word;
+	padding: 0 8px;
+
+	:global(.light) & {
+		background-color: #f8faf9;
+	}
+
+	.user {
+		font-weight: 600;
+	}
+}
+
+.MessageBox,
+.noPerm {
+	flex-shrink: 0;
+	width: 100vw;
+	position: relative;
+
+	.header {
+		:global(.animate) & {
+			transition: bottom 0.2s ease-in-out;
+		}
+	}
+
+	.texbox_wrap {
+		position: relative;
+	}
+
+	textarea,
+	.hidden,
+	.placeholder,
+	.text {
+		all: unset;
+
+		position: absolute;
+		top: 0;
+		left: 0;
+
+		font-size: 14px;
+
+		box-sizing: border-box;
+
+		background: #383a40;
+
+		padding: 8px;
+
+		line-height: 1.2;
+
+		white-space: pre-wrap;
+		word-wrap: break-word;
+		overflow-wrap: break-word;
+
+		min-height: 20px;
+		height: auto;
+		width: 100vw;
+		max-height: calc(16px * 5);
+
+		display: block;
+
+		:global(.light) & {
+			background: #ebedef;
+		}
+
+		:global(.animate) & {
+			transition: bottom 0.2s ease-in-out, height 0.2s ease-in-out;
+		}
+	}
+
+	.placeholder {
+		pointer-events: none;
+		color: #a3a4a7;
+		white-space: nowrap;
+		background-color: transparent !important;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.hidden {
+		&::after {
+			content: " ";
+		}
+		visibility: hidden;
+		pointer-events: none;
+	}
+
+	.grow,
+	.texbox_wrap {
+		:global(.animate) & {
+			transition: height 0.2s ease-in-out;
+		}
+	}
+
+	.bar {
+		bottom: 0;
+		left: 0;
+		width: 100vw;
+		z-index: -1;
+		position: absolute;
+		background: #232428;
+
+		display: flex;
+
+		:global(.light) & {
+			background: #d7d8dd;
+			color: #4e5058;
+		}
+
+		& > div {
+			&:first-child {
+				justify-content: start;
+			}
+
+			padding: 0 3px;
+
+			width: 33.33%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			transition: opacity 0.2s linear;
+			opacity: 1;
+
+			&.hide {
+				opacity: 0;
+			}
+		}
+	}
+}
+
+.noPerm {
+	width: 100vw;
+
+	.text {
+		color: #a3a4a7;
+		white-space: nowrap;
+		background-color: transparent !important;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		position: relative !important;
+	}
+}
+
+.Messages {
+	position: relative;
+	height: 100vh;
+	width: 100vw;
+	display: flex;
+	flex-direction: column;
+
+	.listWrap {
+		width: 100vw;
+		flex: 1;
+		:global(.animate) & {
+			transition: bottom 0.2s ease-in-out, height 0.2s ease-in-out, bottom 0.2s ease-in-out;
+		}
+		overflow-x: hidden;
+		overflow-y: auto;
+	}
+}
+
+.loading {
+	height: 20px;
+	display: flex;
+	justify-content: center;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 20px;
+}
+
+.mention {
+	padding: 0 2px;
+	background-color: #3c4270;
+	&,
+	& * {
+		color: #c9cdfb;
+	}
+	border-radius: 2px;
+
+	:global(.light) & {
+		&,
+		& * {
+			color: #5865f2;
+		}
+
+		background-color: #e6e8fd;
+	}
+}
+
+.hideContent {
+	display: none;
+}
+
+.bot {
+	font-size: 9px;
+	padding: 1px 4px;
+	height: 12px;
+	border-radius: 3px;
+	line-height: 1;
+	margin: 0 2px;
+	align-self: center;
+	font-weight: 500;
+
+	background-color: #5865f2;
+	color: white;
+}
+
+.reactions {
+	display: flex;
+	flex-wrap: wrap;
+	padding-left: 34px;
+}
+
+.button_wrap {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	padding: 3px 0;
+	font-size: 12px;
+	font-weight: 600;
+	min-height: 36px;
+	align-items: center;
+	justify-content: center;
+}
+
+.reactionButton {
+	height: 20px;
+	border: solid 1px;
+	display: flex;
+	font-size: 12px;
+	align-items: center;
+	padding: 0 3px;
+	margin-right: 2px;
+	margin-bottom: 2px;
+
+	border-radius: 4px;
+
+	&.me {
+		border-color: #5865f2;
+		background-color: rgba(88, 101, 242, 0.15);
+
+		:global(.light) & {
+			color: #4752c4;
+		}
+	}
+
+	&:not(.me) {
+		background-color: #2b2d31;
+		border-color: #2b2d31;
+
+		:global(.light) & {
+			background-color: #f2f3f5;
+			border-color: #f2f3f5;
+		}
+	}
+
+	.non_uni {
+		display: flex;
+		align-items: center;
+	}
+
+	img {
+		width: 12px;
+		height: 12px;
+		object-fit: contain;
+	}
+
+	.num {
+		margin-left: 2px;
+	}
+}
+
+.spoiler_hidden span {
+	opacity: 0;
+}
+
+.subtext {
+	font-size: 10px;
+}
+
+.forwarded {
+	.message_content {
+		position: relative;
+
+		&::before {
+			content: "";
+			position: absolute;
+			height: calc(100% - 2px);
+			top: 0;
+			left: 34px;
+			width: 3px;
+
+			background-color: #4e5058;
+
+			:global(.light) & {
+				background-color: #c4c9ce;
+			}
+
+			border-radius: 2px;
+		}
+	}
+
+	&_header {
+		font-size: 12px;
+		font-style: italic;
+		font-weight: 600;
+		padding-left: calc(34px + 9px + 17px);
+		color: #97989f;
+
+		position: relative;
+
+		svg {
+			position: absolute;
+			top: 2px;
+			left: calc(34px + 9px);
+		}
+
+		:global(.light) & {
+			color: #5c5d67;
+		}
+
+		
+	}
+
+	.text,
+	:global(.kori-embeds) {
+		padding-left: calc(34px + 9px);
+	}
+}

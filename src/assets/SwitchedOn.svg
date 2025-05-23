@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+
+ <g class="layer">
+  <title>Layer 1</title>
+  <circle cx="10" cy="10" fill="#ffffff" fill-opacity="null" id="svg_3" r="9" stroke="null" stroke-dasharray="null" stroke-linecap="null" stroke-linejoin="null" stroke-opacity="null" stroke-width="null"/>
+  <path d="m7.9,14.85l-1.6,-1.59l8.01,-8l1.59,1.59l-8,8z" fill="rgba(35, 165, 90, 1)" id="svg_1"/>
+  <path d="m4.09,11.09l1.59,-1.59l3.77,3.77l-1.59,1.59l-3.77,-3.77z" fill="rgba(35, 165, 90, 1)" id="svg_2"/>
+ </g>
+</svg>

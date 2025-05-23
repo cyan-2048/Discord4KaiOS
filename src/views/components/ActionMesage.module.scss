@@ -1,0 +1,39 @@
+.main {
+	display: flex;
+	font-size: 13px;
+	padding: 2px 0;
+	padding-right: 5px;
+	margin: 2px 0;
+
+	.icon {
+		width: 32px;
+		display: flex;
+		flex-shrink: 0;
+
+		:global {
+			svg {
+				width: 18px;
+				height: 18px;
+				margin: auto;
+				transform: scale(0.8);
+			}
+		}
+	}
+}
+
+.user {
+	font-weight: 500;
+}
+
+.date {
+	white-space: nowrap;
+	color: #878d96;
+	font-size: 10px;
+	font-weight: 500;
+	padding: 3px 2px;
+	line-height: 0.9;
+	padding-left: 1px;
+	:global(.light) & {
+		color: #313338;
+	}
+}

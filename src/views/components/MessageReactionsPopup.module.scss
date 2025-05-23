@@ -1,0 +1,121 @@
+
+
+.reaction_container {
+	background-color: #2b2d31;
+
+	:global(.light) & {
+		background-color: #f2f3f5;
+	}
+
+	padding: 8px;
+	display: flex;
+	flex-direction: row;
+	overflow-x: hidden;
+  flex-shrink: 0;
+
+	&:hover {
+		scrollbar-width: none;
+		overflow-x: auto;
+	}
+}
+
+.reactionButton {
+	display: flex;
+	align-items: center;
+	padding: 0 4px;
+	border-radius: 4px;
+	margin-right: 2px;
+
+	&.selected {
+		background-color: #1e1f22;
+
+		:global(.light) & {
+			background-color: #e3e5e8;
+		}
+	}
+}
+
+.avatar {
+	width: 20px;
+	height: 20px;
+  overflow: hidden;
+	border-radius: 100%;
+  flex-shrink: 0;
+}
+
+.user {
+	display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 14px;
+  &:last-child {
+    margin-bottom: 4px;
+  }
+
+	box-shadow: rgba(78, 80, 88, 0.3) 0px -1px 0px 0px inset;
+  
+
+	:global(.light) & {
+		box-shadow: rgba(196, 201, 206, 0.3) 0px -1px 0px 0px inset;
+	}
+
+	.name {
+		font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+    margin: 0 4px;
+		flex: 1;
+		height: 18px;
+	}
+
+  .username {
+    font-weight: 500;
+  }
+}
+
+.num {
+	font-weight: 700;
+	font-size: 12px;
+	margin-left: 3px;
+}
+
+.non_uni {
+	display: flex;
+	align-items: center;
+}
+
+.unicode,
+.non_uni {
+	font-size: 16px;
+	padding: 2px 3px;
+	padding-left: 0;
+}
+
+.reactions {
+  overflow-y: auto;
+}
+
+.MessageReactions {
+	width: 82vw;
+	height: 80vh;
+	background-color: #313338;
+
+	:global(.light) & {
+		background-color: #ffffff;
+	}
+
+	border-radius: 4px;
+	overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+	:focus {
+		background-color: #36373d;
+
+		:global(.light) & {
+			background-color: #e0e1e5;
+		}
+	}
+}

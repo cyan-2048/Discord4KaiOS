@@ -1,0 +1,140 @@
+.picker {
+	height: 80vh;
+	width: 100vw;
+
+	background-color: #2b2d31;
+
+	:global(.light) & {
+		background-color: #f2f3f5;
+	}
+
+	display: flex;
+
+	flex-direction: column;
+
+	.main {
+		overflow: auto;
+		flex-grow: 1;
+		padding-bottom: 8px;
+	}
+}
+
+.search {
+	padding: 8px;
+
+	input {
+		all: unset;
+		font-size: 14px;
+		width: 100%;
+	}
+
+	background-color: #1e1f22;
+
+	:global(.light) & {
+		background-color: #e3e5e8;
+	}
+}
+
+.trending {
+	display: flex;
+	flex-wrap: wrap;
+
+	.category {
+		overflow: hidden;
+		border-radius: 5px;
+		flex-shrink: 0;
+		width: 110px;
+		height: 70px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		margin-top: 5px;
+
+		background-repeat: no-repeat;
+		background-position: center;
+		background-size: cover;
+
+		div {
+			font-weight: 600;
+			font-size: 14px;
+			z-index: 2;
+		}
+
+		
+			&:nth-child(even) {
+			margin-left: 5px;
+		}
+
+    &:nth-child(odd) {
+      margin-left: 7.5px;
+    }
+		
+
+		position: relative;
+
+		color: white;
+
+		&::before {
+			content: "";
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.4);
+			top: 0;
+			left: 0;
+		}
+
+		&:focus {
+			&::after {
+				top: 0;
+				left: 0;
+				content: "";
+				position: absolute;
+				width: 100%;
+				height: 100%;
+				border-radius: inherit;
+				border: solid 2px #5865f2;
+				box-sizing: border-box;
+			}
+		}
+	}
+}
+
+.content {
+	display: flex;
+	justify-content: center;
+
+	.column {
+		width: 110px;
+		.gif {
+			margin-top: 5px;
+
+			width: 110px;
+			background-repeat: no-repeat;
+			background-position: center;
+			background-size: cover;
+			border-radius: 5px;
+
+			position: relative;
+
+			&:focus {
+				&::after {
+					border-radius: inherit;
+					top: 0;
+					left: 0;
+					content: "";
+					position: absolute;
+					width: 100%;
+					height: 100%;
+					border-radius: inherit;
+					border: solid 2px #5865f2;
+					box-sizing: border-box;
+				}
+			}
+		}
+
+		&:nth-child(even) {
+			margin-left: 5px;
+		}
+	}
+}

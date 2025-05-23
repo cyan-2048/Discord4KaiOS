@@ -1,0 +1,107 @@
+/*
+
+w => guilds is in focus
+x => channels is in focus
+y => messages is in focus
+z => dynamic is in focus
+
+*/
+
+.mainView,
+.guilds,
+.channels,
+.messages {
+	position: fixed;
+	height: 100vh;
+	width: 100vw;
+	top: 0;
+	bottom: 0;
+	left: 0;
+}
+
+.mainView {
+
+	:global(.animate) & {
+		transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s ease, bottom 0.3s ease;
+	}
+
+	z-index: 5;
+}
+
+.guilds,
+.channels,
+.messages {
+	:global(.animate) & {
+		transition: transform 0.3s cubic-bezier(0.46, 0.03, 0.52, 0.96);
+	}
+}
+
+.guilds {
+	&.guildsInFocus {
+		transform: translateX(0);
+	}
+
+	&.channelsInFocus {
+		transform: translateX(-72px);
+	}
+
+	&.messagesInFocus {
+		transform: translateX(calc(-72px + -100vw));
+	}
+
+	width: 72px;
+	height: 100vh;
+	overflow-x: hidden;
+	overflow-y: auto;
+
+	background-color: #1e1f22;
+}
+
+.channels {
+	background-color: #2b2d31;
+
+	&.guildsInFocus {
+		transform: translateX(72px);
+	}
+
+	&.channelsInFocus {
+		transform: translateX(0);
+	}
+
+	&.messagesInFocus {
+		transform: translateX(-100vw);
+	}
+
+	overflow: auto;
+	height: 100vh;
+}
+
+.messages {
+	background-color: #2e3035;
+
+	&.messagesInFocus {
+		transform: translate(0);
+	}
+
+	&.guildsInFocus {
+		transform: translateX(calc(100vw + 72px));
+	}
+
+	&.channelsInFocus {
+		transform: translateX(100vw);
+	}
+}
+
+:global(.light) {
+	.guilds {
+		background-color: #e3e5e8;
+	}
+
+	.channels {
+		background-color: #f2f3f5;
+	}
+
+	.messages {
+		background-color: #ffffff;
+	}
+}

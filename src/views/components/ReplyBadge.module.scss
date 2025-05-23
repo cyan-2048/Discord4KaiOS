@@ -1,0 +1,18 @@
+.badge {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	flex: 0 0 auto;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+
+	color: rgb(181, 186, 193);
+	background: rgb(30, 31, 34);
+
+	:global(.light) & {
+		background: rgb(227, 229, 232);
+		color: rgb(78, 80, 88);
+	}
+}

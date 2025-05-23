@@ -1,0 +1,46 @@
+
+
+.tooltip {
+	font-size: 16px;
+	display: flex;
+	flex-direction: row;
+	position: fixed;
+	z-index: 999;
+
+	--bg: #111214;
+	color: white;
+
+	.body {
+		padding: 8px 12px;
+		background-color: var(--bg);
+		border-radius: 5px;
+		flex: 1;
+		hyphens: auto;
+		font-weight: 600;
+		min-width: 0;
+	}
+
+	.arrow {
+		&.left,
+		&.right {
+			width: 10px;
+			flex-shrink: 0;
+			position: relative;
+		}
+
+		&.left {
+			&::after {
+				content: "";
+				position: absolute;
+				width: 0;
+				height: 0;
+				border-width: 5px;
+				border-style: solid;
+				border-color: transparent var(--bg) transparent transparent;
+				top: 50%;
+				transform: translateY(-50%);
+				left: 0;
+			}
+		}
+	}
+}

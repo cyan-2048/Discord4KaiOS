@@ -1,0 +1,239 @@
+.dmItem {
+	border-radius: 4px;
+	margin-bottom: 2px;
+	height: 42px;
+	display: flex;
+
+	padding: 3px 8px;
+	width: calc(100% - 16px);
+	margin-left: 8px;
+
+	.aside {
+		display: flex;
+		overflow: hidden;
+		flex-direction: column;
+		justify-content: center;
+		width: 100%;
+
+		.overflow,
+		.subtitle {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			width: 100%;
+		}
+
+		.overflow {
+			height: 20px;
+			line-height: 20px;
+			font-size: 16px;
+		}
+
+		.subtitle {
+			font-size: 12px;
+			height: 16px;
+			line-height: 16px;
+		}
+	}
+
+	.avatar {
+		width: 32px;
+		height: 32px;
+		border-radius: 100%;
+		margin-inline-end: 12px;
+		margin-top: auto;
+		margin-bottom: auto;
+	}
+
+	.wrap {
+		width: 32px;
+		height: 32px;
+
+		flex-shrink: 0;
+
+		margin-inline-end: 12px;
+		margin-top: auto;
+		margin-bottom: auto;
+
+		position: relative;
+
+		.status_icon {
+			width: 10px;
+			position: absolute;
+			bottom: 0;
+			right: 0;
+		}
+	}
+}
+
+.dmItem,
+.chItem,
+.separator {
+	color: rgb(148, 155, 164);
+
+	:global(.light) & {
+		color: rgb(92, 94, 102);
+	}
+
+	&.selected {
+		background-color: #3f4248;
+	}
+
+	&:focus {
+		&:not(.separator) {
+			background-color: #35373c;
+		}
+
+		color: rgb(219, 222, 225);
+	}
+
+	&.selected,
+	&.unread {
+		color: #fff;
+	}
+
+	:global(.light) & {
+		&.selected {
+			background-color: #d7d8dd;
+		}
+
+		&:focus {
+			&:not(.separator) {
+				background-color: #e0e1e5;
+			}
+
+			color: rgb(49, 51, 56);
+		}
+
+		&.selected,
+		&.unread {
+			color: rgb(6, 6, 7);
+		}
+	}
+}
+
+.vListItem {
+	&.start {
+		margin-top: 8px;
+	}
+	&.startGuild > :first-child {
+		margin-bottom: 8px;
+	}
+}
+
+.separator {
+	height: 24px;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	margin-top: 16px;
+	line-height: 24px;
+	padding-left: 18px;
+	position: relative;
+
+	svg {
+		position: absolute;
+		width: 12px;
+		height: 12px;
+		left: 3px;
+		top: 50%;
+		transform: matrix(1, 0, 0, 1, 0, -6);
+	}
+
+	&.collapsed {
+		svg {
+			transform: matrix(0, -1, 1, 0, 0, -6);
+		}
+	}
+}
+
+.chItem {
+	.indicator {
+		border-radius: 0 4px 4px 0;
+		width: 4px;
+		height: 8px;
+		position: absolute;
+		background-color: currentColor;
+		visibility: hidden;
+		left: -8px;
+		top: 50%;
+		transform: translateY(-50%);
+	}
+
+	&.unread {
+		.indicator {
+			visibility: visible;
+		}
+	}
+
+	border-radius: 4px;
+	margin-bottom: 2px;
+	height: 32px;
+	display: flex;
+	position: relative;
+
+	padding: 6px 8px;
+	width: calc(100% - 16px);
+	margin-left: 8px;
+
+	.icon {
+		width: 20px;
+		height: 20px;
+		margin-right: 6px;
+		svg {
+			width: 20px;
+			height: 20px;
+		}
+	}
+	.text {
+		height: 20px;
+		line-height: 20px;
+		font-size: 16px;
+		white-space: nowrap;
+		flex-grow: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.count {
+		height: 16px;
+		line-height: 15px;
+		background-color: rgb(242, 63, 66);
+		color: white;
+		font-size: 12px;
+		font-weight: 700;
+		position: relative;
+		border-radius: 10px;
+		padding: 0 5px;
+		top: 50%;
+		transform: translateY(-50%);
+		margin-left: 6px;
+	}
+}
+
+.guildName {
+	font-weight: 600;
+
+	width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+
+	// border-bottom: 1px solid #1f2124;
+
+	box-shadow: rgba(2, 2, 2, 0.2) 0px 1px 0px 0px, rgba(6, 6, 7, 0.05) 0px 1.5px 0px 0px,
+		rgba(2, 2, 2, 0.05) 0px 2px 0px 0px;
+
+	:global(.light) & {
+		box-shadow: rgba(6, 6, 7, 0.1) 0px 1px 0px 0px, rgba(2, 2, 2, 0.025) 0px 1.5px 0px 0px,
+			rgba(6, 6, 7, 0.025) 0px 2px 0px 0px;
+	}
+
+	padding: 8px 12px;
+	box-sizing: border-box;
+	z-index: 3;
+	// transition: background-color.1s linear;
+	// box-shadow: var(--elevation-low);
+	white-space: nowrap;
+
+	position: relative;
+}

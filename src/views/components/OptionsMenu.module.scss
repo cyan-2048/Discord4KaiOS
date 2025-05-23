@@ -1,0 +1,39 @@
+.menu {
+	width: 100vw;
+	padding: 6px 8px;
+	background-color: #111214;
+
+	:global(.light) & {
+		background-color: #ffffff;
+	}
+
+	.item {
+		padding: 6px 8px;
+		font-size: 14px;
+		border-radius: 2px;
+		position: relative;
+		margin: 2px 0;
+
+		.icon {
+			position: absolute;
+			right: 8px;
+			top: 6px;
+			width: 18px;
+			height: 18px;
+
+			svg {
+				width: 18px;
+				height: 18px;
+			}
+		}
+
+		:global(.light) & {
+			color: #4e5058;
+		}
+
+		&:focus {
+			background-color: #5865f2;
+			color: white;
+		}
+	}
+}

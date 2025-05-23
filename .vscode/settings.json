@@ -1,0 +1,12 @@
+{
+	"prettier.useTabs": true,
+	"prettier.printWidth": 200,
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnPaste": true,
+	"editor.formatOnSave": true,
+	"editor.formatOnSaveMode": "modificationsIfAvailable",
+	"editor.tabSize": 2,
+	"files.exclude": {
+		"**/*.module.scss.d.ts": true
+	}
+}

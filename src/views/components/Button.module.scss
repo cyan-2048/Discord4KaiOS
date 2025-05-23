@@ -1,0 +1,20 @@
+.button {
+	padding: 5px 7px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: #5865f2;
+	color: white;
+
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 600;
+
+	&.focused {
+		background-color: #4752c4;
+	}
+
+	&.disabled {
+		opacity: 0.5;
+	}
+}

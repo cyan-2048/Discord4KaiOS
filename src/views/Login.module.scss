@@ -1,0 +1,75 @@
+.login {
+	width: 100vw;
+	height: 100vh;
+	overflow: auto;
+
+	background: rgba(40, 43, 48, 0.75);
+
+	.content {
+		padding: 20px 16px;
+
+		.label {
+			margin-top: 20px;
+			color: rgb(185, 187, 190);
+			font-size: 10px;
+			.padding {
+				padding-left: 2px;
+				padding-right: 2px;
+			}
+		}
+
+		.red {
+			color: #f04747;
+		}
+
+		.title {
+			font-size: 14px;
+			font-weight: 700;
+			margin-bottom: 8px;
+			text-align: center;
+		}
+		.greet {
+			font-size: 12px;
+			margin-bottom: 14px;
+			color: rgb(185, 187, 190);
+			text-align: center;
+		}
+
+		.focusableInput {
+			margin-top: 8px;
+
+			input {
+				all: unset;
+				background: none;
+				border: none;
+				padding: 8px;
+				font-size: 13px;
+				box-sizing: border-box;
+				width: 100%;
+				box-shadow: 0 1px rgba(255, 255, 255, 0.1);
+
+				&:focus {
+					box-shadow: 0 2px #fff;
+				}
+			}
+		}
+	}
+}
+
+.button {
+}
+
+.backdrop {
+	position: fixed;
+	z-index: -1;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: calc(100vw + 20px);
+	height: calc(100vh + 20px);
+	background-repeat: no-repeat;
+	background-size: cover;
+	background-position: center;
+	background-image: url(https://cdn.discordapp.com/attachments/733624227378495488/772015337850798090/85e031dc63742b86264cc0dbc2a6fdb8.png);
+	filter: blur(10px);
+}

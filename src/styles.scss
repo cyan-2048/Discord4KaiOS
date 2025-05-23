@@ -1,0 +1,93 @@
+body,
+html {
+	margin: 0;
+	padding: 0;
+	color: white;
+	width: 100vw;
+	height: 100vh;
+	overflow: hidden;
+	position: fixed;
+	left: 0;
+	top: 0;
+}
+
+@font-face {
+	font-family: twemoji;
+	src: url("./assets/Twemoji Mozilla.ttf");
+	font-display: swap;
+}
+
+* {
+	box-sizing: border-box;
+	font-family: "Open Sans", roboto, twemoji;
+}
+
+.light {
+	color: #000;
+}
+
+html {
+	background-color: #000;
+}
+
+body {
+	background-color: #232529;
+}
+
+body.light {
+	background-color: #fff;
+}
+
+@keyframes sk-bouncedelay {
+	0%,
+	80%,
+	100% {
+		transform: scale(0);
+	}
+	40% {
+		transform: scale(1);
+	}
+}
+
+.spinner {
+	width: 70px;
+	text-align: center;
+}
+
+.spinner > div {
+	width: 9px;
+	height: 9px;
+
+	background-color: #fff;
+
+	.light & {
+		background-color: #333;
+	}
+
+	border-radius: 100%;
+	display: inline-block;
+	animation: sk-bouncedelay 1.4s infinite ease-in-out both;
+}
+
+.spinner .bounce1 {
+	animation-delay: -0.32s;
+}
+
+.spinner .bounce2 {
+	animation-delay: -0.16s;
+	margin: 0 4px;
+}
+
+a {
+	color: #00a8fc;
+
+	.light & {
+		color: #006ce7;
+	}
+
+	text-decoration: none;
+}
+
+:focus {
+	outline: none;
+}

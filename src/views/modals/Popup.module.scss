@@ -1,0 +1,36 @@
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.Popup {
+	position: fixed;
+  z-index: 999;
+	bottom: 0;
+  height: 100vh;
+  width: 100vw;
+  opacity: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+
+.container {
+  transform: scale(1.1);
+}
+
+.container, .Popup {
+  transition: transform 0.2s, opacity 0.2s;
+  transition-timing-function: ease-in-out;
+}
+
+.open {
+  transform: scale(1);
+  opacity: 1;
+}

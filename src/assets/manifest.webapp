@@ -1,0 +1,41 @@
+{
+	"name": "Kori",
+	"description": "Unofficial Discord Client for KaiOS.",
+	"version": "1.2.1",
+	"launch_path": "/index.html",
+	"theme": "#fff",
+	"theme_color": "#fff",
+	"background_color": "#fff",
+	"orientation": "default",
+
+	"categories": ["social"],
+
+	"icons": {
+		"56": "/icon56.png",
+		"112": "/icon112.png"
+	},
+	"developer": {
+		"name": "cyan-2048",
+		"url": "https://github.com/Discord4KaiOS"
+	},
+	"origin": "app://korikord.cyankindasus.com",
+	"type": "privileged",
+	"permissions": {
+		"spatialnavigation-app-manage": {},
+		"systemXHR": {},
+		"audio-capture": {},
+		"video-capture": {
+			"description": "Reading Codes using the Camera"
+		},
+		"desktop-notification": {},
+		"udp-socket": { "description": "Required to do any UDP" }
+	},
+	"locales": {
+		"en-US": {
+			"name": "Kori",
+			"subtitle": "Discord for KaiOS",
+			"description": "Unofficial Discord Client for KaiOS."
+		}
+	},
+	"default_locale": "en"
+}
