@@ -33,7 +33,7 @@
 
 	"b2g_features": {
 		"display": "Kori",
-		"version": "3.2.1",
+		"version": "3.2.2",
 		"type": "privileged",
 		"default_locale": "en-US",
 		"developer": {

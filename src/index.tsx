@@ -53,7 +53,7 @@ if (import.meta.env.PROD) {
 		const version = isKai3 ? manifest.b2g_features.version : manifest.version;
 
 		// VERSION EMOJI
-		toast("you are running " + version + " 🌌");
+		toast("you are running " + version + " 💀");
 	});
 }
 

@@ -1,7 +1,7 @@
 {
 	"name": "Kori",
 	"description": "Unofficial Discord Client for KaiOS.",
-	"version": "1.2.1",
+	"version": "1.2.2",
 	"launch_path": "/index.html",
 	"theme": "#fff",
 	"theme_color": "#fff",
