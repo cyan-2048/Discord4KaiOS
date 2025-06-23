@@ -6,3 +6,5 @@ export function toast(message: string, duration: number = 3000) {
 	setToastQueue((e) => [...e, { text: message, duration, promise: deferred }]);
 	return deferred.promise;
 }
+
+export * from "./Toast.tsx";
