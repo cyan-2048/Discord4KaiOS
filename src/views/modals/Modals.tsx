@@ -1,4 +1,4 @@
-import Toast from "./Toast.tsx";
+import Toast from "./ToastModal.tsx";
 import FullscreenModal from "./fullscreen";
 import Popup from "./popup";
 import Slide from "./slide";
