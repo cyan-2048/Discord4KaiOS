@@ -28,6 +28,7 @@
 		"lottie-web": "^5.12.2",
 		"lru-cache": "^11.0.2",
 		"minisearch": "^7.1.1",
+		"moment-timezone": "^0.6.0",
 		"pako": "~1.0.5",
 		"sass": "1.77.6",
 		"scroll-into-view": "^1.16.2",

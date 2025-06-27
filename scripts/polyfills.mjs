@@ -32,9 +32,9 @@ self.Worker = Worker;
 const NativeXMLHttpRequest = self.XMLHttpRequest;
 
 class XMLHttpRequest extends NativeXMLHttpRequest {
-	constructor() {
+	constructor(opts) {
 		// @ts-ignore
-		super({ mozSystem: true, mozAnon: true });
+		super(opts ?? { mozSystem: true });
 	}
 }
 

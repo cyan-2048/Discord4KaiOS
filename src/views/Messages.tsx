@@ -91,6 +91,7 @@ import JoinDMMessage from "./components/JoinDMMessage";
 import NameChangeDMMessage from "./components/NameChangeDMMessage";
 import CallMessage from "./components/CallMessage";
 import GifPicker from "./components/GifPicker";
+import IconChangeDMMessage from "./components/IconChangeDMMessage";
 
 type DiscordTextChannel = NonNullable<ReturnType<typeof currentDiscordChannel>>;
 type AttachmentToUpload = NonNullable<SendMessageArgs[2]>[number];
@@ -1836,6 +1837,12 @@ function Message(props: {
 				}}
 				onFocus={(e) => {
 					if (e.currentTarget !== e.target) return;
+
+					if (import.meta.env.DEV) {
+						// @ts-ignore
+						e.currentTarget.$$$kori = props.$;
+					}
+
 					// centerScroll(divRef);
 					setFocused(true);
 					setLastFocused("chat");
@@ -2015,6 +2022,9 @@ function Message(props: {
 					</Match>
 					<Match when={props.$.$.type == 4}>
 						<NameChangeDMMessage $={props.$} />
+					</Match>
+					<Match when={props.$.$.type == 5}>
+						<IconChangeDMMessage $={props.$} />
 					</Match>
 				</Switch>
 			</div>
